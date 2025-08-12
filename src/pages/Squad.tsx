@@ -29,7 +29,7 @@ const Squad: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">First Team Squad</h1>
-          <p className="text-lg md:text-xl text-slate-600 px-4">Meet our talented players who make Cogni Hfx FC special</p>
+          <p className="text-lg md:text-xl text-slate-600 px-4">Meet our talented players who make Cogni Hfx FC special really special</p>
         </div>
 
         {/* Squad Statistics */}
