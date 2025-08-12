@@ -52,17 +52,17 @@ export const players: Player[] = [
   },
   {
     id: 2,
-    name: "James Rodriguez",
+    name: "Surya",
     position: "Defender",
-    age: 26,
-    nationality: "Spain",
+    age: 30,
+    nationality: "India",
     jerseyNumber: 4,
     height: "6'1\"",
     weight: "175 lbs",
     goals: 3,
     assists: 5,
     appearances: 28,
-    photo: "https://images.pexels.com/photos/3621104/pexels-photo-3621104.jpeg?auto=compress&cs=tinysrgb&w=400&h=600&fit=crop",
+    photo: "/images/surya.jpg",
     bio: "Strong central defender with excellent aerial ability and tactical awareness. A natural leader who reads the game exceptionally well."
   },
   {

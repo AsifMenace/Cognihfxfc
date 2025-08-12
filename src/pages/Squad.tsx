@@ -102,7 +102,7 @@ const Squad: React.FC = () => {
                           <img
                             src={player.photo}
                             alt={player.name}
-                            className="w-full h-40 md:h-48 object-cover"
+                            className="w-full h-40 md:h-48 object-cover object-top"
                           />
                           <div className="absolute top-2 md:top-4 right-2 md:right-4 bg-blue-600 text-white w-8 md:w-10 h-8 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base font-bold">
                             {player.jerseyNumber}
