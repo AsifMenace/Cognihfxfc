@@ -26,10 +26,15 @@ const Squad: React.FC = () => {
   const positionOrder = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'];
 
   useEffect(() => {
+    const API_URL =
+      process.env.NODE_ENV === 'development'
+        ? 'https://db-integration--cognihfxfc.netlify.app/.netlify/functions/getPlayers'
+        : '/.netlify/functions/getPlayers';
+   // const API_URL = 'https://db-integration--c  ognihfxfc.netlify.app/.netlify/functions/getPlayers';
+
     const fetchPlayers = async () => {
       try {
-        const res = await fetch('/.netlify/functions/getPlayers');
-        //const res = await fetch('https://cognihfxfc.netlify.app/.netlify/functions/getPlayers');
+        const res = await fetch(API_URL);
         if (!res.ok) throw new Error('Failed to fetch players');
         const data: Player[] = await res.json();
         setPlayers(data);
@@ -39,8 +44,10 @@ const Squad: React.FC = () => {
         setLoading(false);
       }
     };
+  
     fetchPlayers();
   }, []);
+  
 
   const groupedPlayers = players.reduce((acc, player) => {
     if (!acc[player.position]) {
@@ -73,7 +80,7 @@ const Squad: React.FC = () => {
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">First Team Squad</h1>
           <p className="text-lg md:text-xl text-slate-600 px-4">
-            Meet our talented players who make Cogni Hfx FC special
+            Meet our talented core players who make Cogni Hfx FC special
           </p>
         </div>
 
