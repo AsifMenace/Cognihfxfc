@@ -37,17 +37,17 @@ export interface GalleryImage {
 export const players: Player[] = [
   {
     id: 1,
-    name: "Marcus Johnson",
+    name: "Ashok",
     position: "Goalkeeper",
-    age: 28,
-    nationality: "England",
+    age: 30,
+    nationality: "India",
     jerseyNumber: 1,
-    height: "6'3\"",
+    height: "6'1\"",
     weight: "185 lbs",
     goals: 0,
     assists: 2,
     appearances: 25,
-    photo: "https://images.pexels.com/photos/1884574/pexels-photo-1884574.jpeg?auto=compress&cs=tinysrgb&w=400&h=600&fit=crop",
+    photo: "/images/ashok.jpg",
     bio: "Reliable goalkeeper with excellent reflexes and leadership qualities. Known for his ability to organize the defense and make crucial saves in important moments."
   },
   {
