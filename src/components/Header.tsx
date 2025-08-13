@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, Users, Camera, Mail } from 'lucide-react';
+import { Home, Calendar, Users, Camera, Mail, UserPlus } from 'lucide-react';
 
 
 const Header: React.FC = () => {
@@ -81,6 +81,19 @@ const Header: React.FC = () => {
               <Mail size={18} />
               <span>Contact</span>
             </Link>
+            <Link
+              to="/add-player"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                isActive('/add-player')
+                  ? 'bg-blue-600 text-white'
+                  : 'hover:bg-slate-700 text-slate-300 hover:text-white'
+              }`}
+            >
+              {/* You can use any icon you like — here’s an example using the UserPlus icon */}
+              <UserPlus size={18} />
+              <span>Add Player</span>
+            </Link>
+
 
           </nav>
           
@@ -150,6 +163,16 @@ const Header: React.FC = () => {
               >
                 <Camera size={20} /> {/* or use a Mail icon, if you import one */}
                 <span className="text-xs">Contact</span>
+              </Link>
+              <Link
+                to="/add-player"
+                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                  isActive('/add-player') ? 'text-blue-400' : 'text-slate-300'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <UserPlus size={20} /> {/* You can pick another icon if you prefer */}
+                <span className="text-xs">Add Player</span>
               </Link>
           </div>
         </nav>
