@@ -1,14 +1,81 @@
-import React from 'react';
+import React, { useEffect, useState }  from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Users, Trophy, Target } from 'lucide-react';
-import { upcomingGames, players } from '../data/mockData';
+import { upcomingGames } from '../data/mockData';
+
+interface TopScorer {
+  id: number;
+  name: string;
+  position: string;
+  goals: number;
+  appearances: number;
+  photo: string;
+}
+
+interface Player {
+  id: number;
+  name: string;
+  position: string;
+  age: number;
+  nationality: string;
+  jerseyNumber: number;
+  height: string;
+  weight: string;
+  goals: number;
+  assists: number;
+  appearances: number;
+  photo: string;
+  bio: string;
+}
 
 const Home: React.FC = () => {
   const nextGame = upcomingGames[0];
-  const topScorers = players
-    .filter(player => player.goals > 0)
-    .sort((a, b) => b.goals - a.goals)
-    .slice(0, 3);
+  //const topScorers = players
+  //  .filter(player => player.goals > 0)
+  //  .sort((a, b) => b.goals - a.goals)
+  //  .slice(0, 3);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [topScorers, setTopScorers] = useState<TopScorer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const BASE_URL =
+    process.env.NODE_ENV === 'development'
+      ? 'https://db-integration--cognihfxfc.netlify.app/.netlify/functions'
+      : '/.netlify/functions';
+
+useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [playersRes, scorersRes] = await Promise.all([
+          fetch(`${BASE_URL}/getPlayers`),
+          fetch(`${BASE_URL}/getTopScorers`),
+        ]);
+
+        if (!playersRes.ok) throw new Error('Failed to fetch players');
+        if (!scorersRes.ok) throw new Error('Failed to fetch top scorers');
+
+        const playersData: Player[] = await playersRes.json();
+        const scorersData: TopScorer[] = await scorersRes.json();
+
+        setPlayers(playersData);
+        setTopScorers(scorersData);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [BASE_URL]);
+  
+  const squadCount = players.length;
+  const totalGoals = players.reduce((total, p) => total + p.goals, 0);
+
+  const totalWins = 15; // hard-coded for now
+  const upcomingMatches = 4; // hard-coded for now
+
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -90,81 +157,84 @@ const Home: React.FC = () => {
       </section>
 
       {/* Top Scorers Section */}
-      <section className="py-8 md:py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12 text-slate-900">Top Scorers</h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8 max-w-4xl mx-auto">
-            {topScorers.map((player, index) => (
-              <Link
-                key={player.id}
-                to={`/player/${player.id}`}
-                className="group"
-              >
-                <div className="bg-slate-50 rounded-xl p-4 md:p-6 text-center hover:shadow-lg transition-all duration-300 group-hover:scale-105">
-                  <div className="relative mb-4">
-                    <img
-                      src={player.photo}
-                      alt={player.name}
-                      className="w-16 md:w-20 h-16 md:h-20 rounded-full mx-auto object-cover"
-                    />
-                    {index === 0 && (
-                      <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-yellow-400 text-yellow-900 w-6 md:w-8 h-6 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold">
-                        👑
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="font-bold text-base md:text-lg text-slate-900 mb-1">{player.name}</h3>
-                  <p className="text-slate-600 text-xs md:text-sm mb-3">{player.position}</p>
-                  <div className="flex items-center justify-center space-x-4">
-                    <div className="flex items-center space-x-1">
-                      <Target className="text-blue-600" size={16} />
-                      <span className="font-bold text-base md:text-lg text-slate-900">{player.goals}</span>
+      {!loading && !error && (
+        <section className="py-8 md:py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-slate-900">
+              Top Scorers
+            </h2>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              {topScorers.map((player, i) => (
+                <Link key={player.id} to={`/player/${player.id}`} className="group">
+                  <div className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition">
+                    <div className="relative mb-4">
+                      <img
+                        src={player.photo}
+                        alt={player.name}
+                        className="w-16 h-16 rounded-full mx-auto object-cover"
+                      />
+                      {i === 0 && (
+                        <div className="absolute -top-1 -right-1 bg-yellow-400 text-yellow-900 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                          👑
+                        </div>
+                      )}
                     </div>
-                    <div className="text-slate-400">|</div>
-                    <div className="text-slate-600 text-xs md:text-sm">{player.appearances} apps</div>
+                    <h3 className="font-bold">{player.name}</h3>
+                    <p className="text-slate-600 text-xs mb-3">{player.position}</p>
+                    <div className="flex items-center justify-center space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <Target className="text-blue-600" size={16} />
+                        <span className="font-bold">{player.goals}</span>
+                      </div>
+                      <div className="text-slate-400">|</div>
+                      <div className="text-slate-600 text-xs">{player.appearances} apps</div>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
 
       {/* Quick Stats Section */}
       <section className="py-8 md:py-16 bg-slate-900 text-white">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-12 md:w-16 h-12 md:h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
-                <Users size={20} className="md:w-6 md:h-6" />
+          {loading && <p className="text-center">Loading stats...</p>}
+          {error && <p className="text-center text-red-400">{error}</p>}
+          {!loading && !error && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 max-w-4xl mx-auto">
+              <div className="text-center">
+                <div className="w-12 md:w-16 h-12 md:h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                  <Users size={20} className="md:w-6 md:h-6" />
+                </div>
+                <div className="text-2xl md:text-3xl font-bold mb-1">{squadCount}</div>
+                <div className="text-xs md:text-base text-slate-300">Squad Players</div>
               </div>
-              <div className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">{players.length}</div>
-              <div className="text-xs md:text-base text-slate-300">Squad Players</div>
+              <div className="text-center">
+                <div className="w-12 md:w-16 h-12 md:h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                  <Trophy size={20} className="md:w-6 md:h-6" />
+                </div>
+                <div className="text-2xl md:text-3xl font-bold mb-1">{totalWins}</div>
+                <div className="text-xs md:text-base text-slate-300">Wins</div>
+              </div>
+              <div className="text-center">
+                <div className="w-12 md:w-16 h-12 md:h-16 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                  <Target size={20} className="md:w-6 md:h-6" />
+                </div>
+                <div className="text-2xl md:text-3xl font-bold mb-1">{totalGoals}</div>
+                <div className="text-xs md:text-base text-slate-300">Goals Scored</div>
+              </div>
+              <div className="text-center">
+                <div className="w-12 md:w-16 h-12 md:h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                  <Calendar size={20} className="md:w-6 md:h-6" />
+                </div>
+                <div className="text-2xl md:text-3xl font-bold mb-1">{upcomingMatches}</div>
+                <div className="text-xs md:text-base text-slate-300">Upcoming</div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="w-12 md:w-16 h-12 md:h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
-                <Trophy size={20} className="md:w-6 md:h-6" />
-              </div>
-              <div className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">15</div>
-              <div className="text-xs md:text-base text-slate-300">Wins</div>
-            </div>
-            <div className="text-center">
-              <div className="w-12 md:w-16 h-12 md:h-16 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
-                <Target size={20} className="md:w-6 md:h-6" />
-              </div>
-              <div className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">
-                {players.reduce((total, player) => total + player.goals, 0)}
-              </div>
-              <div className="text-xs md:text-base text-slate-300">Goals Scored</div>
-            </div>
-            <div className="text-center">
-              <div className="w-12 md:w-16 h-12 md:h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
-                <Calendar size={20} className="md:w-6 md:h-6" />
-              </div>
-              <div className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">{upcomingGames.length}</div>
-              <div className="text-xs md:text-base text-slate-300">Upcoming</div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
     </div>

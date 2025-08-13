@@ -29,9 +29,9 @@ const PlayerDetail: React.FC = () => {
 
   useEffect(() => {
     const API_URL =
-      process.env.NODE_ENV === 'development'
-        ? 'https://db-integration--cognihfxfc.netlify.app/.netlify/functions/getPlayerById?id=${id}'
-        : '/.netlify/functions/getPlayerById?id=${id}';
+    process.env.NODE_ENV === 'development'
+      ? `https://db-integration--cognihfxfc.netlify.app/.netlify/functions/getPlayerById?id=${id}`
+      : `/.netlify/functions/getPlayerById?id=${id}`;  
 
     const fetchPlayer = async () => {
       try {
