@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AddPlayerForm: React.FC = () => {
+const AddPlayer: React.FC = () => {
   const [form, setForm] = useState({
     name: '',
     position: '',
@@ -17,31 +17,64 @@ const AddPlayerForm: React.FC = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const API_URL =
-    process.env.NODE_ENV === 'development'
-    ? 'https://db-integration--cognihfxfc.netlify.app/.netlify/functions/addPlayer'
-    : '/.netlify/functions/addPlayer';
+  // 🔹 Change these to your Cloudinary details
+  const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/mycloudasif/image/upload';
+  const UPLOAD_PRESET = 'unsigned_preset';
 
+  // Handle basic text/number/textarea changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Handle image file upload to Cloudinary
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', UPLOAD_PRESET);
+
+      const response = await fetch(CLOUDINARY_URL, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Image upload failed');
+      }
+
+      const data = await response.json();
+      // Set the image URL from Cloudinary
+      setForm((prev) => ({ ...prev, photo: data.secure_url }));
+      setSuccess('Image uploaded successfully!');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle submit to Netlify addPlayer function
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
 
-    // Prepare data, convert numbers where needed
     const body = {
       ...form,
       age: Number(form.age),
       jerseyNumber: Number(form.jerseyNumber),
-      height: form.height,
-      weight: form.weight,
       goals: Number(form.goals) || 0,
       assists: Number(form.assists) || 0,
       appearances: Number(form.appearances) || 0,
@@ -49,6 +82,11 @@ const AddPlayerForm: React.FC = () => {
     };
 
     try {
+      const API_URL =
+        process.env.NODE_ENV === 'development'
+        ? 'https://db-integration--cognihfxfc.netlify.app/.netlify/functions/addPlayer'
+        : '/.netlify/functions/addPlayer';
+
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,6 +99,7 @@ const AddPlayerForm: React.FC = () => {
       }
 
       setSuccess('Player added successfully!');
+      // Reset form
       setForm({
         name: '',
         position: '',
@@ -83,124 +122,155 @@ const AddPlayerForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4 bg-white shadow rounded space-y-4">
-      <h2 className="text-2xl font-bold mb-4">Add New Player</h2>
+    <div className="min-h-screen bg-slate-50 py-10">
+      <div className="container mx-auto px-4">
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4 bg-white shadow rounded space-y-4">
+          <h2 className="text-2xl font-bold mb-4">Add New Player</h2>
 
-      {error && <p className="text-red-600">{error}</p>}
-      {success && <p className="text-green-600">{success}</p>}
+          {error && <p className="text-red-600">{error}</p>}
+          {success && <p className="text-green-600">{success}</p>}
 
-      <input
-        type="text"
-        name="name"
-        placeholder="Name"
-        value={form.name}
-        onChange={handleChange}
-        required
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="text"
-        name="position"
-        placeholder="Position"
-        value={form.position}
-        onChange={handleChange}
-        required
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="number"
-        name="age"
-        placeholder="Age"
-        value={form.age}
-        onChange={handleChange}
-        required
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="text"
-        name="nationality"
-        placeholder="Nationality"
-        value={form.nationality}
-        onChange={handleChange}
-        required
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="number"
-        name="jerseyNumber"
-        placeholder="Jersey Number"
-        value={form.jerseyNumber}
-        onChange={handleChange}
-        required
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="text"
-        name="height"
-        placeholder="Height"
-        value={form.height}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="text"
-        name="weight"
-        placeholder="Weight"
-        value={form.weight}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="number"
-        name="goals"
-        placeholder="Goals"
-        value={form.goals}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="number"
-        name="assists"
-        placeholder="Assists"
-        value={form.assists}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="number"
-        name="appearances"
-        placeholder="Appearances"
-        value={form.appearances}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-      />
-      <input
-        type="url"
-        name="photo"
-        placeholder="Photo URL from Cloudinary"
-        value={form.photo}
-        onChange={handleChange}
-        required
-        className="w-full p-2 border rounded"
-      />
-      <textarea
-        name="bio"
-        placeholder="Bio"
-        value={form.bio}
-        onChange={handleChange}
-        rows={4}
-        className="w-full p-2 border rounded"
-      />
+          {/* Name */}
+          <input
+            type="text"
+            name="name"
+            placeholder="Name"
+            value={form.name}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded"
+          />
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
-      >
-        {loading ? 'Adding...' : 'Add Player'}
-      </button>
-    </form>
+          {/* Position */}
+          <input
+            type="text"
+            name="position"
+            placeholder="Position"
+            value={form.position}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Age */}
+          <input
+            type="number"
+            name="age"
+            placeholder="Age"
+            value={form.age}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Nationality */}
+          <input
+            type="text"
+            name="nationality"
+            placeholder="Nationality"
+            value={form.nationality}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Jersey Number */}
+          <input
+            type="number"
+            name="jerseyNumber"
+            placeholder="Jersey Number"
+            value={form.jerseyNumber}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Height */}
+          <input
+            type="text"
+            name="height"
+            placeholder="Height"
+            value={form.height}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Weight */}
+          <input
+            type="text"
+            name="weight"
+            placeholder="Weight"
+            value={form.weight}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Goals */}
+          <input
+            type="number"
+            name="goals"
+            placeholder="Goals"
+            value={form.goals}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Assists */}
+          <input
+            type="number"
+            name="assists"
+            placeholder="Assists"
+            value={form.assists}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Appearances */}
+          <input
+            type="number"
+            name="appearances"
+            placeholder="Appearances"
+            value={form.appearances}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+
+          {/* Image upload */}
+          <div>
+            <label className="block mb-1 font-medium">Upload Player Photo</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="w-full"
+            />
+            {uploadingImage && <p className="text-sm text-blue-600 mt-1">Uploading image...</p>}
+            {form.photo && (
+              <img src={form.photo} alt="Player preview" className="mt-2 max-w-xs rounded" />
+            )}
+          </div>
+
+          {/* Bio */}
+          <textarea
+            name="bio"
+            placeholder="Bio"
+            value={form.bio}
+            onChange={handleChange}
+            rows={4}
+            className="w-full p-2 border rounded"
+          />
+
+          <button
+            type="submit"
+            disabled={loading || uploadingImage}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
+          >
+            {loading ? 'Adding...' : 'Add Player'}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 };
 
-export default AddPlayerForm;
+export default AddPlayer;
