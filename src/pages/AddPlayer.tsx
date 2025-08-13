@@ -22,8 +22,8 @@ const AddPlayerForm: React.FC = () => {
 
   const API_URL =
     process.env.NODE_ENV === 'development'
-      ? 'https://db-integration--cognihfxfc.netlify.app/.netlify/functions/addPlayer'
-      : '/.netlify/functions/addPlayer';
+    ? 'https://db-integration--cognihfxfc.netlify.app/.netlify/functions/addPlayer'
+    : '/.netlify/functions/addPlayer';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
