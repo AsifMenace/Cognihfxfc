@@ -24,12 +24,12 @@ const Gallery: React.FC = () => {
 
   const API_BASE =
   process.env.NODE_ENV === 'development'
-    ? 'https://https://db-integration--cognihfxfc.netlify.app/.netlify/functions'
+    ? 'https://https://v2_db_integ--cognihfxfc.netlify.app/.netlify/functions'
     : '/.netlify/functions';
 
   // Fetch gallery data
   useEffect(() => {
-    fetch('${API_BASE}/getGallery')
+    fetch(`${API_BASE}/getGallery`)
       .then(res => res.json())
       .then(data => setGalleryImages(data))
       .catch(err => console.error(err))
