@@ -1,7 +1,6 @@
 import { neon } from '@netlify/neon';
 
 const sql = neon();
-
 export const handler = async (event) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
