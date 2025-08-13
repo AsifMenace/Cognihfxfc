@@ -35,7 +35,7 @@ export const handler = async (event) => {
       };
     }
 
-    await sql`INSERT INTO gallery (image_url, caption) VALUES (${image_url}, ${caption || null});`;
+    await sql`INSERT INTO gallery (image_url, caption, category) VALUES (${image_url}, ${caption || null}, ${category || 'match'});`;
 
     return {
       statusCode: 201,
