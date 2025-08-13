@@ -7,6 +7,9 @@ import Squad from './pages/Squad';
 import PlayerDetail from './pages/PlayerDetail';
 import Gallery from './pages/Gallery';
 import Contact from './pages/Contact';
+import AddPlayer from './pages/AddPlayer';
+import EditPlayer from './pages/EditPlayer';
+
 
 function App() {
   return (
@@ -20,6 +23,8 @@ function App() {
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/add-player" element={<AddPlayer />} />
+          <Route path="/edit-player/:id" element={<EditPlayer />} />
         </Routes>
       </div>
     </Router>
