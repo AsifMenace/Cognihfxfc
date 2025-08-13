@@ -16,9 +16,13 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-xl font-bold">FC</span>
-            </div>
+          <div className="w-14 h-14 overflow-hidden">
+    <img 
+      src="https://res.cloudinary.com/mycloudasif/image/upload/v1755069690/logocogni_wunnvy.png" 
+      alt="Logo" 
+      className="w-full h-full object-cover" 
+    />
+  </div>
             <div>
               <h1 className="text-xl font-bold">Cogni Hfx FC</h1>
               <p className="text-sm text-slate-300">Football Club</p>
