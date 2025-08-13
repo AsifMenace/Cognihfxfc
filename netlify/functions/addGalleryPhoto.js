@@ -24,7 +24,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { image_url, caption } = JSON.parse(event.body);
+    const { image_url, caption, category } = JSON.parse(event.body);
 
     if (!image_url) {
       return {
