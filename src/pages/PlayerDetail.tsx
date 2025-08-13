@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Target, Trophy, Users, Calendar, MapPin,
-  User, Ruler, Weight
+  User, Ruler, Weight, Pencil
 } from 'lucide-react';
 
 interface Player {
@@ -178,7 +178,18 @@ const PlayerDetail: React.FC = () => {
               </div>
             </div>
           </div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+  <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{player.name}</h1>
 
+  {/* Edit button */}
+  <Link
+    to={`/edit-player/${player.id}`}
+    className="mt-3 md:mt-0 inline-flex items-center justify-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700 transition-colors"
+  >
+    <Pencil size={18} />
+    <span>Edit</span>
+  </Link>
+</div>
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Season Statistics */}
             <div className="lg:col-span-2">
