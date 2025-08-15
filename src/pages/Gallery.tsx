@@ -147,37 +147,63 @@ const Gallery: React.FC = () => {
 
         {/* UPLOAD FORM */}
         <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow mb-8">
-          <h2 className="text-lg font-bold mb-3">Add to Gallery</h2>
-          {error && <p className="text-red-600">{error}</p>}
-          {message && <p className="text-green-600">{message}</p>}
-          <input type="file" accept="image/*" onChange={handleFileChange} required />
-          {uploading && <p className="text-blue-500 mt-1">Uploading...</p>}
-          {imageUrl && <img src={imageUrl} alt="Preview" className="mt-2 w-32 rounded" />}
-          <input
-            type="text"
-            placeholder="Caption"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            className="block w-full border p-2 rounded mt-3"
-          />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="block w-full border p-2 rounded mt-3"
-          >
-            <option value="match">Match</option>
-            <option value="training">Training</option>
-            <option value="celebration">Celebration</option>
-            <option value="team">Team</option>
-          </select>
-          <button
-            type="submit"
-            disabled={saving || uploading || !imageUrl}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          >
-            {saving ? 'Saving...' : 'Add Photo'}
-          </button>
-        </form>
+  <h2 className="text-lg font-bold mb-3">Add to Gallery</h2>
+  {error && <p className="text-red-600">{error}</p>}
+  {message && <p className="text-green-600">{message}</p>}
+
+  {/* File upload (styled label triggers hidden input) */}
+  <div className="flex items-center">
+    <label
+      htmlFor="gallery-file"
+      className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-700"
+    >
+      Choose File
+    </label>
+    <input
+      id="gallery-file"
+      type="file"
+      accept="image/*"
+      onChange={handleFileChange}
+      style={{ display: 'none' }}
+      required
+    />
+    <span className="ml-3 text-gray-600">
+      {/* This shows status next to button */}
+      {imageUrl 
+        ? "File selected"
+        : "No file chosen"}
+    </span>
+  </div>
+
+  {uploading && <p className="text-blue-500 mt-1">Uploading...</p>}
+  {imageUrl && <img src={imageUrl} alt="Preview" className="mt-2 w-32 rounded" />}
+
+  <input
+    type="text"
+    placeholder="Caption"
+    value={caption}
+    onChange={(e) => setCaption(e.target.value)}
+    className="block w-full border p-2 rounded mt-3"
+  />
+  <select
+    value={category}
+    onChange={(e) => setCategory(e.target.value)}
+    className="block w-full border p-2 rounded mt-3"
+  >
+    <option value="match">Match</option>
+    <option value="training">Training</option>
+    <option value="celebration">Celebration</option>
+    <option value="team">Team</option>
+  </select>
+  <button
+    type="submit"
+    disabled={saving || uploading || !imageUrl}
+    className="mt-4 bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
+  >
+    {saving ? 'Saving...' : 'Add Photo'}
+  </button>
+</form>
+
 
         {/* FILTER BUTTONS */}
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 mb-6">
