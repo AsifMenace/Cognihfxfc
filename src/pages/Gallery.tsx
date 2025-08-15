@@ -23,9 +23,9 @@ const Gallery: React.FC = () => {
   const UPLOAD_PRESET = 'unsigned_preset';
 
   const API_BASE =
-  process.env.NODE_ENV === 'development'
-    ? 'https://v2_db_integ--cognihfxfc.netlify.app/.netlify/functions'
-    : '/.netlify/functions';
+    process.env.NODE_ENV === 'development'
+      ? 'https://v2_db_integ--cognihfxfc.netlify.app/.netlify/functions'
+      : '/.netlify/functions';
 
   // Fetch gallery data
   useEffect(() => {
@@ -83,19 +83,19 @@ const Gallery: React.FC = () => {
   // Handle Delete 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this photo?')) return;
-  
+
     try {
       const res = await fetch(`${API_BASE}/deleteGalleryPhoto`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
-  
+
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || 'Failed to delete photo');
       }
-  
+
       // Update local state
       setGalleryImages((prev) => prev.filter((img) => img.id !== id));
     } catch (err: any) {
@@ -111,12 +111,12 @@ const Gallery: React.FC = () => {
     setError(null);
     setMessage(null);
     try {
-        const res = await fetch(`${API_BASE}/addGalleryPhoto`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_url: imageUrl, caption, category }),
-        });
-        
+      const res = await fetch(`${API_BASE}/addGalleryPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: imageUrl, caption, category }),
+      });
+
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || 'Failed to save photo');
@@ -186,11 +186,10 @@ const Gallery: React.FC = () => {
             <button
               key={cat}
               onClick={() => setFilter(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
-                filter === cat
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${filter === cat
                   ? 'bg-blue-600 text-white shadow-lg scale-105'
                   : 'bg-white text-slate-600 hover:bg-slate-100 shadow-sm'
-              }`}
+                }`}
             >
               {getCategoryLabel(cat)}
               {cat !== 'all' && (
@@ -203,50 +202,52 @@ const Gallery: React.FC = () => {
         </div>
 
         {/* IMAGE GRID */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
         {filteredImages.map((image, index) => (
-  <div
-    key={image.id}
-    className="group relative"
-  >
-    {/* Delete button */}
-    <button
-      onClick={(e) => {
-        e.stopPropagation(); // Prevent the lightbox from opening
-        handleDelete(image.id);
-      }}
-      title="Delete photo"
-      className="absolute top-2 right-2 z-10 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-    >
-      ✕
-    </button>
-
-    {/* Image Card */}
-    <div
-      className="relative cursor-pointer overflow-hidden rounded-xl bg-white shadow hover:shadow-xl transition-all duration-300 group-hover:scale-105"
-      onClick={() => setSelectedImage(index)}
-    >
-      <img
-        src={image.image_url}
-        alt={image.caption}
-        className="w-full h-32 sm:h-48 md:h-64 object-cover"
-      />
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-end">
-        <div className="p-2 text-white transform translate-y-full group-hover:translate-y-0 transition-transform">
-          <span
-            className={`inline-block px-2 py-1 rounded-full text-xs font-medium mb-2 ${getCategoryColor(
-              image.category
-            )}`}
+          <div
+            key={image.id}
+            className="group relative"
           >
-            {getCategoryLabel(image.category)}
-          </span>
-          <p className="text-xs">{image.caption}</p>
+            {/* Delete button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent the lightbox from opening
+                handleDelete(image.id);
+              }}
+              title="Delete photo"
+              className="absolute top-2 right-2 z-10 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+            >
+              ✕
+            </button>
+
+            {/* Image Card */}
+            <div
+              className="relative cursor-pointer overflow-hidden rounded-xl bg-white shadow hover:shadow-xl transition-all duration-300 group-hover:scale-105"
+              onClick={() => setSelectedImage(index)}
+            >
+              <img
+                src={image.image_url}
+                alt={image.caption}
+                className="w-full h-32 sm:h-48 md:h-64 object-cover"
+              />
+
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-end">
+                <div className="p-2 text-white transform translate-y-full group-hover:translate-y-0 transition-transform">
+                  <span
+                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium mb-2 ${getCategoryColor(
+                      image.category
+                    )}`}
+                  >
+                    {getCategoryLabel(image.category)}
+                  </span>
+                  <p className="text-xs">{image.caption}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
         </div>
-      </div>
-    </div>
-  </div>
-))}
 
 
         {/* LIGHTBOX */}
