@@ -1,7 +1,7 @@
-import React, { useEffect, useState }  from 'react';
-import { Link } from 'react-router-dom';
-import { Calendar, Users, Trophy, Target } from 'lucide-react';
-import { upcomingGames } from '../data/mockData';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Calendar, Users, Trophy, Target } from "lucide-react";
+import { upcomingGames } from "../data/mockData";
 
 interface TopScorer {
   id: number;
@@ -38,13 +38,13 @@ const Home: React.FC = () => {
   const [topScorers, setTopScorers] = useState<TopScorer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const BASE_URL =
-    process.env.NODE_ENV === 'development'
-      ? 'https://db-integration--cognihfxfc.netlify.app/.netlify/functions'
-      : '/.netlify/functions';
 
-useEffect(() => {
+  const BASE_URL =
+    process.env.NODE_ENV === "development"
+      ? "https://db-integration--cognihfxfc.netlify.app/.netlify/functions"
+      : "/.netlify/functions";
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [playersRes, scorersRes] = await Promise.all([
@@ -52,16 +52,18 @@ useEffect(() => {
           fetch(`${BASE_URL}/getTopScorers`),
         ]);
 
-        if (!playersRes.ok) throw new Error('Failed to fetch players');
-        if (!scorersRes.ok) throw new Error('Failed to fetch top scorers');
+        if (!playersRes.ok) throw new Error("Failed to fetch players");
+        if (!scorersRes.ok) throw new Error("Failed to fetch top scorers");
 
         const playersData: Player[] = await playersRes.json();
         const scorersData: TopScorer[] = await scorersRes.json();
 
         setPlayers(playersData);
         setTopScorers(scorersData);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else setError("An unexpected error occurred.");
       } finally {
         setLoading(false);
       }
@@ -69,13 +71,12 @@ useEffect(() => {
 
     fetchData();
   }, [BASE_URL]);
-  
+
   const squadCount = players.length;
   const totalGoals = players.reduce((total, p) => total + p.goals, 0);
 
   const totalWins = 15; // hard-coded for now
   const upcomingMatches = 4; // hard-coded for now
-
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -84,7 +85,7 @@ useEffect(() => {
         <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
-            Cogni Hfx FC
+              Cogni Hfx FC
             </h1>
             <p className="text-lg sm:text-xl md:text-2xl mb-6 md:mb-8 text-blue-100">
               Passion, Pride, Performance
@@ -110,7 +111,9 @@ useEffect(() => {
       {/* Next Match Section */}
       <section className="py-8 md:py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12 text-slate-900">Next Match</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12 text-slate-900">
+            Next Match
+          </h2>
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg p-4 md:p-8 border-l-4 border-blue-600">
               <div className="flex items-center justify-between mb-6">
@@ -120,28 +123,35 @@ useEffect(() => {
                     {nextGame.competition}
                   </span>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  nextGame.isHome ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
-                }`}>
-                  {nextGame.isHome ? 'Home' : 'Away'}
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    nextGame.isHome
+                      ? "bg-green-100 text-green-800"
+                      : "bg-orange-100 text-orange-800"
+                  }`}
+                >
+                  {nextGame.isHome ? "Home" : "Away"}
                 </span>
               </div>
-              
+
               <div className="text-center mb-6">
                 <div className="text-lg md:text-2xl font-bold text-slate-900 mb-2">
                   Cogni Hfx FC vs {nextGame.opponent}
                 </div>
                 <div className="text-sm md:text-base text-slate-600">
-                  {new Date(nextGame.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })} at {nextGame.time}
+                  {new Date(nextGame.date).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}{" "}
+                  at {nextGame.time}
                 </div>
-                <div className="text-sm text-slate-500 mt-1">{nextGame.venue}</div>
+                <div className="text-sm text-slate-500 mt-1">
+                  {nextGame.venue}
+                </div>
               </div>
-              
+
               <div className="text-center">
                 <Link
                   to="/games"
@@ -165,7 +175,11 @@ useEffect(() => {
             </h2>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
               {topScorers.map((player, i) => (
-                <Link key={player.id} to={`/player/${player.id}`} className="group">
+                <Link
+                  key={player.id}
+                  to={`/player/${player.id}`}
+                  className="group"
+                >
                   <div className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition">
                     <div className="relative mb-4">
                       <img
@@ -180,14 +194,18 @@ useEffect(() => {
                       )}
                     </div>
                     <h3 className="font-bold">{player.name}</h3>
-                    <p className="text-slate-600 text-xs mb-3">{player.position}</p>
+                    <p className="text-slate-600 text-xs mb-3">
+                      {player.position}
+                    </p>
                     <div className="flex items-center justify-center space-x-4">
                       <div className="flex items-center space-x-1">
                         <Target className="text-blue-600" size={16} />
                         <span className="font-bold">{player.goals}</span>
                       </div>
                       <div className="text-slate-400">|</div>
-                      <div className="text-slate-600 text-xs">{player.appearances} apps</div>
+                      <div className="text-slate-600 text-xs">
+                        {player.appearances} apps
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -196,7 +214,6 @@ useEffect(() => {
           </div>
         </section>
       )}
-
 
       {/* Quick Stats Section */}
       <section className="py-8 md:py-16 bg-slate-900 text-white">
@@ -209,29 +226,43 @@ useEffect(() => {
                 <div className="w-12 md:w-16 h-12 md:h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
                   <Users size={20} className="md:w-6 md:h-6" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold mb-1">{squadCount}</div>
-                <div className="text-xs md:text-base text-slate-300">Squad Players</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1">
+                  {squadCount}
+                </div>
+                <div className="text-xs md:text-base text-slate-300">
+                  Squad Players
+                </div>
               </div>
               <div className="text-center">
                 <div className="w-12 md:w-16 h-12 md:h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
                   <Trophy size={20} className="md:w-6 md:h-6" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold mb-1">{totalWins}</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1">
+                  {totalWins}
+                </div>
                 <div className="text-xs md:text-base text-slate-300">Wins</div>
               </div>
               <div className="text-center">
                 <div className="w-12 md:w-16 h-12 md:h-16 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
                   <Target size={20} className="md:w-6 md:h-6" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold mb-1">{totalGoals}</div>
-                <div className="text-xs md:text-base text-slate-300">Goals Scored</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1">
+                  {totalGoals}
+                </div>
+                <div className="text-xs md:text-base text-slate-300">
+                  Goals Scored
+                </div>
               </div>
               <div className="text-center">
                 <div className="w-12 md:w-16 h-12 md:h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
                   <Calendar size={20} className="md:w-6 md:h-6" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold mb-1">{upcomingMatches}</div>
-                <div className="text-xs md:text-base text-slate-300">Upcoming</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1">
+                  {upcomingMatches}
+                </div>
+                <div className="text-xs md:text-base text-slate-300">
+                  Upcoming
+                </div>
               </div>
             </div>
           )}
