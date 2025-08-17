@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Filter } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 type GalleryProps = {
   isAdmin: boolean;
 };
@@ -11,6 +12,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
   const [filter, setFilter] = useState<string>("all");
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Upload form states
   const [caption, setCaption] = useState("");
@@ -173,7 +175,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
           className="mb-4 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors"
           onClick={() => {
             if (!isAdmin) {
-              window.location.href = "/admin-login";
+              navigate("/admin-login"); // client-side navigation—no reload!
             } else {
               setShowAddForm((prev) => !prev);
             }
