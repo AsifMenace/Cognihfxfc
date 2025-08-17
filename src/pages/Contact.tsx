@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from "react";
 
 const Contact: React.FC = () => {
   interface FormData {
@@ -8,38 +8,45 @@ const Contact: React.FC = () => {
   }
 
   const [formData, setFormData] = useState<FormData>({
-    name: '',
-    email: '',
-    message: '',
+    name: "",
+    email: "",
+    message: "",
   });
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     alert(`Thank you, ${formData.name}! Your message has been sent.`);
-    setFormData({ name: '', email: '', message: '' });
+    setFormData({ name: "", email: "", message: "" });
   };
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Contact Us</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            Contact Us
+          </h1>
           <p className="text-lg md:text-xl text-slate-600 px-4">
-            We’d love to hear from the fans! Send us your messages below.
+            We’d love to hear from our fans! Send us your messages below.
           </p>
         </div>
 
-        <form 
-          onSubmit={handleSubmit} 
+        <form
+          onSubmit={handleSubmit}
           className="bg-white shadow-md rounded-lg p-6 space-y-6"
         >
           <div>
-            <label htmlFor="name" className="block mb-2 font-semibold text-slate-700">
+            <label
+              htmlFor="name"
+              className="block mb-2 font-semibold text-slate-700"
+            >
               Name
             </label>
             <input
@@ -54,7 +61,10 @@ const Contact: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="email" className="block mb-2 font-semibold text-slate-700">
+            <label
+              htmlFor="email"
+              className="block mb-2 font-semibold text-slate-700"
+            >
               Email
             </label>
             <input
@@ -69,7 +79,10 @@ const Contact: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="message" className="block mb-2 font-semibold text-slate-700">
+            <label
+              htmlFor="message"
+              className="block mb-2 font-semibold text-slate-700"
+            >
               Message
             </label>
             <textarea
