@@ -41,7 +41,7 @@ const Home: React.FC = () => {
 
   const BASE_URL =
     process.env.NODE_ENV === "development"
-      ? "https://db-integration--cognihfxfc.netlify.app/.netlify/functions"
+      ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
       : "/.netlify/functions";
 
   useEffect(() => {
