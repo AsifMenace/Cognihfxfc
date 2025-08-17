@@ -34,7 +34,7 @@ const Contact: React.FC = () => {
             Contact Us
           </h1>
           <p className="text-lg md:text-xl text-slate-600 px-4">
-            We’d love to hear from our fans! Send us your messages below.
+            We’d love to hear from our fans! Send us your lovely messages below.
           </p>
         </div>
 
