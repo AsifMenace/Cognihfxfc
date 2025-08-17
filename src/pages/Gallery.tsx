@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { X, Filter } from "lucide-react";
+type GalleryProps = {
+  isAdmin: boolean;
+};
 
-const Gallery: React.FC = () => {
+const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
@@ -19,6 +22,8 @@ const Gallery: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
 
   const categories = ["all", "match", "training", "celebration", "team"];
+
+  const [showAddForm, setShowAddForm] = useState(false);
 
   // Replace with your Cloudinary info
   const CLOUDINARY_URL =
@@ -164,66 +169,80 @@ const Gallery: React.FC = () => {
         </div>
 
         {/* UPLOAD FORM */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-4 rounded shadow mb-8"
+        <button
+          className="mb-4 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors"
+          onClick={() => {
+            if (!isAdmin) {
+              window.location.href = "/admin-login";
+            } else {
+              setShowAddForm((prev) => !prev);
+            }
+          }}
         >
-          <h2 className="text-lg font-bold mb-3">Add to Gallery</h2>
-          {error && <p className="text-red-600">{error}</p>}
-          {message && <p className="text-green-600">{message}</p>}
+          + Add Photo
+        </button>
+        {isAdmin && showAddForm && (
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white p-4 rounded shadow mb-8"
+          >
+            <h2 className="text-lg font-bold mb-3">Add to Gallery</h2>
+            {error && <p className="text-red-600">{error}</p>}
+            {message && <p className="text-green-600">{message}</p>}
 
-          {/* File upload (styled label triggers hidden input) */}
-          <div className="flex items-center">
-            <label
-              htmlFor="gallery-file"
-              className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-700"
-            >
-              Choose File
-            </label>
+            {/* File upload (styled label triggers hidden input) */}
+            <div className="flex items-center">
+              <label
+                htmlFor="gallery-file"
+                className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-700"
+              >
+                Choose File
+              </label>
+              <input
+                id="gallery-file"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+                required
+              />
+              <span className="ml-3 text-gray-600">
+                {/* This shows status next to button */}
+                {imageUrl ? "File selected" : "No file chosen"}
+              </span>
+            </div>
+
+            {uploading && <p className="text-blue-500 mt-1">Uploading...</p>}
+            {imageUrl && (
+              <img src={imageUrl} alt="Preview" className="mt-2 w-32 rounded" />
+            )}
+
             <input
-              id="gallery-file"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              style={{ display: "none" }}
-              required
+              type="text"
+              placeholder="Caption"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              className="block w-full border p-2 rounded mt-3"
             />
-            <span className="ml-3 text-gray-600">
-              {/* This shows status next to button */}
-              {imageUrl ? "File selected" : "No file chosen"}
-            </span>
-          </div>
-
-          {uploading && <p className="text-blue-500 mt-1">Uploading...</p>}
-          {imageUrl && (
-            <img src={imageUrl} alt="Preview" className="mt-2 w-32 rounded" />
-          )}
-
-          <input
-            type="text"
-            placeholder="Caption"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            className="block w-full border p-2 rounded mt-3"
-          />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="block w-full border p-2 rounded mt-3"
-          >
-            <option value="match">Match</option>
-            <option value="training">Training</option>
-            <option value="celebration">Celebration</option>
-            <option value="team">Team</option>
-          </select>
-          <button
-            type="submit"
-            disabled={saving || uploading || !imageUrl}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          >
-            {saving ? "Saving..." : "Add Photo"}
-          </button>
-        </form>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="block w-full border p-2 rounded mt-3"
+            >
+              <option value="match">Match</option>
+              <option value="training">Training</option>
+              <option value="celebration">Celebration</option>
+              <option value="team">Team</option>
+            </select>
+            <button
+              type="submit"
+              disabled={saving || uploading || !imageUrl}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
+            >
+              {saving ? "Saving..." : "Add Photo"}
+            </button>
+          </form>
+        )}
 
         {/* FILTER BUTTONS */}
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 mb-6">
@@ -253,16 +272,18 @@ const Gallery: React.FC = () => {
           {filteredImages.map((image, index) => (
             <div key={image.id} className="group relative">
               {/* Delete button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent the lightbox from opening
-                  handleDelete(image.id);
-                }}
-                title="Delete photo"
-                className="absolute top-2 right-2 z-10 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-              >
-                ✕
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent the lightbox from opening
+                    handleDelete(image.id);
+                  }}
+                  title="Delete photo"
+                  className="absolute top-2 right-2 z-10 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                >
+                  ✕
+                </button>
+              )}
 
               {/* Image Card */}
               <div

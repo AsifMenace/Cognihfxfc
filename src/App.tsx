@@ -1,30 +1,65 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import Home from './pages/Home';
-import Games from './pages/Games';
-import Squad from './pages/Squad';
-import PlayerDetail from './pages/PlayerDetail';
-import Gallery from './pages/Gallery';
-import Contact from './pages/Contact';
-import AddPlayer from './pages/AddPlayer';
-import EditPlayer from './pages/EditPlayer';
-
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Header from "./components/Header";
+import Home from "./pages/Home";
+import Games from "./pages/Games";
+import Squad from "./pages/Squad";
+import PlayerDetail from "./pages/PlayerDetail";
+import Gallery from "./pages/Gallery";
+import Contact from "./pages/Contact";
+import AddPlayer from "./pages/AddPlayer";
+import EditPlayer from "./pages/EditPlayer";
+import { useState } from "react";
+import { AdminLogin } from "./components/AdminLogin";
 
 function App() {
+  const [isAdmin, setIsAdmin] = useState(
+    () => localStorage.getItem("isAdmin") === "false"
+  );
+
+  const handleSetIsAdmin = (value: boolean) => {
+    setIsAdmin(value);
+    if (value) {
+      localStorage.setItem("isAdmin", "true");
+    } else {
+      localStorage.removeItem("isAdmin");
+    }
+  };
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
-        <Header />
+        <Header isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/games" element={<Games />} />
-          <Route path="/squad" element={<Squad />} />
+          <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
           <Route path="/player/:id" element={<PlayerDetail />} />
-          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/add-player" element={<AddPlayer />} />
-          <Route path="/edit-player/:id" element={<EditPlayer />} />
+          {/* Admin login route */}
+          <Route
+            path="/admin-login"
+            element={<AdminLogin setIsAdmin={setIsAdmin} />}
+          />
+
+          {/* Protected admin routes */}
+          <Route
+            path="/add-player"
+            element={
+              isAdmin ? <AddPlayer /> : <Navigate to="/admin-login" replace />
+            }
+          />
+          <Route
+            path="/edit-player/:id"
+            element={
+              isAdmin ? <EditPlayer /> : <Navigate to="/admin-login" replace />
+            }
+          />
         </Routes>
       </div>
     </Router>

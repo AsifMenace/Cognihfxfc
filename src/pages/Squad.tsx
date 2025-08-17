@@ -18,7 +18,11 @@ interface Player {
   bio: string;
 }
 
-const Squad: React.FC = () => {
+type SquadProps = {
+  isAdmin: boolean;
+};
+
+const Squad: React.FC<SquadProps> = ({ isAdmin }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
