@@ -92,7 +92,7 @@ const Squad: React.FC<SquadProps> = ({ isAdmin }) => {
             First Team Squad
           </h1>
           <p className="text-lg md:text-xl text-slate-600 px-4">
-            Meet our talented core players who make Cogni Hfx FC special
+            Meet our talented and amazing players who make Cogni Hfx FC special
           </p>
         </div>
 
