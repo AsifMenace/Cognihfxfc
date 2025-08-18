@@ -14,10 +14,15 @@ export const handler = async (event) => {
   try {
     const matches =
       await sql`SELECT * FROM matches ORDER BY date ASC, time ASC;`;
+    const cleanMatches = matches.map((match) => ({
+      ...match,
+      // Handles boolean true, string 't', boolean false, string 'f'
+      isHome: match.isHome === true || match.isHome === "t", // properly boolean
+    }));
     return {
       statusCode: 200,
       headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify(matches),
+      body: JSON.stringify(cleanMatches),
     };
   } catch (err) {
     return {
