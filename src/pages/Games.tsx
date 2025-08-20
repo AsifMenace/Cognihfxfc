@@ -14,7 +14,7 @@ type Match = {
   venue: string;
   result?: string; // Optional, e.g. for upcoming matches
   competition?: string;
-  isHome?: boolean;
+  ishome?: boolean;
 };
 
 const formatDate = (dateStr: string) => {
@@ -62,12 +62,12 @@ export function Games() {
                   </span>
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      game.isHome
+                      game.ishome
                         ? "bg-green-100 text-green-800"
                         : "bg-orange-100 text-orange-800"
                     }`}
                   >
-                    {game.isHome ? (
+                    {game.ishome ? (
                       <>
                         <Home size={14} className="mr-1" />
                         Home
@@ -88,6 +88,24 @@ export function Games() {
                     <span className="mx-2 md:mx-4 text-slate-400">vs</span>
                     <span>{game.opponent}</span>
                   </div>
+                  {/* Show score if match is completed */}
+                  {game.result &&
+                    (() => {
+                      const scores = game.result.split("-");
+                      return (
+                        <div className="ml-4 flex items-center justify-center space-x-2">
+                          <span className="px-4 py-2 bg-green-300 text-3xl font-extrabold text-slate-900 rounded border border-blue-300 shadow">
+                            {scores[0]}
+                          </span>
+                          <span className="text-2xl font-bold text-slate-700">
+                            -
+                          </span>
+                          <span className="px-4 py-2 bg-green-300 text-3xl font-extrabold text-slate-900 rounded border border-blue-300 shadow">
+                            {scores[1]}
+                          </span>
+                        </div>
+                      );
+                    })()}
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 text-slate-600 text-sm md:text-base">
                     <div className="flex items-center justify-center space-x-2">
@@ -122,7 +140,7 @@ export function Games() {
                 className={`h-1 ${
                   index === 0
                     ? "bg-red-500"
-                    : game.isHome
+                    : game.ishome
                     ? "bg-green-500"
                     : "bg-blue-500"
                 }`}

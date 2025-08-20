@@ -12,6 +12,15 @@ export const handler = async (event) => {
 
   try {
     const { date, time, opponent, venue, result } = JSON.parse(event.body);
+    console.log("Parsed match data:", {
+      date,
+      time,
+      opponent,
+      venue,
+      result,
+      competition,
+      ishome,
+    });
     await sql`
       INSERT INTO matches (date, time, opponent, venue, result)
       VALUES (
@@ -24,6 +33,7 @@ export const handler = async (event) => {
       body: JSON.stringify({ message: "Match added successfully" }),
     };
   } catch (err) {
+    console.error("AddMatch error:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),

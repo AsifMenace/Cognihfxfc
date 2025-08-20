@@ -1,6 +1,14 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Users, Camera, Mail, UserPlus } from "lucide-react";
+import {
+  Home,
+  Calendar,
+  Users,
+  Camera,
+  Mail,
+  UserPlus,
+  CalendarPlus,
+} from "lucide-react";
 type HeaderProps = {
   isAdmin: boolean;
   setIsAdmin: (value: boolean) => void;
@@ -102,12 +110,41 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               </Link>
             )}
             {isAdmin && (
+              <Link
+                to="/add-match"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  isActive("/add-match")
+                    ? "bg-green-600 text-white"
+                    : "hover:bg-slate-700 text-slate-300 hover:text-white"
+                }`}
+              >
+                {/* Use a relevant icon, for example a calendar or plus icon */}
+                <CalendarPlus size={18} />
+                <span>Add Match</span>
+              </Link>
+            )}
+
+            {isAdmin && (
               <button
                 onClick={() => setIsAdmin(false)}
                 className="ml-4 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
                 Logout
               </button>
+            )}
+
+            {!isAdmin && (
+              <>
+                {/* Desktop */}
+                <div className="hidden md:block">
+                  <Link
+                    to="/admin-login"
+                    className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+                  >
+                    Admin
+                  </Link>
+                </div>
+              </>
             )}
           </nav>
 
@@ -209,12 +246,55 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               </Link>
             )}
             {isAdmin && (
+              <Link
+                to="/add-match"
+                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                  isActive("/add-match") ? "text-green-400" : "text-slate-300"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <CalendarPlus size={20} />
+                <span className="text-xs">Add Match</span>
+              </Link>
+            )}
+
+            {!isAdmin && (
+              <>
+                {/* Mobile */}
+                <div className="block md:hidden">
+                  <Link
+                    to="/admin-login"
+                    className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm transition"
+                  >
+                    Admin
+                  </Link>
+                </div>
+              </>
+            )}
+
+            {isAdmin && (
               <button
                 onClick={() => {
                   setIsAdmin(false);
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="
+                          max-w-xs
+                          min-w-[100px]
+                          px-2
+                          py-2
+                          bg-red-600
+                          text-white
+                          rounded
+                          hover:bg-red-700
+                          focus:outline-none
+                          focus:ring-2
+                          focus:ring-red-500
+                          transition
+                          duration-150
+                          ease-in-out
+                          text-center
+                          whitespace-nowrap"
               >
                 Logout
               </button>

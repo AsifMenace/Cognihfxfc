@@ -16,6 +16,7 @@ import AddPlayer from "./pages/AddPlayer";
 import EditPlayer from "./pages/EditPlayer";
 import { useState } from "react";
 import { AdminLogin } from "./components/AdminLogin";
+import { AddMatch } from "./pages/AddMatch"; // create this page/component
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
@@ -58,6 +59,12 @@ function App() {
             path="/edit-player/:id"
             element={
               isAdmin ? <EditPlayer /> : <Navigate to="/admin-login" replace />
+            }
+          />
+          <Route
+            path="/add-match"
+            element={
+              isAdmin ? <AddMatch /> : <Navigate to="/admin-login" replace />
             }
           />
         </Routes>

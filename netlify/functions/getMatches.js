@@ -14,16 +14,19 @@ export const handler = async (event) => {
   try {
     const matches =
       await sql`SELECT * FROM matches ORDER BY date ASC, time ASC;`;
-    const cleanMatches = matches.map((match) => ({
-      ...match,
-      // Handles boolean true, string 't', boolean false, string 'f'
-      isHome: match.isHome === true || match.isHome === "t", // properly boolean
+    const cleanMatches = matches.map(({ ishome, ...rest }) => ({
+      ...rest,
+      isHome: ishome,
     }));
     return {
       statusCode: 200,
       headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify(cleanMatches),
     };
+    console.log(
+      "Raw isHome values:",
+      matches.map((m) => m.isHome)
+    );
   } catch (err) {
     return {
       statusCode: 500,
