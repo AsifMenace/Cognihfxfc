@@ -8,13 +8,13 @@ const API_BASE =
 
 type Match = {
   id: number;
-  date: string; // string representation of date from API
+  date: string;
   time: string;
   opponent: string;
   venue: string;
-  result?: string; // Optional, e.g. for upcoming matches
+  result?: string;
   competition?: string;
-  ishome?: boolean;
+  isHome?: boolean;
 };
 
 const formatDate = (dateStr: string) => {
@@ -28,13 +28,71 @@ const formatDate = (dateStr: string) => {
 
 export function Games() {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${API_BASE}/getMatches`)
       .then((res) => res.json())
-      .then((data) => setMatches(data))
-      .catch((err) => console.error(err));
+      .then((data) => {
+        setMatches(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
+
+  if (loading) {
+    return <div>Loading matches...</div>;
+  }
+
+  function parseMatchDateTime(match: Match) {
+    if (match.date.includes("T")) {
+      // Date already includes time info, parse directly
+      return new Date(match.date);
+    } else {
+      // date is plain YYYY-MM-DD string, parse as before
+      const [year, month, day] = match.date.split("-");
+      const [hour = "0", minute = "0"] = (match.time?.trim() || "00:00").split(
+        ":"
+      );
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute)
+      );
+    }
+  }
+
+  function isPastMatch(match: Match) {
+    const now = new Date();
+    const matchDateTime = parseMatchDateTime(match);
+    const isPast = matchDateTime < now;
+    console.log(
+      `Match ${match.opponent} at ${match.date} ${match.time} isPast: ${isPast}`
+    );
+    return isPast;
+  }
+
+  const upcomingMatches = matches.filter((m) => !isPastMatch(m));
+  const pastMatches = matches.filter(isPastMatch);
+
+  upcomingMatches.sort(
+    (a, b) =>
+      new Date(`${a.date}T${a.time || "00:00"}`).getTime() -
+      new Date(`${b.date}T${b.time || "00:00"}`).getTime()
+  );
+
+  pastMatches.sort(
+    (a, b) =>
+      new Date(`${b.date}T${b.time || "00:00"}`).getTime() -
+      new Date(`${a.date}T${a.time || "00:00"}`).getTime()
+  );
+
+  const orderedMatches = [...upcomingMatches, ...pastMatches];
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -49,7 +107,7 @@ export function Games() {
         </div>
 
         <div className="max-w-4xl mx-auto space-y-6">
-          {matches.map((game, index) => (
+          {orderedMatches.map((game, index) => (
             <div
               key={game.id}
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
@@ -62,12 +120,12 @@ export function Games() {
                   </span>
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      game.ishome
+                      game.isHome
                         ? "bg-green-100 text-green-800"
                         : "bg-orange-100 text-orange-800"
                     }`}
                   >
-                    {game.ishome ? (
+                    {game.isHome ? (
                       <>
                         <Home size={14} className="mr-1" />
                         Home
@@ -126,7 +184,7 @@ export function Games() {
                 </div>
 
                 {/* Match Priority Indicator */}
-                {index === 0 && (
+                {index === 0 && !isPastMatch(game) && (
                   <div className="text-center">
                     <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800">
                       🔥 Next Match
@@ -140,7 +198,7 @@ export function Games() {
                 className={`h-1 ${
                   index === 0
                     ? "bg-red-500"
-                    : game.ishome
+                    : game.isHome
                     ? "bg-green-500"
                     : "bg-blue-500"
                 }`}

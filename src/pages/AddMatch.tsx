@@ -11,7 +11,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
     venue: "",
     result: "",
     competition: "",
-    ishome: true, // if used; adjust as needed
+    isHome: true, // if used; adjust as needed
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +58,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
           venue: "",
           result: "",
           competition: "",
-          ishome: true,
+          isHome: true,
         });
         if (onMatchAdded) onMatchAdded(); // trigger refresh in Games
       } else {
@@ -135,8 +135,8 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
       <label className="flex items-center mb-3">
         <input
           type="checkbox"
-          name="ishome"
-          checked={form.ishome}
+          name="isHome"
+          checked={form.isHome}
           onChange={handleChange}
           className="mr-2"
         />
