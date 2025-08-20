@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Users, Trophy, Target } from "lucide-react";
-// Removed import of static upcomingGames; using real data now
+// Removed import of static upcomingGames; using real data now dummy
 
 interface TopScorer {
   id: number;
