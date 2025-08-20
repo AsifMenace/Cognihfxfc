@@ -34,7 +34,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
 
   const API_BASE =
     process.env.NODE_ENV === "development"
-      ? "https://v2_db_integ--cognihfxfc.netlify.app/.netlify/functions"
+      ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
       : "/.netlify/functions";
 
   // Fetch gallery data

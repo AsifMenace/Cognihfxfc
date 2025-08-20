@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Users, Trophy, Target } from "lucide-react";
-import { upcomingGames } from "../data/mockData";
+// Removed import of static upcomingGames; using real data now dummy
 
 interface TopScorer {
   id: number;
@@ -28,38 +28,75 @@ interface Player {
   bio: string;
 }
 
+interface Match {
+  id: number;
+  date: string;
+  time: string;
+  opponent: string;
+  venue: string;
+  competition?: string;
+  isHome?: boolean;
+}
+
 const Home: React.FC = () => {
-  const nextGame = upcomingGames[0];
-  //const topScorers = players
-  //  .filter(player => player.goals > 0)
-  //  .sort((a, b) => b.goals - a.goals)
-  //  .slice(0, 3);
+  // *** ADDED ***
   const [players, setPlayers] = useState<Player[]>([]);
   const [topScorers, setTopScorers] = useState<TopScorer[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]); // NEW state to hold matches
+  const [nextGame, setNextGame] = useState<Match | null>(null); // NEW state for next match
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const BASE_URL =
     process.env.NODE_ENV === "development"
-      ? "https://db-integration--cognihfxfc.netlify.app/.netlify/functions"
+      ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
       : "/.netlify/functions";
 
+  // *** MODIFIED: Fetch matches as well ***
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [playersRes, scorersRes] = await Promise.all([
+        const [playersRes, scorersRes, matchesRes] = await Promise.all([
           fetch(`${BASE_URL}/getPlayers`),
           fetch(`${BASE_URL}/getTopScorers`),
+          fetch(`${BASE_URL}/getMatches`), // NEW fetch for matches
         ]);
 
         if (!playersRes.ok) throw new Error("Failed to fetch players");
         if (!scorersRes.ok) throw new Error("Failed to fetch top scorers");
+        if (!matchesRes.ok) throw new Error("Failed to fetch matches");
 
         const playersData: Player[] = await playersRes.json();
         const scorersData: TopScorer[] = await scorersRes.json();
+        const matchesData: Match[] = await matchesRes.json(); // NEW data for matches
 
         setPlayers(playersData);
         setTopScorers(scorersData);
+        setMatches(matchesData); // Set all matches
+
+        // Determine nextGame from fetched matches
+        const now = new Date();
+        const parseMatchDateTime = (match: Match) => {
+          const [year, month, day] = match.date.split("-");
+          const [hour = "0", minute = "0"] = (match.time || "00:00").split(":");
+          return new Date(
+            Number(year),
+            Number(month) - 1,
+            Number(day),
+            Number(hour),
+            Number(minute)
+          );
+        };
+
+        const upcoming = matchesData
+          .filter((m) => parseMatchDateTime(m) >= now)
+          .sort(
+            (a, b) =>
+              parseMatchDateTime(a).getTime() - parseMatchDateTime(b).getTime()
+          );
+
+        setNextGame(upcoming[0] || null);
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
@@ -76,8 +113,21 @@ const Home: React.FC = () => {
   const totalGoals = players.reduce((total, p) => total + p.goals, 0);
 
   const totalWins = 15; // hard-coded for now
-  const upcomingMatches = 4; // hard-coded for now
+  const upcomingMatches = matches.filter((match) => {
+    const now = new Date();
+    const [year, month, day] = match.date.split("-");
+    const [hour = "0", minute = "0"] = (match.time || "00:00").split(":");
+    const matchDateTime = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute)
+    );
+    return matchDateTime >= now;
+  }).length;
 
+  // *** MODIFIED: Use nextGame from state; fallback message if none ***
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Hero Section */}
@@ -115,53 +165,60 @@ const Home: React.FC = () => {
             Next Match
           </h2>
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-4 md:p-8 border-l-4 border-blue-600">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <Calendar className="text-blue-600" size={24} />
-                  <span className="text-xs md:text-sm font-medium text-slate-600 uppercase tracking-wider">
-                    {nextGame.competition}
+            {/* *** MODIFIED: dynamically render nextGame data or fallback *** */}
+            {nextGame ? (
+              <div className="bg-white rounded-xl shadow-lg p-4 md:p-8 border-l-4 border-blue-600">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="text-blue-600" size={24} />
+                    <span className="text-xs md:text-sm font-medium text-slate-600 uppercase tracking-wider">
+                      {nextGame.competition || "friendly"}
+                    </span>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      nextGame.isHome
+                        ? "bg-green-100 text-green-800"
+                        : "bg-orange-100 text-orange-800"
+                    }`}
+                  >
+                    {nextGame.isHome ? "Home" : "Away"}
                   </span>
                 </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    nextGame.isHome
-                      ? "bg-green-100 text-green-800"
-                      : "bg-orange-100 text-orange-800"
-                  }`}
-                >
-                  {nextGame.isHome ? "Home" : "Away"}
-                </span>
-              </div>
 
-              <div className="text-center mb-6">
-                <div className="text-lg md:text-2xl font-bold text-slate-900 mb-2">
-                  Cogni Hfx FC vs {nextGame.opponent}
+                <div className="text-center mb-6">
+                  <div className="text-lg md:text-2xl font-bold text-slate-900 mb-2">
+                    Cogni Hfx FC vs {nextGame.opponent}
+                  </div>
+                  <div className="text-sm md:text-base text-slate-600">
+                    {new Date(nextGame.date).toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}{" "}
+                    at {nextGame.time}
+                  </div>
+                  <div className="text-sm text-slate-500 mt-1">
+                    {nextGame.venue}
+                  </div>
                 </div>
-                <div className="text-sm md:text-base text-slate-600">
-                  {new Date(nextGame.date).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}{" "}
-                  at {nextGame.time}
-                </div>
-                <div className="text-sm text-slate-500 mt-1">
-                  {nextGame.venue}
-                </div>
-              </div>
 
-              <div className="text-center">
-                <Link
-                  to="/games"
-                  className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  <Calendar size={20} />
-                  <span>View All Fixtures</span>
-                </Link>
+                <div className="text-center">
+                  <Link
+                    to="/games"
+                    className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    <Calendar size={20} />
+                    <span>View All Fixtures</span>
+                  </Link>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-center text-slate-600">
+                No upcoming match scheduled.
+              </p>
+            )}
           </div>
         </div>
       </section>

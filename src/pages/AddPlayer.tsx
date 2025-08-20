@@ -28,7 +28,9 @@ const AddPlayer: React.FC = () => {
 
   // Handle basic text/number/textarea changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -152,15 +154,39 @@ const AddPlayer: React.FC = () => {
           />
 
           {/* Position */}
-          <input
-            type="text"
+          <select
             name="position"
-            placeholder="Position"
             value={form.position}
             onChange={handleChange}
             required
-            className="w-full p-2 border rounded"
-          />
+            className="
+    w-full
+    p-3
+    border
+    border-gray-300
+    rounded-md
+    bg-white
+    text-gray-900
+    text-base
+    font-medium
+    shadow-sm
+    focus:outline-none
+    focus:ring-2
+    focus:ring-blue-500
+    focus:border-blue-500
+    transition
+    duration-150
+    ease-in-out
+  "
+          >
+            <option value="" disabled>
+              Select Position
+            </option>
+            <option value="Goalkeeper">Goalkeeper</option>
+            <option value="Defender">Defender</option>
+            <option value="Midfielder">Midfielder</option>
+            <option value="Forward">Forward</option>
+          </select>
 
           {/* Age */}
           <input
