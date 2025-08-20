@@ -43,7 +43,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/.netlify/functions/addmatch", {
+      const res = await fetch("/.netlify/functions/addMatches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

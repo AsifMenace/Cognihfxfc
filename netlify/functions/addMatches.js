@@ -11,7 +11,9 @@ export const handler = async (event) => {
   }
 
   try {
-    const { date, time, opponent, venue, result } = JSON.parse(event.body);
+    const { date, time, opponent, venue, result, competition, isHome } =
+      JSON.parse(event.body);
+
     console.log("Parsed match data:", {
       date,
       time,
@@ -19,14 +21,22 @@ export const handler = async (event) => {
       venue,
       result,
       competition,
-      ishome,
+      isHome,
     });
+
     await sql`
-      INSERT INTO matches (date, time, opponent, venue, result)
-      VALUES (
-        ${date}, ${time}, ${opponent}, ${venue}, ${result || null}
-      );
-    `;
+  INSERT INTO matches (date, time, opponent, venue, result, competition, isHome)
+  VALUES (
+    ${date},
+    ${time},
+    ${opponent},
+    ${venue},
+    ${result && result.trim() !== "" ? result : null},
+    ${competition && competition.trim() !== "" ? competition : null},
+    ${typeof isHome === "boolean" ? isHome : true} -- default to true
+  );
+`;
+
     return {
       statusCode: 201,
       headers: { "Access-Control-Allow-Origin": "*" },
