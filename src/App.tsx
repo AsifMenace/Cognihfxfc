@@ -17,6 +17,7 @@ import EditPlayer from "./pages/EditPlayer";
 import { useState } from "react";
 import { AdminLogin } from "./components/AdminLogin";
 import { AddMatch } from "./pages/AddMatch"; // create this page/component
+import MatchCentre from "./pages/MatchCentre";
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
@@ -42,6 +43,7 @@ function App() {
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/match/:id" element={<MatchCentre />} />
           {/* Admin login route */}
           <Route
             path="/admin-login"
