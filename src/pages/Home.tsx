@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Users, Trophy, Target } from "lucide-react";
+import { parseMatchDateTime } from "../components/dateUtils"; // adjust relative path as needed
 // Removed import of static upcomingGames; using real data now dummy
 
 interface TopScorer {
@@ -191,7 +192,7 @@ const Home: React.FC = () => {
                     Cogni Hfx FC vs {nextGame.opponent}
                   </div>
                   <div className="text-sm md:text-base text-slate-600">
-                    {new Date(nextGame.date).toLocaleDateString("en-US", {
+                    {parseMatchDateTime(nextGame).toLocaleDateString("en-US", {
                       weekday: "long",
                       year: "numeric",
                       month: "long",

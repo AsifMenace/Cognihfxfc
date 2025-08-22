@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
+import { parseMatchDateTime } from "../components/dateUtils";
 
 // Countdown Timer Component
 
@@ -39,7 +40,7 @@ const MatchCentre = () => {
     async function fetchData() {
       try {
         const [matchRes, lineupRes] = await Promise.all([
-          fetch(`${API_BASE}/getMatch/${id}`),
+          fetch(`/.netlify/functions/getMatch?id=${id}`),
           fetch(`${API_BASE}/getLineup?match_id=${id}`),
         ]);
 
@@ -71,7 +72,7 @@ const MatchCentre = () => {
       <div className="text-center py-12 text-red-600">Match not found.</div>
     );
 
-  const kickoffDate = new Date(`${match.date}T${match.time || "00:00"}`);
+  const kickoffDate = parseMatchDateTime(match);
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -90,7 +91,7 @@ const MatchCentre = () => {
             </span>
             <span className="flex items-center">
               <Calendar size={16} className="mr-1 text-blue-600" />
-              {new Date(match.date).toLocaleDateString("en-US", {
+              {kickoffDate.toLocaleDateString("en-US", {
                 weekday: "long",
                 year: "numeric",
                 month: "short",

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, MapPin, Clock, Home, Plane } from "lucide-react";
 import { Link } from "react-router-dom"; // Make sure Link is imported
+import { parseMatchDateTime } from "../components/dateUtils"; // Utility function to parse date and time
 
 const API_BASE =
   process.env.NODE_ENV === "development"
@@ -18,8 +19,8 @@ type Match = {
   isHome?: boolean;
 };
 
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
+const formatDate = (match: Match) => {
+  const date = parseMatchDateTime(match);
   return date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -48,26 +49,6 @@ export function Games() {
     return <div>Loading matches...</div>;
   }
 
-  function parseMatchDateTime(match: Match) {
-    if (match.date.includes("T")) {
-      // Date already includes time info, parse directly
-      return new Date(match.date);
-    } else {
-      // date is plain YYYY-MM-DD string, parse as before
-      const [year, month, day] = match.date.split("-");
-      const [hour = "0", minute = "0"] = (match.time?.trim() || "00:00").split(
-        ":"
-      );
-      return new Date(
-        Number(year),
-        Number(month) - 1,
-        Number(day),
-        Number(hour),
-        Number(minute)
-      );
-    }
-  }
-
   function isPastMatch(match: Match) {
     const now = new Date();
     const matchDateTime = parseMatchDateTime(match);
@@ -81,16 +62,23 @@ export function Games() {
   const upcomingMatches = matches.filter((m) => !isPastMatch(m));
   const pastMatches = matches.filter(isPastMatch);
 
+  // upcomingMatches.sort(
+  //   (a, b) =>
+  //     new Date(`${a.date}T${a.time || "00:00"}`).getTime() -
+  //     new Date(`${b.date}T${b.time || "00:00"}`).getTime()
+  // );
+
+  // pastMatches.sort(
+  //   (a, b) =>
+  //     new Date(`${b.date}T${b.time || "00:00"}`).getTime() -
+  //     new Date(`${a.date}T${a.time || "00:00"}`).getTime()
+  // );
   upcomingMatches.sort(
-    (a, b) =>
-      new Date(`${a.date}T${a.time || "00:00"}`).getTime() -
-      new Date(`${b.date}T${b.time || "00:00"}`).getTime()
+    (a, b) => parseMatchDateTime(a).getTime() - parseMatchDateTime(b).getTime()
   );
 
   pastMatches.sort(
-    (a, b) =>
-      new Date(`${b.date}T${b.time || "00:00"}`).getTime() -
-      new Date(`${a.date}T${a.time || "00:00"}`).getTime()
+    (a, b) => parseMatchDateTime(b).getTime() - parseMatchDateTime(a).getTime()
   );
 
   const orderedMatches = [...upcomingMatches, ...pastMatches];
@@ -171,7 +159,7 @@ export function Games() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 text-slate-600 text-sm md:text-base">
                       <div className="flex items-center justify-center space-x-2">
                         <Calendar size={18} className="text-blue-600" />
-                        <span>{formatDate(game.date)}</span>
+                        <span>{formatDate(game)}</span>
                       </div>
 
                       <div className="flex items-center justify-center space-x-2">
