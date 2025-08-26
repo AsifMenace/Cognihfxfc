@@ -231,7 +231,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       {/* Remove button for admins */}
                       {isAdmin && (
                         <button
-                          onClick={() => handleRemovePlayer(player.id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent navigation to player details page
+                            handleRemovePlayer(player.id);
+                          }}
                           className="absolute top-2 right-2 text-red-600 hover:text-red-800"
                           title="Remove player from match"
                         >
