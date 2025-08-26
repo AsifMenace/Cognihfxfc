@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Calendar, Users, Trophy, Target } from "lucide-react";
 import { parseMatchDateTime } from "../components/dateUtils"; // adjust relative path as needed
 // Removed import of static upcomingGames; using real data now dummy
+import CountdownTimer from "../components/CountdownTimer";
 
 interface TopScorer {
   id: number;
@@ -191,15 +192,29 @@ const Home: React.FC = () => {
                   <div className="text-lg md:text-2xl font-bold text-slate-900 mb-2">
                     Cogni Hfx FC vs {nextGame.opponent}
                   </div>
-                  <div className="text-sm md:text-base text-slate-600">
-                    {parseMatchDateTime(nextGame).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}{" "}
-                    at {nextGame.time}
-                  </div>
+                  {nextGame && (
+                    <>
+                      <CountdownTimer kickOff={parseMatchDateTime(nextGame)} />
+
+                      <div className="text-sm md:text-base text-slate-600 mt-4">
+                        <Calendar
+                          size={16}
+                          className="inline mr-1 text-blue-600"
+                        />
+                        {parseMatchDateTime(nextGame).toLocaleDateString(
+                          "en-US",
+                          {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}{" "}
+                        at {nextGame.time}
+                      </div>
+                    </>
+                  )}
+
                   <div className="text-sm text-slate-500 mt-1">
                     {nextGame.venue}
                   </div>

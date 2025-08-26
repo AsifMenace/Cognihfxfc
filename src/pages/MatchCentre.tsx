@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
@@ -7,8 +7,6 @@ import { parseMatchDateTime } from "../components/dateUtils";
 type MatchCentreProps = {
   isAdmin: boolean;
 };
-
-// Countdown Timer Component
 
 interface Player {
   id: number;
@@ -33,15 +31,34 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
   const [lineups, setLineups] = useState<Player[]>([]);
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const formRef = useRef<HTMLFormElement>(null);
+
   const API_BASE =
     process.env.NODE_ENV === "development"
-      ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
+      ? "/.netlify/functions"
       : "/.netlify/functions";
 
+  // Fetch all players
+  useEffect(() => {
+    async function fetchPlayers() {
+      try {
+        const res = await fetch(`${API_BASE}/getPlayers`);
+        if (!res.ok) throw new Error("Failed to fetch players");
+        const data = await res.json();
+        setAllPlayers(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchPlayers();
+  }, [API_BASE]);
+
+  // Fetch match and lineup
   useEffect(() => {
     async function fetchData() {
       try {
@@ -67,6 +84,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     fetchData();
   }, [id, API_BASE]);
 
+  // Remove player handler
   async function handleRemovePlayer(playerId: number) {
     if (
       !window.confirm(
@@ -84,7 +102,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       });
 
       if (res.ok) {
-        // Remove player from local lineup state to update UI instantly
         setLineups((prev) => prev.filter((p) => p.id !== playerId));
       } else {
         const data = await res.json();
@@ -94,6 +111,47 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       alert(`Failed to remove player: ${(error as Error).message}`);
     }
   }
+
+  // Handle add player form submit
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const playerIdValue = formData.get("playerId");
+
+    if (!playerIdValue || typeof playerIdValue !== "string") {
+      alert("Please select a valid player.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/.netlify/functions/addPlayerToMatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          match_id: match?.id,
+          player_id: Number(playerIdValue),
+        }),
+      });
+
+      if (response.ok) {
+        const addedPlayer = allPlayers.find(
+          (p) => p.id === Number(playerIdValue)
+        );
+        if (addedPlayer) {
+          setLineups((prev) => [...prev, addedPlayer]);
+        }
+        alert("Player successfully added to the match!");
+        formRef.current?.reset();
+      } else {
+        const errData = await response.json();
+        alert(`Failed to add player: ${errData.error || "Unknown error"}`);
+      }
+    } catch (err) {
+      alert(`Error adding player: ${(err as Error).message}`);
+    }
+  };
 
   if (loading)
     return <div className="text-center py-12">Loading match details...</div>;
@@ -163,7 +221,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               const resultValue = formData.get("result");
 
               if (resultValue === null || typeof resultValue !== "string") {
-                // Handle empty or invalid input gracefully, e.g., ignore update or show error
                 return;
               }
 
@@ -176,7 +233,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               if (resp.ok) {
                 setMatch({ ...match, result: resultValue });
                 setSuccessMessage("Match result updated successfully!");
-                // Optionally clear message after some seconds:
                 setTimeout(() => setSuccessMessage(null), 3000);
               }
             }}
@@ -213,13 +269,12 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               </div>
             )}
             {lineups.map((player) => (
-              <Link
-                key={player.id}
-                to={`/player/${player.id}`}
-                className="group"
-              >
-                <div className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition">
-                  <div className="relative mb-4">
+              <div key={player.id} className="relative group">
+                <Link
+                  to={`/player/${player.id}`}
+                  className="block bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition"
+                >
+                  <div className="mb-4">
                     <img
                       src={player.photo}
                       alt={player.name}
@@ -228,27 +283,54 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     <div className="font-bold">{player.name}</div>
                     <div className="text-xs text-slate-600 mb-1">
                       {player.position} #{player.jerseyNumber}
-                      {/* Remove button for admins */}
-                      {isAdmin && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent navigation to player details page
-                            handleRemovePlayer(player.id);
-                          }}
-                          className="absolute top-2 right-2 text-red-600 hover:text-red-800"
-                          title="Remove player from match"
-                        >
-                          ✖
-                        </button>
-                      )}
                     </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+
+                {isAdmin && (
+                  <button
+                    onClick={() => handleRemovePlayer(player.id)}
+                    className="absolute top-2 right-2 text-red-600 hover:text-red-800"
+                    title="Remove player from match"
+                  >
+                    ✖
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </div>
 
+        {isAdmin && (
+          <form ref={formRef} onSubmit={handleSubmit} className="mb-6">
+            <label htmlFor="playerId" className="block mb-2 font-semibold">
+              Add Player to Match
+            </label>
+            <select
+              name="playerId"
+              id="playerId"
+              className="border rounded px-3 py-1 mr-2"
+              required
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Select a player
+              </option>
+              {allPlayers.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.name} ({player.position})
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
+            >
+              Add Player
+            </button>
+          </form>
+        )}
+        {/* Back link */}
         <div className="text-center mt-8">
           <Link to="/games" className="text-blue-600 hover:underline">
             ← Back to Games
