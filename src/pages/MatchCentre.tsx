@@ -130,20 +130,25 @@ const MatchCentre = () => {
               </div>
             )}
             {lineups.map((player) => (
-              <div
+              <Link
                 key={player.id}
-                className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition"
+                to={`/player/${player.id}`}
+                className="group"
               >
-                <img
-                  src={player.photo}
-                  alt={player.name}
-                  className="w-16 h-16 rounded-full mx-auto object-cover mb-2"
-                />
-                <div className="font-bold">{player.name}</div>
-                <div className="text-xs text-slate-600 mb-1">
-                  {player.position} #{player.jerseyNumber}
+                <div className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition">
+                  <div className="relative mb-4">
+                    <img
+                      src={player.photo}
+                      alt={player.name}
+                      className="w-16 h-16 rounded-full mx-auto object-cover mb-2"
+                    />
+                    <div className="font-bold">{player.name}</div>
+                    <div className="text-xs text-slate-600 mb-1">
+                      {player.position} #{player.jerseyNumber}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
