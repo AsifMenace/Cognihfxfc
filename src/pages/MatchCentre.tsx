@@ -4,6 +4,10 @@ import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
 import { parseMatchDateTime } from "../components/dateUtils";
 
+type MatchCentreProps = {
+  isAdmin: boolean;
+};
+
 // Countdown Timer Component
 
 interface Player {
@@ -22,14 +26,16 @@ interface Match {
   venue: string;
   competition: string;
   isHome: boolean;
+  result?: string;
 }
 
-const MatchCentre = () => {
+const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
   const [lineups, setLineups] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const API_BASE =
     process.env.NODE_ENV === "development"
@@ -61,6 +67,34 @@ const MatchCentre = () => {
     fetchData();
   }, [id, API_BASE]);
 
+  async function handleRemovePlayer(playerId: number) {
+    if (
+      !window.confirm(
+        "Are you sure you want to remove this player from the match?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/.netlify/functions/removePlayerFromMatch", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ match_id: match?.id, player_id: playerId }),
+      });
+
+      if (res.ok) {
+        // Remove player from local lineup state to update UI instantly
+        setLineups((prev) => prev.filter((p) => p.id !== playerId));
+      } else {
+        const data = await res.json();
+        alert(`Failed to remove player: ${data.error || res.statusText}`);
+      }
+    } catch (error) {
+      alert(`Failed to remove player: ${(error as Error).message}`);
+    }
+  }
+
   if (loading)
     return <div className="text-center py-12">Loading match details...</div>;
 
@@ -81,6 +115,9 @@ const MatchCentre = () => {
         <div className="bg-white rounded-xl shadow-lg mb-8 p-6 flex flex-col items-center">
           <div className="text-2xl md:text-3xl font-bold mb-2 text-blue-900">
             Cogni Hfx FC vs {match.opponent}
+          </div>
+          <div className="text-xl md:text-2xl font-semibold text-green-700 mb-4">
+            {match.result ? `Result: ${match.result}` : "Result not available"}
           </div>
 
           <CountdownTimer kickOff={kickoffDate} />
@@ -118,6 +155,52 @@ const MatchCentre = () => {
           </div>
         </div>
 
+        {isAdmin && (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const resultValue = formData.get("result");
+
+              if (resultValue === null || typeof resultValue !== "string") {
+                // Handle empty or invalid input gracefully, e.g., ignore update or show error
+                return;
+              }
+
+              const resp = await fetch(`${API_BASE}/updateMatchResult`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: match.id, result: resultValue }),
+              });
+
+              if (resp.ok) {
+                setMatch({ ...match, result: resultValue });
+                setSuccessMessage("Match result updated successfully!");
+                // Optionally clear message after some seconds:
+                setTimeout(() => setSuccessMessage(null), 3000);
+              }
+            }}
+            style={{ marginTop: 16 }}
+          >
+            {successMessage && (
+              <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
+                {successMessage}
+              </div>
+            )}
+
+            <label>
+              Update Result:{" "}
+              <input
+                name="result"
+                defaultValue={match.result || ""}
+                placeholder="e.g. 2-1"
+                style={{ marginRight: 8 }}
+              />
+            </label>
+            <button type="submit">Save</button>
+          </form>
+        )}
+
         {/* Lineups Section */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-slate-900 mb-4 text-center">
@@ -145,6 +228,19 @@ const MatchCentre = () => {
                     <div className="font-bold">{player.name}</div>
                     <div className="text-xs text-slate-600 mb-1">
                       {player.position} #{player.jerseyNumber}
+                      {/* Remove button for admins */}
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent navigation to player details page
+                            handleRemovePlayer(player.id);
+                          }}
+                          className="absolute top-2 right-2 text-red-600 hover:text-red-800"
+                          title="Remove player from match"
+                        >
+                          ✖
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
