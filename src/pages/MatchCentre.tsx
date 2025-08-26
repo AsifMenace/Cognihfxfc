@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
 import { parseMatchDateTime } from "../components/dateUtils";
+
 type MatchCentreProps = {
   isAdmin: boolean;
 };
@@ -34,6 +35,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [lineups, setLineups] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const API_BASE =
     process.env.NODE_ENV === "development"
@@ -127,18 +129,34 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             onSubmit={async (e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              const result = formData.get("result");
+              const resultValue = formData.get("result");
+
+              if (resultValue === null || typeof resultValue !== "string") {
+                // Handle empty or invalid input gracefully, e.g., ignore update or show error
+                return;
+              }
+
               const resp = await fetch(`${API_BASE}/updateMatchResult`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: match.id, result }),
+                body: JSON.stringify({ id: match.id, result: resultValue }),
               });
+
               if (resp.ok) {
-                window.location.reload(); // Or setMatch({...match, result}) for instant UI update
+                setMatch({ ...match, result: resultValue });
+                setSuccessMessage("Match result updated successfully!");
+                // Optionally clear message after some seconds:
+                setTimeout(() => setSuccessMessage(null), 3000);
               }
             }}
             style={{ marginTop: 16 }}
           >
+            {successMessage && (
+              <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
+                {successMessage}
+              </div>
+            )}
+
             <label>
               Update Result:{" "}
               <input
