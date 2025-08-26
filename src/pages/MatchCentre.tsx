@@ -120,6 +120,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     const formData = new FormData(form);
     const playerIdValue = formData.get("playerId");
 
+    const playerIdNum = Number(playerIdValue);
+
+    if (lineups.some((p) => p.id === playerIdNum)) {
+      alert("This player is already added to the match.");
+      return; // Stop submitting
+    }
+
     if (!playerIdValue || typeof playerIdValue !== "string") {
       alert("Please select a valid player.");
       return;

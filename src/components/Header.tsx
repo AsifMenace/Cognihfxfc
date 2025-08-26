@@ -181,104 +181,105 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               : "max-h-0"
           }`}
         >
-          <div className="flex justify-around">
-            <Link
-              to="/"
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                isActive("/") ? "text-blue-400" : "text-slate-300"
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <Home size={20} />
-              <span className="text-xs">Home</span>
-            </Link>
-            <Link
-              to="/games"
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                isActive("/games") ? "text-blue-400" : "text-slate-300"
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <Calendar size={20} />
-              <span className="text-xs">Games</span>
-            </Link>
-            <Link
-              to="/squad"
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                isActive("/squad") ? "text-blue-400" : "text-slate-300"
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <Users size={20} />
-              <span className="text-xs">Squad</span>
-            </Link>
-            <Link
-              to="/gallery"
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                isActive("/gallery") ? "text-blue-400" : "text-slate-300"
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <Camera size={20} />
-              <span className="text-xs">Gallery</span>
-            </Link>
-            <Link
-              to="/contact"
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                isActive("/contact") ? "text-blue-400" : "text-slate-300"
-              }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <Mail size={20} /> {/* or use a Mail icon, if you import one */}
-              <span className="text-xs">Contact</span>
-            </Link>
-            {isAdmin && (
+          <div className="overflow-x-auto no-scrollbar">
+            <div className="flex space-x-6 px-4">
               <Link
-                to="/add-player"
+                to="/"
                 className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                  isActive("/add-player") ? "text-blue-400" : "text-slate-300"
+                  isActive("/") ? "text-blue-400" : "text-slate-300"
                 }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <UserPlus size={20} />{" "}
-                {/* You can pick another icon if you prefer */}
-                <span className="text-xs">Add Player</span>
+                <Home size={20} />
+                <span className="text-xs">Home</span>
               </Link>
-            )}
-            {isAdmin && (
               <Link
-                to="/add-match"
+                to="/games"
                 className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                  isActive("/add-match") ? "text-green-400" : "text-slate-300"
+                  isActive("/games") ? "text-blue-400" : "text-slate-300"
                 }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <CalendarPlus size={20} />
-                <span className="text-xs">Add Match</span>
+                <Calendar size={20} />
+                <span className="text-xs">Games</span>
               </Link>
-            )}
+              <Link
+                to="/squad"
+                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                  isActive("/squad") ? "text-blue-400" : "text-slate-300"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Users size={20} />
+                <span className="text-xs">Squad</span>
+              </Link>
+              <Link
+                to="/gallery"
+                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                  isActive("/gallery") ? "text-blue-400" : "text-slate-300"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Camera size={20} />
+                <span className="text-xs">Gallery</span>
+              </Link>
+              <Link
+                to="/contact"
+                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                  isActive("/contact") ? "text-blue-400" : "text-slate-300"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Mail size={20} /> {/* or use a Mail icon, if you import one */}
+                <span className="text-xs">Contact</span>
+              </Link>
+              {isAdmin && (
+                <Link
+                  to="/add-player"
+                  className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                    isActive("/add-player") ? "text-blue-400" : "text-slate-300"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <UserPlus size={20} />{" "}
+                  {/* You can pick another icon if you prefer */}
+                  <span className="text-xs">Add Player</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  to="/add-match"
+                  className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                    isActive("/add-match") ? "text-green-400" : "text-slate-300"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <CalendarPlus size={20} />
+                  <span className="text-xs">Add Match</span>
+                </Link>
+              )}
 
-            {!isAdmin && (
-              <>
-                {/* Mobile */}
-                <div className="block md:hidden">
-                  <Link
-                    to="/admin-login"
-                    className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm transition"
-                  >
-                    Admin
-                  </Link>
-                </div>
-              </>
-            )}
+              {!isAdmin && (
+                <>
+                  {/* Mobile */}
+                  <div className="block md:hidden">
+                    <Link
+                      to="/admin-login"
+                      className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm transition"
+                    >
+                      Admin
+                    </Link>
+                  </div>
+                </>
+              )}
 
-            {isAdmin && (
-              <button
-                onClick={() => {
-                  setIsAdmin(false);
-                  setIsMobileMenuOpen(false);
-                }}
-                className="
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setIsAdmin(false);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="
                           max-w-xs
                           min-w-[100px]
                           px-2
@@ -295,10 +296,11 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                           ease-in-out
                           text-center
                           whitespace-nowrap"
-              >
-                Logout
-              </button>
-            )}
+                >
+                  Logout
+                </button>
+              )}
+            </div>
           </div>
         </nav>
       </div>
