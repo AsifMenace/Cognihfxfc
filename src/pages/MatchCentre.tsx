@@ -67,6 +67,34 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     fetchData();
   }, [id, API_BASE]);
 
+  async function handleRemovePlayer(playerId: number) {
+    if (
+      !window.confirm(
+        "Are you sure you want to remove this player from the match?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/.netlify/functions/removePlayerFromMatch", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ match_id: match?.id, player_id: playerId }),
+      });
+
+      if (res.ok) {
+        // Remove player from local lineup state to update UI instantly
+        setLineups((prev) => prev.filter((p) => p.id !== playerId));
+      } else {
+        const data = await res.json();
+        alert(`Failed to remove player: ${data.error || res.statusText}`);
+      }
+    } catch (error) {
+      alert(`Failed to remove player: ${(error as Error).message}`);
+    }
+  }
+
   if (loading)
     return <div className="text-center py-12">Loading match details...</div>;
 
@@ -200,6 +228,16 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     <div className="font-bold">{player.name}</div>
                     <div className="text-xs text-slate-600 mb-1">
                       {player.position} #{player.jerseyNumber}
+                      {/* Remove button for admins */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleRemovePlayer(player.id)}
+                          className="absolute top-2 right-2 text-red-600 hover:text-red-800"
+                          title="Remove player from match"
+                        >
+                          ✖
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
