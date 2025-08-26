@@ -43,7 +43,10 @@ function App() {
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/match/:id" element={<MatchCentre />} />
+          <Route
+            path="/match/:id"
+            element={<MatchCentre isAdmin={isAdmin} />}
+          />
           {/* Admin login route */}
           <Route
             path="/admin-login"

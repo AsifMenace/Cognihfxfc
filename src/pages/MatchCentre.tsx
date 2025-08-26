@@ -3,6 +3,9 @@ import { useParams, Link } from "react-router-dom";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
 import { parseMatchDateTime } from "../components/dateUtils";
+type MatchCentreProps = {
+  isAdmin: boolean;
+};
 
 // Countdown Timer Component
 
@@ -22,9 +25,10 @@ interface Match {
   venue: string;
   competition: string;
   isHome: boolean;
+  result?: string;
 }
 
-const MatchCentre = () => {
+const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
   const [lineups, setLineups] = useState<Player[]>([]);
@@ -117,6 +121,36 @@ const MatchCentre = () => {
             </span>
           </div>
         </div>
+
+        {isAdmin && (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const result = formData.get("result");
+              const resp = await fetch(`${API_BASE}/updateMatchResult`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: match.id, result }),
+              });
+              if (resp.ok) {
+                window.location.reload(); // Or setMatch({...match, result}) for instant UI update
+              }
+            }}
+            style={{ marginTop: 16 }}
+          >
+            <label>
+              Update Result:{" "}
+              <input
+                name="result"
+                defaultValue={match.result || ""}
+                placeholder="e.g. 2-1"
+                style={{ marginRight: 8 }}
+              />
+            </label>
+            <button type="submit">Save</button>
+          </form>
+        )}
 
         {/* Lineups Section */}
         <div className="mb-6">
