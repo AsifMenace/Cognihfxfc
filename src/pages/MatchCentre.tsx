@@ -88,6 +88,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           <div className="text-2xl md:text-3xl font-bold mb-2 text-blue-900">
             Cogni Hfx FC vs {match.opponent}
           </div>
+          <div className="text-xl md:text-2xl font-semibold text-green-700 mb-4">
+            {match.result ? `Result: ${match.result}` : "Result not available"}
+          </div>
 
           <CountdownTimer kickOff={kickoffDate} />
 
