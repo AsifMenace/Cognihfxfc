@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-
+import { useParams } from "react-router-dom";
 interface Team {
   id: number;
   name: string;
@@ -26,6 +26,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const { id } = useParams<{ id?: string }>(); // <-- add this line
 
   useEffect(() => {
     // Fetch teams on mount for dropdowns
@@ -38,6 +39,33 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
         setTeams([]);
       });
   }, []);
+
+  useEffect(() => {
+    if (id) {
+      // Fetch match details to prefill form for editing
+      fetch(`/.netlify/functions/getMatch?id=${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.match) {
+            setForm({
+              id: data.match.id,
+              date: data.match.date || "",
+              time: data.match.time || "",
+              opponent: data.match.opponent || "",
+              venue: data.match.venue || "",
+              result: data.match.result || "",
+              competition: data.match.competition || "",
+              isHome: data.match.isHome ?? true,
+              home_team_id: data.match.home_team_id ?? "",
+              away_team_id: data.match.away_team_id ?? "",
+            });
+          }
+        })
+        .catch(() => {
+          setError("Failed to load match data for editing");
+        });
+    }
+  }, [id]);
 
   // Update form field with check to clear opponent or teams mutually
   const handleChange = (
@@ -59,6 +87,12 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
         opponent: value,
         home_team_id: "",
         away_team_id: "",
+      }));
+    } else if (name === "isHome") {
+      // Checkbox returns value via checked property, use e.target.checked
+      setForm((f) => ({
+        ...f,
+        isHome: (e.target as HTMLInputElement).checked,
       }));
     } else {
       setForm((f) => ({
@@ -113,19 +147,21 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess("Match added!");
-        setForm({
-          id: null,
-          date: "",
-          time: "",
-          opponent: "",
-          venue: "",
-          result: "",
-          competition: "",
-          isHome: true,
-          home_team_id: "",
-          away_team_id: "",
-        });
+        setSuccess(id ? "Match updated!" : "Match added!");
+        if (!id) {
+          setForm({
+            id: null,
+            date: "",
+            time: "",
+            opponent: "",
+            venue: "",
+            result: "",
+            competition: "",
+            isHome: true,
+            home_team_id: "",
+            away_team_id: "",
+          });
+        }
         if (onMatchAdded) onMatchAdded();
       } else {
         setError(data.error || "Error adding match.");
@@ -247,7 +283,13 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
         disabled={loading}
         className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
       >
-        {loading ? "Adding..." : "Add Match"}
+        {loading
+          ? id
+            ? "Updating..."
+            : "Adding..."
+          : id
+          ? "Update Match"
+          : "Add Match"}
       </button>
     </form>
   );

@@ -72,6 +72,12 @@ function App() {
               isAdmin ? <AddMatch /> : <Navigate to="/admin-login" replace />
             }
           />
+          <Route
+            path="/match/edit/:id"
+            element={
+              isAdmin ? <AddMatch /> : <Navigate to="/admin-login" replace />
+            }
+          />
         </Routes>
       </div>
     </Router>

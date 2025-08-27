@@ -110,7 +110,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       });
 
       if (res.ok) {
-        setLineups((prev) => prev.filter((p) => p.id !== playerId));
+        const data = await res.json();
+        setLineups(data.lineup); // update lineup state with fresh data
+        alert(data.message || "Player removed successfully");
       } else {
         const data = await res.json();
         alert(`Failed to remove player: ${data.error || res.statusText}`);
@@ -273,6 +275,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             </span>
           </div>
         </div>
+        {isAdmin && (
+          <Link
+            to={`/match/edit/${match.id}`}
+            className="text-blue-600 hover:underline"
+          >
+            Edit Match
+          </Link>
+        )}
 
         {isAdmin && (
           <form
