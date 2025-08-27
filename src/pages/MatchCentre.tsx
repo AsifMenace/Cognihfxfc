@@ -14,17 +14,24 @@ interface Player {
   photo: string;
   position: string;
   jerseyNumber: number;
+  team_id?: number | null;
 }
 
 interface Match {
   id: number;
   date: string;
   time: string;
-  opponent: string;
+  opponent?: string | null;
   venue: string;
   competition: string;
   isHome: boolean;
   result?: string;
+  home_team_id?: number | null;
+  away_team_id?: number | null;
+  home_team_name?: string | null;
+  home_team_color?: string | null;
+  away_team_name?: string | null;
+  away_team_color?: string | null;
 }
 
 const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
@@ -35,6 +42,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | "">("");
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -102,7 +110,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       });
 
       if (res.ok) {
-        setLineups((prev) => prev.filter((p) => p.id !== playerId));
+        const data = await res.json();
+        setLineups(data.lineup); // update lineup state with fresh data
+        alert(data.message || "Player removed successfully");
       } else {
         const data = await res.json();
         alert(`Failed to remove player: ${data.error || res.statusText}`);
@@ -119,6 +129,17 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     const form = e.currentTarget;
     const formData = new FormData(form);
     const playerIdValue = formData.get("playerId");
+
+    const teamIdValue = selectedTeamId;
+
+    if (!playerIdValue || typeof playerIdValue !== "string") {
+      alert("Please select a valid player.");
+      return;
+    }
+    if (teamIdValue === "") {
+      alert("Please select a team.");
+      return;
+    }
 
     const playerIdNum = Number(playerIdValue);
 
@@ -138,19 +159,22 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           match_id: match?.id,
-          player_id: Number(playerIdValue),
+          player_id: playerIdNum,
+          team_id: teamIdValue,
         }),
       });
 
       if (response.ok) {
-        const addedPlayer = allPlayers.find(
-          (p) => p.id === Number(playerIdValue)
+        const lineupRes = await fetch(
+          `${API_BASE}/getLineup?match_id=${match?.id}`
         );
-        if (addedPlayer) {
-          setLineups((prev) => [...prev, addedPlayer]);
+        if (lineupRes.ok) {
+          const lineupData = await lineupRes.json();
+          setLineups(lineupData || []);
         }
         alert("Player successfully added to the match!");
         formRef.current?.reset();
+        setSelectedTeamId("");
       } else {
         const errData = await response.json();
         alert(`Failed to add player: ${errData.error || "Unknown error"}`);
@@ -172,15 +196,47 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     );
 
   const kickoffDate = parseMatchDateTime(match);
+  const teamMap: { [id: number]: { name: string; colorClass: string } } = {
+    1: { name: "Red", colorClass: "text-red-600" },
+    2: { name: "Black", colorClass: "text-gray-700" },
+    3: { name: "Blue", colorClass: "text-blue-600" },
+  };
+
+  const playingTeamIds = [match?.home_team_id, match?.away_team_id].filter(
+    (id): id is number => typeof id === "number"
+  );
+
+  const groupedLineups = {
+    Red: lineups.filter((p) => p.team_id === 1),
+    Black: lineups.filter((p) => p.team_id === 2),
+    Blue: lineups.filter((p) => p.team_id === 3),
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="container mx-auto px-4 max-w-3xl">
         {/* Match Header */}
         <div className="bg-white rounded-xl shadow-lg mb-8 p-6 flex flex-col items-center">
-          <div className="text-2xl md:text-3xl font-bold mb-2 text-blue-900">
-            Cogni Hfx FC vs {match.opponent}
+          <div className="text-2xl md:text-3xl font-bold mb-2 text-blue-900 flex justify-center items-center space-x-4">
+            {match?.home_team_name && match?.away_team_name ? (
+              <>
+                <span style={{ color: match?.home_team_color ?? "black" }}>
+                  {match?.home_team_name}
+                </span>
+                <span className="text-slate-400">vs</span>
+                <span style={{ color: match?.away_team_color ?? "black" }}>
+                  {match?.away_team_name}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-blue-600 font-bold">Cogni Hfx FC</span>
+                <span className="text-slate-400 mx-2">vs</span>
+                <span>{match?.opponent}</span>
+              </>
+            )}
           </div>
+
           <div className="text-xl md:text-2xl font-semibold text-green-700 mb-4">
             {match.result ? `Result: ${match.result}` : "Result not available"}
           </div>
@@ -219,6 +275,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             </span>
           </div>
         </div>
+        {isAdmin && (
+          <Link
+            to={`/match/edit/${match.id}`}
+            className="text-blue-600 hover:underline"
+          >
+            Edit Match
+          </Link>
+        )}
 
         {isAdmin && (
           <form
@@ -269,54 +333,74 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           <h2 className="text-xl font-semibold text-slate-900 mb-4 text-center">
             Line Ups
           </h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {lineups.length === 0 && (
-              <div className="text-slate-500 text-center">
-                Line ups coming soon.
-              </div>
-            )}
-            {lineups.map((player) => (
-              <div key={player.id} className="relative group">
-                <Link
-                  to={`/player/${player.id}`}
-                  className="block bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition"
-                >
-                  <div className="mb-4">
-                    <img
-                      src={player.photo}
-                      alt={player.name}
-                      className="w-16 h-16 rounded-full mx-auto object-cover mb-2"
-                    />
-                    <div className="font-bold">{player.name}</div>
-                    <div className="text-xs text-slate-600 mb-1">
-                      {player.position} #{player.jerseyNumber}
-                    </div>
-                  </div>
-                </Link>
 
-                {isAdmin && (
-                  <button
-                    onClick={() => handleRemovePlayer(player.id)}
-                    className="absolute top-2 right-2 text-red-600 hover:text-red-800"
-                    title="Remove player from match"
-                  >
-                    ✖
-                  </button>
+          {playingTeamIds.map((teamId) => {
+            const { name: teamName, colorClass } = teamMap[teamId];
+            const teamPlayers =
+              groupedLineups[teamName as keyof typeof groupedLineups] || [];
+
+            return (
+              <div key={teamId} className="mb-6">
+                <h3 className={`font-bold mb-2 ${colorClass}`}>
+                  {teamName} Team
+                </h3>
+                {teamPlayers.length === 0 ? (
+                  <div className="text-slate-500 text-center">
+                    No players assigned.
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {teamPlayers.map((player) => (
+                      <div key={player.id} className="relative group">
+                        <Link
+                          to={`/player/${player.id}`}
+                          className="block bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition"
+                        >
+                          <div className="mb-4">
+                            <img
+                              src={player.photo}
+                              alt={player.name}
+                              className="w-16 h-16 rounded-full mx-auto object-cover mb-2"
+                            />
+                            <div className="font-bold">{player.name}</div>
+                            <div className="text-xs text-slate-600 mb-1">
+                              {player.position} #{player.jerseyNumber}
+                            </div>
+                          </div>
+                        </Link>
+
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleRemovePlayer(player.id)}
+                            className="absolute top-2 right-2 text-red-600 hover:text-red-800"
+                            title="Remove player from match"
+                          >
+                            ✖
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         {isAdmin && (
-          <form ref={formRef} onSubmit={handleSubmit} className="mb-6">
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            className="mb-6 flex flex-wrap items-center space-x-2"
+          >
             <label htmlFor="playerId" className="block mb-2 font-semibold">
               Add Player to Match
             </label>
+
             <select
               name="playerId"
               id="playerId"
-              className="border rounded px-3 py-1 mr-2"
+              className="border rounded px-3 py-1"
               required
               defaultValue=""
             >
@@ -329,6 +413,27 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 </option>
               ))}
             </select>
+
+            <select
+              name="teamId"
+              id="teamId"
+              className="border rounded px-3 py-1"
+              required
+              value={selectedTeamId}
+              onChange={(e) =>
+                setSelectedTeamId(
+                  e.target.value === "" ? "" : Number(e.target.value)
+                )
+              }
+            >
+              <option value="" disabled>
+                Select a team
+              </option>
+              <option value={1}>Red</option>
+              <option value={2}>Black</option>
+              <option value={3}>Blue</option>
+            </select>
+
             <button
               type="submit"
               className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"

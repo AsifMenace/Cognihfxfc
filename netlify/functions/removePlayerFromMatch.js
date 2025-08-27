@@ -25,9 +25,20 @@ export const handler = async (event) => {
       WHERE match_id = ${match_id} AND player_id = ${player_id}
     `;
 
+    // Fetch updated lineup
+    const lineup = await sql`
+  SELECT mp.*, p.*
+  FROM match_players mp
+  JOIN players p ON p.id = mp.player_id
+  WHERE mp.match_id = ${match_id}
+`;
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "Player removed from match lineup" }),
+      body: JSON.stringify({
+        message: "Player removed from match lineup",
+        lineup,
+      }),
     };
   } catch (error) {
     return {

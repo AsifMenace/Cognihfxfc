@@ -8,6 +8,8 @@ import {
   Mail,
   UserPlus,
   CalendarPlus,
+  Trophy,
+  TrophyIcon,
 } from "lucide-react";
 type HeaderProps = {
   isAdmin: boolean;
@@ -63,6 +65,17 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               <span>Games</span>
             </Link>
             <Link
+              to="/standings"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                isActive("/standings")
+                  ? "bg-blue-600 text-white"
+                  : "hover:bg-slate-700 text-slate-300 hover:text-white"
+              }`}
+            >
+              <Trophy size={20} className="flex-shrink-0 w-5 h-5" />
+              <span>League Standings</span>
+            </Link>
+            <Link
               to="/squad"
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 isActive("/squad")
@@ -105,7 +118,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 }`}
               >
                 {/* You can use any icon you like — here’s an example using the UserPlus icon */}
-                <UserPlus size={18} />
+                <UserPlus size={18} className="flex-shrink-0 w-5 h-5" />
                 <span>Add Player</span>
               </Link>
             )}
@@ -119,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 }`}
               >
                 {/* Use a relevant icon, for example a calendar or plus icon */}
-                <CalendarPlus size={18} />
+                <CalendarPlus size={18} className="flex-shrink-0 w-5 h-5" />
                 <span>Add Match</span>
               </Link>
             )}
@@ -202,6 +215,17 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               >
                 <Calendar size={20} />
                 <span className="text-xs">Games</span>
+              </Link>
+
+              <Link
+                to="/standings"
+                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                  isActive("/standings") ? "text-blue-400" : "text-slate-300"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Calendar size={20} />
+                <span className="text-xs text-center">League Standings</span>
               </Link>
               <Link
                 to="/squad"

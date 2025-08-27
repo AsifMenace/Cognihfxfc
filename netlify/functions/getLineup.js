@@ -21,7 +21,7 @@ export const handler = async (event) => {
     }
 
     const lineup = await sql`
-      SELECT p.*
+      SELECT p.*,mp.team_id
       FROM players p
       JOIN match_players mp ON p.id = mp.player_id
       WHERE mp.match_id = ${match_id}

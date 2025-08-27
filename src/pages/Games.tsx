@@ -12,11 +12,15 @@ type Match = {
   id: number;
   date: string;
   time: string;
-  opponent: string;
+  opponent?: string | null;
   venue: string;
   result?: string;
   competition?: string;
   isHome?: boolean;
+  home_team_name?: string | null;
+  home_team_color?: string | null;
+  away_team_name?: string | null;
+  away_team_color?: string | null;
 };
 
 const formatDate = (match: Match) => {
@@ -27,6 +31,41 @@ const formatDate = (match: Match) => {
     day: "numeric",
   });
 };
+
+function MatchListItem({ match }: { match: Match }) {
+  const isInternal = match.home_team_name && match.away_team_name;
+
+  return (
+    <div className="match-item border p-4 rounded mb-4">
+      <div className="date-time mb-2">
+        <strong>{match.date}</strong> at <strong>{match.time}</strong>
+      </div>
+      <div className="teams flex items-center justify-between mb-2">
+        {isInternal ? (
+          <>
+            <span
+              className="home-team font-bold"
+              style={{ color: match.home_team_color || "black" }}
+            >
+              {match.home_team_name}
+            </span>
+            <span>vs</span>
+            <span
+              className="away-team font-bold"
+              style={{ color: match.away_team_color || "black" }}
+            >
+              {match.away_team_name}
+            </span>
+          </>
+        ) : (
+          <span className="opponent font-bold">{match.opponent}</span>
+        )}
+      </div>
+      <div className="venue mb-1">Venue: {match.venue}</div>
+      <div className="result">Result: {match.result || "TBD"}</div>
+    </div>
+  );
+}
 
 export function Games() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -96,107 +135,142 @@ export function Games() {
         </div>
 
         <div className="max-w-4xl mx-auto space-y-6">
-          {orderedMatches.map((game, index) => (
-            <Link
-              to={`/match/${game.id}`}
-              key={game.id}
-              className="block group"
-            >
-              <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="p-4 md:p-6 lg:p-8">
-                  {/* Competition Badge */}
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                      {game.competition || "friendly"}
-                    </span>
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        game.isHome
-                          ? "bg-green-100 text-green-800"
-                          : "bg-orange-100 text-orange-800"
-                      }`}
-                    >
-                      {game.isHome ? (
-                        <>
-                          <Home size={14} className="mr-1" />
-                          Home
-                        </>
-                      ) : (
-                        <>
-                          <Plane size={14} className="mr-1" />
-                          Away
-                        </>
-                      )}
-                    </span>
-                  </div>
+          {orderedMatches.map((game, index) => {
+            const isInternal = game.home_team_name && game.away_team_name;
 
-                  {/* Main Match Info */}
-                  <div className="text-center mb-8">
-                    <div className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4">
-                      <span className="text-blue-600">Cogni Hfx FC</span>
-                      <span className="mx-2 md:mx-4 text-slate-400">vs</span>
-                      <span>{game.opponent}</span>
-                    </div>
-                    {/* Show score if match is completed */}
-                    {game.result &&
-                      (() => {
-                        const scores = game.result.split("-");
-                        return (
-                          <div className="ml-4 flex items-center justify-center space-x-2">
-                            <span className="px-4 py-2 bg-green-300 text-3xl font-extrabold text-slate-900 rounded border border-blue-300 shadow">
-                              {scores[0]}
-                            </span>
-                            <span className="text-2xl font-bold text-slate-700">
-                              -
-                            </span>
-                            <span className="px-4 py-2 bg-green-300 text-3xl font-extrabold text-slate-900 rounded border border-blue-300 shadow">
-                              {scores[1]}
-                            </span>
-                          </div>
-                        );
-                      })()}
+            // Parse score parts once
+            const scores = game.result ? game.result.split("-") : [];
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 text-slate-600 text-sm md:text-base">
-                      <div className="flex items-center justify-center space-x-2">
-                        <Calendar size={18} className="text-blue-600" />
-                        <span>{formatDate(game)}</span>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-2">
-                        <Clock size={18} className="text-blue-600" />
-                        <span>{game.time ? game.time.slice(0, 5) : "TBD"}</span>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-2">
-                        <MapPin size={18} className="text-blue-600" />
-                        <span>{game.venue}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Match Priority Indicator */}
-                  {index === 0 && !isPastMatch(game) && (
-                    <div className="text-center">
-                      <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                        🔥 Next Match
+            return (
+              <Link
+                to={`/match/${game.id}`}
+                key={game.id}
+                className="block group"
+              >
+                <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <div className="p-4 md:p-6 lg:p-8">
+                    {/* Competition Badge */}
+                    <div className="flex items-center justify-between mb-6">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        {game.competition || "friendly"}
                       </span>
+                      {/* Hide home/away badge because it's not relevant for internal matches */}
+                      {!isInternal && (
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            game.isHome
+                              ? "bg-green-100 text-green-800"
+                              : "bg-orange-100 text-orange-800"
+                          }`}
+                        >
+                          {game.isHome ? (
+                            <>
+                              <Home size={14} className="mr-1" />
+                              Home
+                            </>
+                          ) : (
+                            <>
+                              <Plane size={14} className="mr-1" />
+                              Away
+                            </>
+                          )}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Bottom accent line */}
-                <div
-                  className={`h-1 ${
-                    index === 0
-                      ? "bg-red-500"
-                      : game.isHome
-                      ? "bg-green-500"
-                      : "bg-blue-500"
-                  }`}
-                ></div>
-              </div>
-            </Link>
-          ))}
+                    {/* Main Match Info */}
+                    <div className="text-center mb-8">
+                      <div className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 flex justify-center items-center space-x-3">
+                        {isInternal ? (
+                          <>
+                            <span
+                              className="font-bold"
+                              style={{ color: game.home_team_color || "black" }}
+                            >
+                              {game.home_team_name}
+                            </span>
+                            <span className="text-slate-400">vs</span>
+                            <span
+                              className="font-bold"
+                              style={{ color: game.away_team_color || "black" }}
+                            >
+                              {game.away_team_name}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-blue-600 font-bold">
+                              Cogni Hfx FC
+                            </span>
+                            <span className="mx-2 md:mx-4 text-slate-400">
+                              vs
+                            </span>
+                            <span>{game.opponent}</span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Show score if match is completed */}
+                      {game.result && scores.length === 2 && (
+                        <div className="ml-4 flex items-center justify-center space-x-2">
+                          <span className="px-4 py-2 bg-green-300 text-3xl font-extrabold text-slate-900 rounded border border-blue-300 shadow">
+                            {scores[0]}
+                          </span>
+                          <span className="text-2xl font-bold text-slate-700">
+                            -
+                          </span>
+                          <span className="px-4 py-2 bg-green-300 text-3xl font-extrabold text-slate-900 rounded border border-blue-300 shadow">
+                            {scores[1]}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 text-slate-600 text-sm md:text-base mt-4">
+                        <div className="flex items-center justify-center space-x-2">
+                          <Calendar size={18} className="text-blue-600" />
+                          <span>{formatDate(game)}</span>
+                        </div>
+
+                        <div className="flex items-center justify-center space-x-2">
+                          <Clock size={18} className="text-blue-600" />
+                          <span>
+                            {game.time ? game.time.slice(0, 5) : "TBD"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-center space-x-2">
+                          <MapPin size={18} className="text-blue-600" />
+                          <span>{game.venue}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Match Priority Indicator */}
+                    {index === 0 && !isPastMatch(game) && (
+                      <div className="text-center">
+                        <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                          🔥 Next Match
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom accent line */}
+                  <div
+                    className={`h-1 ${
+                      index === 0
+                        ? "bg-red-500"
+                        : isInternal
+                        ? "bg-purple-500"
+                        : game.isHome
+                        ? "bg-green-500"
+                        : "bg-blue-500"
+                    }`}
+                  ></div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
         {/* Season Stats */}

@@ -34,10 +34,17 @@ interface Match {
   id: number;
   date: string;
   time: string;
-  opponent: string;
+  opponent?: string | null;
   venue: string;
-  competition?: string;
-  isHome?: boolean;
+  competition: string;
+  isHome: boolean;
+  result?: string;
+  home_team_id?: number | null;
+  away_team_id?: number | null;
+  home_team_name?: string | null;
+  home_team_color?: string | null;
+  away_team_name?: string | null;
+  away_team_color?: string | null;
 }
 
 const Home: React.FC = () => {
@@ -151,9 +158,15 @@ const Home: React.FC = () => {
               </Link>
               <Link
                 to="/squad"
-                className="bg-transparent border-2 border-white hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600 border-2 border-white hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
               >
                 Meet the Squad
+              </Link>
+              <Link
+                to="/standings"
+                className="bg-blue-600 border-2 border-white hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+              >
+                View League Standings
               </Link>
             </div>
           </div>
@@ -189,9 +202,32 @@ const Home: React.FC = () => {
                 </div>
 
                 <div className="text-center mb-6">
-                  <div className="text-lg md:text-2xl font-bold text-slate-900 mb-2">
-                    Cogni Hfx FC vs {nextGame.opponent}
+                  <div className="text-lg md:text-2xl font-bold text-slate-900 mb-2 flex justify-center items-center space-x-4">
+                    {nextGame.home_team_name && nextGame.away_team_name ? (
+                      <>
+                        <span
+                          style={{ color: nextGame.home_team_color ?? "black" }}
+                        >
+                          {nextGame.home_team_name}
+                        </span>
+                        <span className="text-slate-400">vs</span>
+                        <span
+                          style={{ color: nextGame.away_team_color ?? "black" }}
+                        >
+                          {nextGame.away_team_name}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-blue-600 font-bold">
+                          Cogni Hfx FC
+                        </span>
+                        <span className="text-slate-400 mx-2">vs</span>
+                        <span>{nextGame.opponent}</span>
+                      </>
+                    )}
                   </div>
+
                   {nextGame && (
                     <>
                       <CountdownTimer kickOff={parseMatchDateTime(nextGame)} />
