@@ -29,7 +29,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
 
   useEffect(() => {
     // Fetch teams on mount for dropdowns
-    fetch("/api/getTeams") // adjust endpoint as needed
+    fetch("/.netlify/functions/getTeams") // adjust endpoint as needed
       .then((res) => res.json())
       .then((data) => {
         setTeams(data);
