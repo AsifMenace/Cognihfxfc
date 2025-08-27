@@ -18,6 +18,7 @@ import { useState } from "react";
 import { AdminLogin } from "./components/AdminLogin";
 import { AddMatch } from "./pages/AddMatch"; // create this page/component
 import MatchCentre from "./pages/MatchCentre";
+import { LeagueStandings } from "./pages/LeagueStandings";
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
@@ -39,6 +40,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/games" element={<Games />} />
+          <Route path="/standings" element={<LeagueStandings />} />
           <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />

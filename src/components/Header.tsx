@@ -8,6 +8,8 @@ import {
   Mail,
   UserPlus,
   CalendarPlus,
+  Trophy,
+  TrophyIcon,
 } from "lucide-react";
 type HeaderProps = {
   isAdmin: boolean;
@@ -61,6 +63,17 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
             >
               <Calendar size={18} />
               <span>Games</span>
+            </Link>
+            <Link
+              to="/standings"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                isActive("/games")
+                  ? "bg-blue-600 text-white"
+                  : "hover:bg-slate-700 text-slate-300 hover:text-white"
+              }`}
+            >
+              <TrophyIcon size={18} />
+              <span>League Standings</span>
             </Link>
             <Link
               to="/squad"
@@ -202,6 +215,17 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               >
                 <Calendar size={20} />
                 <span className="text-xs">Games</span>
+              </Link>
+
+              <Link
+                to="/standings"
+                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                  isActive("/standings") ? "text-blue-400" : "text-slate-300"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Calendar size={20} />
+                <span className="text-xs">League Standings</span>
               </Link>
               <Link
                 to="/squad"

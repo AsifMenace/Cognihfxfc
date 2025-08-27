@@ -1,9 +1,8 @@
 import { neon } from "@netlify/neon";
 
-export async function handler() {
-  const client = new Client();
-  await client.connect();
+const sql = neon();
 
+export const handler = async () => {
   const standingsQuery = `
     WITH all_team_matches AS (
       SELECT home_team_id AS team_id,
@@ -52,17 +51,21 @@ export async function handler() {
   `;
 
   try {
-    const result = await client.query(standingsQuery);
+    const result = await sql.unsafe(standingsQuery);
     return {
       statusCode: 200,
-      body: JSON.stringify(result.rows),
+      body: JSON.stringify(result),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      body: JSON.stringify({ error: error.message }),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
     };
-  } finally {
-    await client.end();
   }
-}
+};
