@@ -26,7 +26,7 @@ export const handler = async (event) => {
       INSERT INTO match_players (match_id, player_id, team_id)
       VALUES (${match_id}, ${player_id}, ${team_id})
       ON CONFLICT (match_id, player_id) DO UPDATE SET team_id = EXCLUDED.team_id
-    `[(match_id, player_id, team_id)];
+    `;
 
     return {
       statusCode: 201,
