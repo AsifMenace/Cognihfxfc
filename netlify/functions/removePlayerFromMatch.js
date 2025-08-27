@@ -27,7 +27,7 @@ export const handler = async (event) => {
 
     // Fetch updated lineup
     const lineup = await sql`
-  SELECT mp.*, p.name, p.photo, p.position, p.jerseyNumber
+  SELECT mp.*, p.*
   FROM match_players mp
   JOIN players p ON p.id = mp.player_id
   WHERE mp.match_id = ${match_id}
