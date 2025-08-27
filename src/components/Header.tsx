@@ -67,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
             <Link
               to="/standings"
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                isActive("/games")
+                isActive("/standings")
                   ? "bg-blue-600 text-white"
                   : "hover:bg-slate-700 text-slate-300 hover:text-white"
               }`}
@@ -225,7 +225,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Calendar size={20} />
-                <span className="text-xs">League Standings</span>
+                <span className="text-xs text-center">League Standings</span>
               </Link>
               <Link
                 to="/squad"

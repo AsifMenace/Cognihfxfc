@@ -51,7 +51,8 @@ export const handler = async () => {
   `;
 
   try {
-    const result = await sql.unsafe(standingsQuery);
+    const result = await sql`${standingsQuery}`;
+
     return {
       statusCode: 200,
       body: JSON.stringify(result),

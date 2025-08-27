@@ -158,9 +158,15 @@ const Home: React.FC = () => {
               </Link>
               <Link
                 to="/squad"
-                className="bg-transparent border-2 border-white hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600 border-2 border-white hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
               >
                 Meet the Squad
+              </Link>
+              <Link
+                to="/standings"
+                className="bg-blue-600 border-2 border-white hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+              >
+                View League Standings
               </Link>
             </div>
           </div>
