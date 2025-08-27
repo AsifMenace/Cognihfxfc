@@ -22,7 +22,13 @@ export const handler = async (event) => {
 
   try {
     const matches = await sql`
-      SELECT * FROM matches WHERE id = ${matchId} LIMIT 1
+      SELECT m.*,
+       t1.name AS home_team_name, t1.color AS home_team_color,
+       t2.name AS away_team_name, t2.color AS away_team_color
+FROM matches m
+LEFT JOIN teams t1 ON m.home_team_id = t1.id
+LEFT JOIN teams t2 ON m.away_team_id = t2.id
+WHERE m.id = ${matchId} LIMIT 1
     `;
 
     if (matches.length === 0) {

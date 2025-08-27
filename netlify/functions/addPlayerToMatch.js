@@ -11,20 +11,22 @@ export const handler = async (event) => {
   }
 
   try {
-    const { match_id, player_id } = JSON.parse(event.body);
+    const { match_id, player_id, team_id } = JSON.parse(event.body);
 
-    if (!match_id || !player_id) {
+    if (!match_id || !player_id || !team_id) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "match_id and player_id are required" }),
+        body: JSON.stringify({
+          error: "match_id, player_id and team_id are required",
+        }),
       };
     }
 
     await sql`
-      INSERT INTO match_players (match_id, player_id)
-      VALUES (${match_id}, ${player_id})
-      ON CONFLICT DO NOTHING
-    `;
+      INSERT INTO match_players (match_id, player_id, team_id)
+      VALUES (${match_id}, ${player_id}, ${team_id})
+      ON CONFLICT (match_id, player_id) DO UPDATE SET team_id = EXCLUDED.team_id
+    `[(match_id, player_id, team_id)];
 
     return {
       statusCode: 201,
