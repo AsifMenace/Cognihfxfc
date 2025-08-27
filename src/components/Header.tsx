@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                   : "hover:bg-slate-700 text-slate-300 hover:text-white"
               }`}
             >
-              <Trophy size={20} className="flex-shrink-0 w-5 h-5" />
+              <Trophy size={18} className="flex-shrink-0 w-5 h-5" />
               <span>League Standings</span>
             </Link>
             <Link
