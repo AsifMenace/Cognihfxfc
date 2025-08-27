@@ -1,10 +1,9 @@
 import { neon } from "@netlify/neon";
 
 const sql = neon();
-
 export const handler = async () => {
-  const standingsQuery = `
-    WITH all_team_matches AS (
+  try {
+    const result = await sql`WITH all_team_matches AS (
       SELECT home_team_id AS team_id,
              CAST(split_part(result, '-', 1) AS INTEGER) AS goals_for,
              CAST(split_part(result, '-', 2) AS INTEGER) AS goals_against
@@ -47,11 +46,7 @@ export const handler = async () => {
       (r.wins * 3 + r.draws) AS points
     FROM team_results r
     JOIN teams t ON r.team_id = t.id
-    ORDER BY points DESC, goal_difference DESC, goals_for DESC;
-  `;
-
-  try {
-    const result = await sql`${standingsQuery}`;
+    ORDER BY points DESC, goal_difference DESC, goals_for DESC;`;
 
     return {
       statusCode: 200,

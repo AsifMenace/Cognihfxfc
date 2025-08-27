@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                   : "hover:bg-slate-700 text-slate-300 hover:text-white"
               }`}
             >
-              <TrophyIcon size={18} />
+              <Trophy size={20} className="flex-shrink-0 w-5 h-5" />
               <span>League Standings</span>
             </Link>
             <Link
@@ -118,7 +118,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 }`}
               >
                 {/* You can use any icon you like — here’s an example using the UserPlus icon */}
-                <UserPlus size={18} />
+                <UserPlus size={18} className="flex-shrink-0 w-5 h-5" />
                 <span>Add Player</span>
               </Link>
             )}
@@ -132,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 }`}
               >
                 {/* Use a relevant icon, for example a calendar or plus icon */}
-                <CalendarPlus size={18} />
+                <CalendarPlus size={18} className="flex-shrink-0 w-5 h-5" />
                 <span>Add Match</span>
               </Link>
             )}
