@@ -92,6 +92,23 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     fetchData();
   }, [id, API_BASE]);
 
+  type Scorer = {
+    player_name: string;
+    team_name: string;
+    team_id: number;
+  };
+
+  const [scorers, setScorers] = useState<Scorer[]>([]);
+
+  useEffect(() => {
+    if (!match) return; // only fetch once match data is loaded
+
+    fetch(`/.netlify/functions/getmatchgoals?matchId=${match.id}`)
+      .then((res) => res.json())
+      .then((data: Scorer[]) => setScorers(data))
+      .catch((e) => console.error("Failed to load scorers", e));
+  }, [match]);
+
   // Remove player handler
   async function handleRemovePlayer(playerId: number) {
     if (
@@ -212,6 +229,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     Blue: lineups.filter((p) => p.team_id === 3),
   };
 
+  const redScorers = scorers.filter(
+    (s) => s.team_name === match?.home_team_name
+  );
+  const blackScorers = scorers.filter(
+    (s) => s.team_name === match?.away_team_name
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="container mx-auto px-4 max-w-3xl">
@@ -327,6 +351,32 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             <button type="submit">Save</button>
           </form>
         )}
+        <div className="flex justify-between mb-8 max-w-3xl mx-auto px-4">
+          {/* Home/Red Team scorers aligned left by default */}
+          <div className="w-1/3 text-left text-red-700">
+            <h3
+              className="font-bold mb-2"
+              style={{ color: match?.home_team_color ?? "red" }}
+            >
+              {match?.home_team_name} Goal Scorers
+            </h3>
+            {/* scorer list */}
+          </div>
+
+          {/* Optional spacer in the center */}
+          <div className="w-1/3" />
+
+          {/* Away/Black Team scorers aligned right */}
+          <div
+            className="w-1/3 text-right"
+            style={{ color: match?.away_team_color ?? "black" }}
+          >
+            <h3 className="font-bold mb-2">
+              {match?.away_team_name} Goal Scorers
+            </h3>
+            {/* scorer list */}
+          </div>
+        </div>
 
         {/* Lineups Section */}
         <div className="mb-6">
@@ -360,7 +410,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                             <img
                               src={player.photo}
                               alt={player.name}
-                              className="w-16 h-16 rounded-full mx-auto object-cover mb-2"
+                              className="w-16 h-16 rounded-full mx-auto object-cover mb-2 object-top"
                             />
                             <div className="font-bold">{player.name}</div>
                             <div className="text-xs text-slate-600 mb-1">

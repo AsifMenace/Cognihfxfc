@@ -303,7 +303,7 @@ const Home: React.FC = () => {
                       <img
                         src={player.photo}
                         alt={player.name}
-                        className="w-16 h-16 rounded-full mx-auto object-cover"
+                        className="w-16 h-16 rounded-full mx-auto object-cover object-top"
                       />
                       {i === 0 && (
                         <div className="absolute -top-1 -right-1 bg-yellow-400 text-yellow-900 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
