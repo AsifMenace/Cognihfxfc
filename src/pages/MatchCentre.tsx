@@ -43,6 +43,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<number | "">("");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [loadingAdd, setLoadingAdd] = useState(false); // for submission state
+  const [success, setSuccess] = useState<string | null>(null);
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -91,6 +94,32 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
     fetchData();
   }, [id, API_BASE]);
+
+  type Scorer = {
+    player_name: string;
+    team_name: string;
+    team_id: number;
+  };
+
+  const [scorers, setScorers] = useState<Scorer[]>([]);
+
+  async function fetchScorers() {
+    if (!match) return;
+    try {
+      const res = await fetch(
+        `/.netlify/functions/getMatchGoals?matchId=${match.id}`
+      );
+      if (!res.ok) throw new Error("Failed to fetch goal scorers");
+      const data: Scorer[] = await res.json();
+      setScorers(data);
+    } catch (e) {
+      console.error("Failed to load scorers", e);
+    }
+  }
+
+  useEffect(() => {
+    fetchScorers();
+  }, [match]);
 
   // Remove player handler
   async function handleRemovePlayer(playerId: number) {
@@ -212,6 +241,51 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     Blue: lineups.filter((p) => p.team_id === 3),
   };
 
+  const homeScorers = scorers.filter(
+    (s) => s.team_name === match?.home_team_name
+  );
+  const awayScorers = scorers.filter(
+    (s) => s.team_name === match?.away_team_name
+  );
+
+  async function handleAddGoal(e: React.FormEvent) {
+    e.preventDefault();
+    if (!match) return;
+
+    setLoadingAdd(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const res = await fetch("/.netlify/functions/addMatchGoal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          match_id: match.id,
+          player_id: Number(selectedPlayerId),
+          team_id: Number(selectedTeamId),
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to add goal scorer");
+      }
+
+      setSuccess("Goal scorer added successfully!");
+      await fetchScorers();
+      // Optionally reset selections
+      setSelectedPlayerId("");
+      setSelectedTeamId("");
+
+      // TODO: Refresh goal scorers list here (covered in step 2)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoadingAdd(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="container mx-auto px-4 max-w-3xl">
@@ -283,49 +357,180 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             Edit Match
           </Link>
         )}
+        <div className="flex justify-between mb-8 max-w-3xl mx-auto px-4">
+          {/* Home/Red Team scorers aligned left by default */}
+          <div className="w-1/3 text-left text-red-700">
+            <h3
+              className="font-bold mb-2"
+              style={{ color: match?.home_team_color ?? "red" }}
+            >
+              {match?.home_team_name} Goal Scorers
+            </h3>
+            {homeScorers.length === 0 ? (
+              <p className="text-gray-400">No goals yet</p>
+            ) : (
+              <ul>
+                {homeScorers.map((scorer, index) => (
+                  <li key={index}>{scorer.player_name}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Optional spacer in the center */}
+          <div className="w-1/3" />
+
+          {/* Away/Black Team scorers aligned right */}
+          <div
+            className="w-1/3 text-right"
+            style={{ color: match?.away_team_color ?? "black" }}
+          >
+            <h3 className="font-bold mb-2">
+              {match?.away_team_name} Goal Scorers
+            </h3>
+            {awayScorers.length === 0 ? (
+              <p className="text-gray-400">No goals yet</p>
+            ) : (
+              <ul>
+                {awayScorers.map((scorer, index) => (
+                  <li key={index}>{scorer.player_name}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
 
         {isAdmin && (
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const resultValue = formData.get("result");
+          <section className="my-8 p-6 max-w-md mx-auto border rounded shadow-sm bg-white">
+            <h2 className="text-xl font-semibold mb-4">Add Goal Scorer</h2>
 
-              if (resultValue === null || typeof resultValue !== "string") {
-                return;
-              }
+            <form
+              onSubmit={handleAddGoal}
+              className="mb-6 flex flex-wrap items-center space-x-2"
+            >
+              <label htmlFor="playerId" className="block mb-2 font-semibold">
+                Select Player:
+              </label>
 
-              const resp = await fetch(`${API_BASE}/updateMatchResult`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: match.id, result: resultValue }),
-              });
+              <select
+                id="playerId"
+                value={selectedPlayerId}
+                onChange={(e) => setSelectedPlayerId(e.target.value)}
+                className="border rounded px-3 py-1"
+                required
+              >
+                <option value="" disabled>
+                  Select a player
+                </option>
+                {allPlayers.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name} ({player.position})
+                  </option>
+                ))}
+              </select>
 
-              if (resp.ok) {
-                setMatch({ ...match, result: resultValue });
-                setSuccessMessage("Match result updated successfully!");
-                setTimeout(() => setSuccessMessage(null), 3000);
-              }
-            }}
-            style={{ marginTop: 16 }}
-          >
-            {successMessage && (
-              <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
-                {successMessage}
-              </div>
-            )}
+              <label htmlFor="teamId" className="block mb-2 font-semibold">
+                Select Team:
+              </label>
 
-            <label>
-              Update Result:{" "}
-              <input
-                name="result"
-                defaultValue={match.result || ""}
-                placeholder="e.g. 2-1"
-                style={{ marginRight: 8 }}
-              />
-            </label>
-            <button type="submit">Save</button>
-          </form>
+              <select
+                id="teamId"
+                value={selectedTeamId}
+                onChange={(e) =>
+                  setSelectedTeamId(
+                    e.target.value === "" ? "" : Number(e.target.value)
+                  )
+                }
+                className="border rounded px-3 py-1"
+                required
+              >
+                <option value="" disabled>
+                  Select a team
+                </option>
+                {match?.home_team_id && (
+                  <option value={match.home_team_id}>
+                    {match.home_team_name}
+                  </option>
+                )}
+                {match?.away_team_id && (
+                  <option value={match.away_team_id}>
+                    {match.away_team_name}
+                  </option>
+                )}
+              </select>
+
+              <button
+                type="submit"
+                disabled={loadingAdd}
+                className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loadingAdd ? "Adding..." : "Add Goal Scorer"}
+              </button>
+              {error && (
+                <div className="mb-4 p-2 text-red-800 bg-red-100 rounded">
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="mb-4 p-2 text-green-800 bg-green-100 rounded">
+                  {success}
+                </div>
+              )}
+            </form>
+          </section>
+        )}
+        {isAdmin && (
+          <section className="my-8 p-6 max-w-md mx-auto border rounded shadow-sm bg-white">
+            <h2 className="text-xl font-semibold mb-4">Update Match Result</h2>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const resultValue = formData.get("result");
+
+                if (resultValue === null || typeof resultValue !== "string") {
+                  return;
+                }
+
+                const resp = await fetch(`${API_BASE}/updateMatchResult`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ id: match.id, result: resultValue }),
+                });
+
+                if (resp.ok) {
+                  setMatch({ ...match, result: resultValue });
+                  setSuccessMessage("Match result updated successfully!");
+                  setTimeout(() => setSuccessMessage(null), 3000);
+                }
+              }}
+            >
+              {successMessage && (
+                <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
+                  {successMessage}
+                </div>
+              )}
+
+              <label className="block mb-2 font-semibold">
+                Update Result:
+                <input
+                  name="result"
+                  defaultValue={match.result || ""}
+                  placeholder="e.g. 2-1"
+                  className="border rounded ml-2 px-3 py-1"
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Save
+              </button>
+            </form>
+          </section>
         )}
 
         {/* Lineups Section */}
@@ -360,7 +565,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                             <img
                               src={player.photo}
                               alt={player.name}
-                              className="w-16 h-16 rounded-full mx-auto object-cover mb-2"
+                              className="w-16 h-16 rounded-full mx-auto object-cover mb-2 object-top"
                             />
                             <div className="font-bold">{player.name}</div>
                             <div className="text-xs text-slate-600 mb-1">

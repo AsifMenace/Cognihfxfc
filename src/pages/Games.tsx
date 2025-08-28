@@ -67,6 +67,38 @@ function MatchListItem({ match }: { match: Match }) {
   );
 }
 
+type GoalScorersProps = {
+  matchId: number;
+};
+
+type Scorers = {
+  player_name: string;
+  team_name: string;
+};
+
+function GoalScorers({ matchId }: GoalScorersProps) {
+  const [scorers, setScorers] = useState<Scorers[]>([]);
+
+  useEffect(() => {
+    fetch(`/.netlify/functions/getMatchGoals?matchId=${matchId}`)
+      .then((res) => res.json())
+      .then((data) => setScorers(data as Scorers[]));
+  }, [matchId]);
+
+  return (
+    <div className="goal-scorers mt-2 text-sm text-gray-700">
+      <strong>Goal Scorers:</strong>{" "}
+      {scorers.length > 0
+        ? scorers.map((g, idx) => (
+            <span key={idx} className="mr-2">
+              {g.player_name} ({g.team_name})
+            </span>
+          ))
+        : "No goals yet"}
+    </div>
+  );
+}
+
 export function Games() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
