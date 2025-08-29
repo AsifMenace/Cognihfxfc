@@ -50,7 +50,7 @@ export const LeagueStandings: React.FC = () => {
   const [topScorers, setTopScorers] = useState<Scorer[]>([]);
 
   useEffect(() => {
-    fetch("/.netlify/functions/getTopScorers")
+    fetch("/.netlify/functions/getTopScorers?limit=10")
       .then((res) => res.json())
       .then((data) => setTopScorers(data));
   }, []);
