@@ -101,7 +101,14 @@ export const LeagueStandings: React.FC = () => {
         <h3 className="text-lg font-bold mb-2">Top Scorers</h3>
         <ul className="divide-y divide-gray-200">
           {topScorers.map((player, idx) => (
-            <li key={player.id} className="flex items-center py-2 space-x-3">
+            <li
+              key={player.id}
+              className={`flex items-center py-2 space-x-3 rounded px-3 transition-shadow cursor-pointer ${
+                idx === 0
+                  ? "bg-yellow-100 border border-yellow-400 shadow-lg font-semibold"
+                  : "bg-white hover:shadow-md"
+              }`}
+            >
               {player.photo ? (
                 <img
                   src={player.photo}
@@ -114,8 +121,20 @@ export const LeagueStandings: React.FC = () => {
                 </div>
               )}
               <span className="font-bold">{idx + 1}.</span>
-              <span className="flex-1">{player.name}</span>
-              <span className="text-sm text-gray-500">{player.position}</span>
+              <span className="flex-1 uppercase">{player.name}</span>
+              <span className="flex items-center text-sm text-gray-500">
+                {" "}
+                {idx === 0 && (
+                  <span
+                    className="text-yellow-500 mr-1"
+                    role="img"
+                    aria-label="trophy"
+                  >
+                    🏆
+                  </span>
+                )}
+                {player.position}
+              </span>
               <span className="font-semibold">{player.goals} goals</span>
               <span className="text-xs text-gray-400 ml-2">
                 ({player.appearances} apps)

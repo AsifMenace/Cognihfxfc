@@ -372,112 +372,140 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               {match.isHome ? "Home" : "Away"}
             </span>
           </div>
-        </div>
-        {isAdmin && (
-          <Link
-            to={`/match/edit/${match.id}`}
-            className="text-blue-600 hover:underline"
-          >
-            Edit Match
-          </Link>
-        )}
-        <div className="flex justify-between mb-8 max-w-3xl mx-auto px-4">
-          {/* Home/Red Team scorers */}
-          <div className="w-1/3 text-left text-red-700">
-            <h3
-              className="font-bold mb-2"
-              style={{ color: match?.home_team_color ?? "red" }}
-            >
-              {match?.home_team_name} Goal Scorers
-            </h3>
-            {homeScorers.length === 0 ? (
-              <p className="text-gray-400">No goals yet</p>
-            ) : (
-              <ul>
-                {homeScorers.map((scorer) => (
-                  <li
-                    key={scorer.id}
-                    className="flex justify-between items-center"
-                  >
-                    <span>{scorer.player_name}</span>
-                    {isAdmin && (
-                      <button
-                        onClick={() =>
-                          handleRemoveGoal(scorer.id, scorer.player_id)
-                        }
-                        aria-label={`Remove goal by ${scorer.player_name}`}
-                        className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                        type="button"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 text-gray-600 hover:text-gray-800"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+          <div>
+            {isAdmin && (
+              <Link
+                to={`/match/edit/${match.id}`}
+                className="inline-block px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
+              >
+                Edit Match
+              </Link>
             )}
           </div>
+        </div>
 
-          {/* Away/Black Team scorers */}
-          <div
-            className="w-1/3 text-right"
-            style={{ color: match?.away_team_color ?? "black" }}
-          >
-            <h3 className="font-bold mb-2">
-              {match?.away_team_name} Goal Scorers
-            </h3>
-            {awayScorers.length === 0 ? (
-              <p className="text-gray-400">No goals yet</p>
-            ) : (
-              <ul>
-                {awayScorers.map((scorer) => (
-                  <li
-                    key={scorer.id}
-                    className="flex justify-between items-center"
-                  >
-                    <span>{scorer.player_name}</span>
-                    {isAdmin && (
-                      <button
-                        onClick={() =>
-                          handleRemoveGoal(scorer.id, scorer.player_id)
-                        }
-                        aria-label={`Remove goal by ${scorer.player_name}`}
-                        className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                        type="button"
+        <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
+          <div className="flex justify-between mb-8 px-4">
+            {/* Home/Red Team scorers */}
+            <div
+              className="w-1/3 text-left "
+              style={{ color: match?.home_team_color ?? "black" }}
+            >
+              <h3
+                className="text-xl sm:text-2xl font-extrabold mb-4 relative inline-block tracking-wide uppercase drop-shadow-sm"
+                style={{ color: match?.home_team_color ?? "red" }}
+              >
+                GOAL SCORERS
+                <span className="block sm:w-20 w-30 h-1 bg-gradient-to-r from-red-500 to-red-700 rounded mt-1"></span>
+              </h3>
+              {homeScorers.length === 0 ? (
+                <p className="text-gray-400">No goals yet</p>
+              ) : (
+                <ul>
+                  {homeScorers.map((scorer) => (
+                    <li
+                      key={scorer.id}
+                      className="flex justify-between items-center"
+                    >
+                      <span
+                        role="img"
+                        aria-label="soccer ball"
+                        className="mr-2"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 text-gray-800 hover:text-gray-800"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                        ⚽
+                      </span>
+                      <span className="uppercase">{scorer.player_name}</span>
+                      {isAdmin && (
+                        <button
+                          onClick={() =>
+                            handleRemoveGoal(scorer.id, scorer.player_id)
+                          }
+                          aria-label={`Remove goal by ${scorer.player_name}`}
+                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                          type="button"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-gray-600 hover:text-gray-800"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Away/Black Team scorers */}
+            <div
+              className="w-1/3 text-right"
+              style={{ color: match?.away_team_color ?? "black" }}
+            >
+              <h3
+                className="text-xl sm:text-2xl font-extrabold mb-4 relative inline-block tracking-wide uppercase drop-shadow-sm"
+                style={{ color: match?.away_team_color ?? "red" }}
+              >
+                GOAL SCORERS
+                <span className="block sm:w-20 w-30 h-1 bg-gradient-to-r from-red-500 to-red-700 rounded mt-1"></span>
+              </h3>
+
+              {awayScorers.length === 0 ? (
+                <p className="text-gray-400">No goals yet</p>
+              ) : (
+                <ul>
+                  {awayScorers.map((scorer) => (
+                    <li
+                      key={scorer.id}
+                      className="flex justify-between items-center"
+                    >
+                      <span
+                        role="img"
+                        aria-label="soccer ball"
+                        className="mr-2"
+                      >
+                        ⚽
+                      </span>
+                      <span className="uppercase">{scorer.player_name}</span>
+                      {isAdmin && (
+                        <button
+                          onClick={() =>
+                            handleRemoveGoal(scorer.id, scorer.player_id)
+                          }
+                          aria-label={`Remove goal by ${scorer.player_name}`}
+                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                          type="button"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
 
