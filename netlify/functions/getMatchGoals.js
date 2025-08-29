@@ -14,7 +14,7 @@ export const handler = async (event) => {
 
   try {
     const goals = await sql`
-      SELECT p.name AS player_name, t.name AS team_name,t.id as team_id
+      SELECT mg.id as id,mg.player_id as player_id,p.name AS player_name, t.name AS team_name,t.id as team_id
       FROM match_goals mg
       JOIN players p ON mg.player_id = p.id
       JOIN teams t ON mg.team_id = t.id

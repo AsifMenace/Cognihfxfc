@@ -96,6 +96,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   }, [id, API_BASE]);
 
   type Scorer = {
+    id: number;
+    player_id: number;
     player_name: string;
     team_name: string;
     team_id: number;
@@ -286,6 +288,28 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   }
 
+  async function handleRemoveGoal(goalId: number, playerId: number) {
+    if (!window.confirm("Are you sure you want to remove this goal?")) return;
+
+    try {
+      const res = await fetch("/.netlify/functions/removeMatchGoal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal_id: goalId, player_id: playerId }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to remove goal");
+      }
+
+      // Refresh the scorer list after removing
+      await fetchScorers();
+    } catch (error) {
+      alert(`Error removing goal: ${(error as Error).message}`);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="container mx-auto px-4 max-w-3xl">
@@ -358,7 +382,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           </Link>
         )}
         <div className="flex justify-between mb-8 max-w-3xl mx-auto px-4">
-          {/* Home/Red Team scorers aligned left by default */}
+          {/* Home/Red Team scorers */}
           <div className="w-1/3 text-left text-red-700">
             <h3
               className="font-bold mb-2"
@@ -370,17 +394,44 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               <p className="text-gray-400">No goals yet</p>
             ) : (
               <ul>
-                {homeScorers.map((scorer, index) => (
-                  <li key={index}>{scorer.player_name}</li>
+                {homeScorers.map((scorer) => (
+                  <li
+                    key={scorer.id}
+                    className="flex justify-between items-center"
+                  >
+                    <span>{scorer.player_name}</span>
+                    {isAdmin && (
+                      <button
+                        onClick={() =>
+                          handleRemoveGoal(scorer.id, scorer.player_id)
+                        }
+                        aria-label={`Remove goal by ${scorer.player_name}`}
+                        className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        type="button"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 text-gray-600 hover:text-gray-800"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </li>
                 ))}
               </ul>
             )}
           </div>
 
-          {/* Optional spacer in the center */}
-          <div className="w-1/3" />
-
-          {/* Away/Black Team scorers aligned right */}
+          {/* Away/Black Team scorers */}
           <div
             className="w-1/3 text-right"
             style={{ color: match?.away_team_color ?? "black" }}
@@ -392,8 +443,38 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               <p className="text-gray-400">No goals yet</p>
             ) : (
               <ul>
-                {awayScorers.map((scorer, index) => (
-                  <li key={index}>{scorer.player_name}</li>
+                {awayScorers.map((scorer) => (
+                  <li
+                    key={scorer.id}
+                    className="flex justify-between items-center"
+                  >
+                    <span>{scorer.player_name}</span>
+                    {isAdmin && (
+                      <button
+                        onClick={() =>
+                          handleRemoveGoal(scorer.id, scorer.player_id)
+                        }
+                        aria-label={`Remove goal by ${scorer.player_name}`}
+                        className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        type="button"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 text-gray-800 hover:text-gray-800"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </li>
                 ))}
               </ul>
             )}
