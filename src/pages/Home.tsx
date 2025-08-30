@@ -152,19 +152,19 @@ const Home: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/games"
-                className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
               >
                 View Fixtures
               </Link>
               <Link
                 to="/squad"
-                className="bg-blue-600 border-2 border-white hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
               >
                 Meet the Squad
               </Link>
               <Link
                 to="/standings"
-                className="bg-blue-600 border-2 border-white hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
               >
                 View League Standings
               </Link>
