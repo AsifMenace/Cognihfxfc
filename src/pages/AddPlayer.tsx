@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useParams, Link } from "react-router-dom";
 
 const AddPlayer: React.FC = () => {
   const [form, setForm] = useState({
@@ -131,8 +132,8 @@ const AddPlayer: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="container mx-auto px-4 max-w-3xl">
         <form
           onSubmit={handleSubmit}
           className="max-w-3xl mx-auto p-4 bg-white shadow rounded space-y-4"
@@ -312,6 +313,15 @@ const AddPlayer: React.FC = () => {
             {loading ? "Adding..." : "Add Player"}
           </button>
         </form>
+        {/* Back link */}
+        <div className="text-center mt-8">
+          <Link
+            to="/squad"
+            className="inline-block px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition"
+          >
+            ← Back to Squad
+          </Link>
+        </div>
       </div>
     </div>
   );

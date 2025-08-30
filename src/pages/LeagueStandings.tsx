@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
 
 type Scorer = {
   id: number;
@@ -142,6 +143,15 @@ export const LeagueStandings: React.FC = () => {
             </li>
           ))}
         </ul>
+      </div>
+      {/* Back link */}
+      <div className="text-center mt-8">
+        <Link
+          to="/games"
+          className="inline-block px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition"
+        >
+          ← Back to Games
+        </Link>
       </div>
     </div>
   );

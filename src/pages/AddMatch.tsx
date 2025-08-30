@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 interface Team {
   id: number;
   name: string;
@@ -174,123 +174,136 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-md mx-auto p-6 bg-white rounded shadow my-8"
-    >
-      <h2 className="text-xl font-bold mb-4">Add Match</h2>
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="container mx-auto px-4 max-w-3xl">
+        <form
+          onSubmit={handleSubmit}
+          className="max-w-md mx-auto p-6 bg-white rounded shadow my-8"
+        >
+          <h2 className="text-xl font-bold mb-4">Add Match</h2>
 
-      <input
-        type="date"
-        name="date"
-        value={form.date}
-        onChange={handleChange}
-        required
-        className="w-full p-2 border rounded mb-3"
-      />
-      <input
-        type="time"
-        name="time"
-        value={form.time}
-        onChange={handleChange}
-        required
-        className="w-full p-2 border rounded mb-3"
-      />
+          <input
+            type="date"
+            name="date"
+            value={form.date}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded mb-3"
+          />
+          <input
+            type="time"
+            name="time"
+            value={form.time}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded mb-3"
+          />
 
-      <label className="block mb-1 font-semibold">Home Team</label>
-      <select
-        name="home_team_id"
-        value={form.home_team_id}
-        onChange={handleChange}
-        disabled={!!form.opponent}
-        className="w-full p-2 border rounded mb-3"
-      >
-        <option value="">-- Select Home Team --</option>
-        {teams.map((team) => (
-          <option key={team.id} value={team.id}>
-            {team.name}
-          </option>
-        ))}
-      </select>
+          <label className="block mb-1 font-semibold">Home Team</label>
+          <select
+            name="home_team_id"
+            value={form.home_team_id}
+            onChange={handleChange}
+            disabled={!!form.opponent}
+            className="w-full p-2 border rounded mb-3"
+          >
+            <option value="">-- Select Home Team --</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
 
-      <label className="block mb-1 font-semibold">Away Team</label>
-      <select
-        name="away_team_id"
-        value={form.away_team_id}
-        onChange={handleChange}
-        disabled={!!form.opponent}
-        className="w-full p-2 border rounded mb-3"
-      >
-        <option value="">-- Select Away Team --</option>
-        {teams.map((team) => (
-          <option key={team.id} value={team.id}>
-            {team.name}
-          </option>
-        ))}
-      </select>
+          <label className="block mb-1 font-semibold">Away Team</label>
+          <select
+            name="away_team_id"
+            value={form.away_team_id}
+            onChange={handleChange}
+            disabled={!!form.opponent}
+            className="w-full p-2 border rounded mb-3"
+          >
+            <option value="">-- Select Away Team --</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
 
-      <input
-        type="text"
-        name="opponent"
-        placeholder="Opponent (for external matches)"
-        value={form.opponent}
-        onChange={handleChange}
-        disabled={!!form.home_team_id || !!form.away_team_id}
-        className="w-full p-2 border rounded mb-3"
-      />
+          <input
+            type="text"
+            name="opponent"
+            placeholder="Opponent (for external matches)"
+            value={form.opponent}
+            onChange={handleChange}
+            disabled={!!form.home_team_id || !!form.away_team_id}
+            className="w-full p-2 border rounded mb-3"
+          />
 
-      <input
-        type="text"
-        name="venue"
-        value={form.venue}
-        onChange={handleChange}
-        placeholder="Venue"
-        required
-        className="w-full p-2 border rounded mb-3"
-      />
-      <input
-        type="text"
-        name="result"
-        value={form.result}
-        onChange={handleChange}
-        placeholder="Result (e.g., 2-1)"
-        className="w-full p-2 border rounded mb-3"
-      />
-      <input
-        type="text"
-        name="competition"
-        value={form.competition}
-        onChange={handleChange}
-        placeholder="Competition"
-        className="w-full p-2 border rounded mb-3"
-      />
-      <label className="flex items-center mb-3">
-        <input
-          type="checkbox"
-          name="isHome"
-          checked={form.isHome}
-          onChange={handleChange}
-          className="mr-2"
-        />
-        Home match
-      </label>
+          <input
+            type="text"
+            name="venue"
+            value={form.venue}
+            onChange={handleChange}
+            placeholder="Venue"
+            required
+            className="w-full p-2 border rounded mb-3"
+          />
+          <input
+            type="text"
+            name="result"
+            value={form.result}
+            onChange={handleChange}
+            placeholder="Result (e.g., 2-1)"
+            className="w-full p-2 border rounded mb-3"
+          />
+          <input
+            type="text"
+            name="competition"
+            value={form.competition}
+            onChange={handleChange}
+            placeholder="Competition"
+            className="w-full p-2 border rounded mb-3"
+          />
+          <label className="flex items-center mb-3">
+            <input
+              type="checkbox"
+              name="isHome"
+              checked={form.isHome}
+              onChange={handleChange}
+              className="mr-2"
+            />
+            Home match
+          </label>
 
-      {error && <div className="text-red-500 mb-2">{error}</div>}
-      {success && <div className="text-green-600 mb-2">{success}</div>}
+          {error && <div className="text-red-500 mb-2">{error}</div>}
+          {success && <div className="text-green-600 mb-2">{success}</div>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        {loading
-          ? id
-            ? "Updating..."
-            : "Adding..."
-          : id
-          ? "Update Match"
-          : "Add Match"}
-      </button>
-    </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            {loading
+              ? id
+                ? "Updating..."
+                : "Adding..."
+              : id
+              ? "Update Match"
+              : "Add Match"}
+          </button>
+        </form>
+        {/* Back link */}
+        <div className="text-center mt-8">
+          <Link
+            to="/games"
+            className="inline-block px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition"
+          >
+            ← Back to Games
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
