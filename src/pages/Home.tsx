@@ -4,6 +4,7 @@ import { Calendar, Users, Trophy, Target } from "lucide-react";
 import { parseMatchDateTime } from "../components/dateUtils"; // adjust relative path as needed
 // Removed import of static upcomingGames; using real data now dummy
 import CountdownTimer from "../components/CountdownTimer";
+import { motion } from "framer-motion";
 
 interface TopScorer {
   id: number;
@@ -140,42 +141,68 @@ const Home: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-900 via-slate-800 to-blue-800 text-white">
+      <motion.section
+        className="bg-gradient-to-br from-blue-900 via-slate-800 to-blue-800 text-white"
+        initial={{ opacity: 0, y: -40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7 }}
+      >
         <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6">
+            <motion.h1
+              className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6 drop-shadow-xl"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.7 }}
+            >
               Cogni Hfx FC
-            </h1>
-            <p className="text-lg sm:text-xl md:text-2xl mb-6 md:mb-8 text-blue-100">
+            </motion.h1>
+            <motion.p
+              className="text-lg sm:text-xl md:text-2xl mb-6 md:mb-8 text-blue-100"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1, duration: 0.6 }}
+            >
               Passion, Pride, Performance
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            </motion.p>
+
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.5 }}
+            >
               <Link
                 to="/games"
-                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors shadow-lg transform hover:scale-105"
               >
                 View Fixtures
               </Link>
               <Link
                 to="/squad"
-                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors shadow-lg transform hover:scale-105"
               >
                 Meet the Squad
               </Link>
               <Link
                 to="/standings"
-                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors shadow-lg transform hover:scale-105"
               >
                 View League Standings
               </Link>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Next Match Section */}
       <section className="py-8 md:py-16">
-        <div className="container mx-auto px-4">
+        <motion.div
+          className="max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1, duration: 0.8 }}
+        >
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12 text-slate-900">
             Next Match
           </h2>
@@ -281,7 +308,7 @@ const Home: React.FC = () => {
               </p>
             )}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Top Scorers Section */}
@@ -293,40 +320,48 @@ const Home: React.FC = () => {
             </h2>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
               {topScorers.map((player, i) => (
-                <Link
+                <motion.div
                   key={player.id}
-                  to={`/player/${player.id}`}
-                  className="group"
+                  className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-xl hover:-translate-y-1 transition"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + i * 0.1, duration: 0.8 }}
                 >
-                  <div className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition">
-                    <div className="relative mb-4">
-                      <img
-                        src={player.photo}
-                        alt={player.name}
-                        className="w-16 h-16 rounded-full mx-auto object-cover object-top"
-                      />
-                      {i === 0 && (
-                        <div className="absolute -top-1 -right-1 bg-yellow-400 text-yellow-900 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
-                          👑
+                  <Link
+                    key={player.id}
+                    to={`/player/${player.id}`}
+                    className="group"
+                  >
+                    <div className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition">
+                      <div className="relative mb-4">
+                        <img
+                          src={player.photo}
+                          alt={player.name}
+                          className="w-16 h-16 rounded-full mx-auto object-cover object-top"
+                        />
+                        {i === 0 && (
+                          <div className="absolute -top-1 -right-1 bg-yellow-400 text-yellow-900 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                            👑
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="font-bold">{player.name}</h3>
+                      <p className="text-slate-600 text-xs mb-3">
+                        {player.position}
+                      </p>
+                      <div className="flex items-center justify-center space-x-4">
+                        <div className="flex items-center space-x-1">
+                          <Target className="text-blue-600" size={16} />
+                          <span className="font-bold">{player.goals}</span>
                         </div>
-                      )}
-                    </div>
-                    <h3 className="font-bold">{player.name}</h3>
-                    <p className="text-slate-600 text-xs mb-3">
-                      {player.position}
-                    </p>
-                    <div className="flex items-center justify-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <Target className="text-blue-600" size={16} />
-                        <span className="font-bold">{player.goals}</span>
-                      </div>
-                      <div className="text-slate-400">|</div>
-                      <div className="text-slate-600 text-xs">
-                        {player.appearances} apps
+                        <div className="text-slate-400">|</div>
+                        <div className="text-slate-600 text-xs">
+                          {player.appearances} apps
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </div>
