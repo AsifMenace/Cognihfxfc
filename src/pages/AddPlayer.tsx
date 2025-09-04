@@ -92,7 +92,7 @@ const AddPlayer: React.FC = () => {
     try {
       const API_URL =
         process.env.NODE_ENV === "development"
-          ? "https://db-integration--cognihfxfc.netlify.app/.netlify/functions/addPlayer"
+          ? "/.netlify/functions/addPlayer"
           : "/.netlify/functions/addPlayer";
 
       const res = await fetch(API_URL, {
