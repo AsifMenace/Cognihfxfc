@@ -21,6 +21,8 @@ type Match = {
   home_team_color?: string | null;
   away_team_name?: string | null;
   away_team_color?: string | null;
+  home_team_id?: number | null; // Add this line
+  away_team_id?: number | null; // Add this line
 };
 
 const formatDate = (match: Match) => {
@@ -67,34 +69,76 @@ function MatchListItem({ match }: { match: Match }) {
   );
 }
 
-type GoalScorersProps = {
-  matchId: number;
-};
-
 type Scorers = {
   player_name: string;
   team_name: string;
 };
 
-function GoalScorers({ matchId }: GoalScorersProps) {
-  const [scorers, setScorers] = useState<Scorers[]>([]);
+interface GoalScorersProps {
+  matchId: number;
+  match: {
+    home_team_id?: number | null;
+    away_team_id?: number | null;
+  };
+}
+
+interface GoalDetail {
+  id: number;
+  player_id: number;
+  player_name: string;
+  team_name: string;
+  team_id: number;
+}
+
+function GoalScorers({ matchId, match }: GoalScorersProps) {
+  const [goalDetails, setGoalDetails] = useState<GoalDetail[]>([]);
 
   useEffect(() => {
     fetch(`/.netlify/functions/getMatchGoals?matchId=${matchId}`)
       .then((res) => res.json())
-      .then((data) => setScorers(data as Scorers[]));
+      .then((data) => setGoalDetails(data as GoalDetail[]));
   }, [matchId]);
 
+  const homeScorers = goalDetails.filter(
+    (g) => g.team_id === match.home_team_id
+  );
+  const awayScorers = goalDetails.filter(
+    (g) => g.team_id === match.away_team_id
+  );
+
   return (
-    <div className="goal-scorers mt-2 text-sm text-gray-700">
-      <strong>Goal Scorers:</strong>{" "}
-      {scorers.length > 0
-        ? scorers.map((g, idx) => (
-            <span key={idx} className="mr-2">
-              {g.player_name} ({g.team_name})
-            </span>
-          ))
-        : "No goals yet"}
+    <div className="mt-4 p-4 bg-white rounded-lg shadow-md max-w-md mx-auto text-gray-700">
+      <div className="font-semibold text-center mb-3 text-lg text-blue-700">
+        Goal Scorers
+      </div>
+      <div className="flex justify-between">
+        <div className="flex-1 text-left">
+          {homeScorers.length > 0 ? (
+            <ul className="space-y-1 list-none">
+              {homeScorers.map((g) => (
+                <li key={g.id} className="uppercase">
+                  ⚽ {g.player_name}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-gray-400">No goals yet</div>
+          )}
+        </div>
+        <div className="flex-1 text-right">
+          {awayScorers.length > 0 ? (
+            <ul className="space-y-1 list-none">
+              {awayScorers.map((g) => (
+                <li key={g.id} className="uppercase">
+                  ⚽ {g.player_name}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-gray-400">No goals yet</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -256,6 +300,15 @@ export function Games() {
                           </span>
                         </div>
                       )}
+
+                      {/* Goal Scorers component rendering */}
+                      <GoalScorers
+                        matchId={game.id}
+                        match={{
+                          home_team_id: game.home_team_id,
+                          away_team_id: game.away_team_id,
+                        }}
+                      />
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 text-slate-600 text-sm md:text-base mt-4">
                         <div className="flex items-center justify-center space-x-2">
