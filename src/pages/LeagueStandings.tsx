@@ -51,7 +51,7 @@ export const LeagueStandings: React.FC = () => {
   const [topScorers, setTopScorers] = useState<Scorer[]>([]);
 
   useEffect(() => {
-    fetch("/.netlify/functions/getTopScorers?limit=10")
+    fetch("/.netlify/functions/getTopScorers?limit=20")
       .then((res) => res.json())
       .then((data) => setTopScorers(data));
   }, []);
@@ -61,11 +61,16 @@ export const LeagueStandings: React.FC = () => {
 
   return (
     <div className="overflow-auto max-w-4xl mx-auto mt-8">
-      <h2 className="text-2xl font-bold mb-4 text-center">League Standings</h2>
+      <h2 className="text-2xl uppercase font-bold mb-4 text-center">
+        League Standings
+      </h2>
       <table className="min-w-full bg-white border rounded shadow">
         <thead>
           <tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
+            <th className="py-3 px-6 text-center">Pos</th>{" "}
+            {/* New position column */}
             <th className="py-3 px-6 text-left">Team</th>
+            <th className="py-3 px-6 text-center">Pts</th>
             <th className="py-3 px-6 text-center">P</th>
             <th className="py-3 px-6 text-center">W</th>
             <th className="py-3 px-6 text-center">D</th>
@@ -73,12 +78,16 @@ export const LeagueStandings: React.FC = () => {
             <th className="py-3 px-6 text-center">GF</th>
             <th className="py-3 px-6 text-center">GA</th>
             <th className="py-3 px-6 text-center">GD</th>
-            <th className="py-3 px-6 text-center">Pts</th>
           </tr>
         </thead>
         <tbody>
-          {standings.map((team) => (
-            <tr key={team.team_id} className="text-gray-600 hover:bg-gray-50">
+          {standings.map((team, index) => (
+            <tr
+              key={team.team_id}
+              className="text-gray-600 uppercase hover:bg-gray-50"
+            >
+              <td className="py-3 px-6 text-center font-bold">{index + 1}</td>{" "}
+              {/* Position */}
               <td className="py-3 px-6 flex items-center space-x-3">
                 <span
                   className="inline-block w-4 h-4 rounded-full"
@@ -86,6 +95,7 @@ export const LeagueStandings: React.FC = () => {
                 />
                 <span>{team.team_name}</span>
               </td>
+              <td className="py-3 px-6 text-center font-bold">{team.points}</td>
               <td className="py-3 px-6 text-center">{team.played}</td>
               <td className="py-3 px-6 text-center">{team.wins}</td>
               <td className="py-3 px-6 text-center">{team.draws}</td>
@@ -93,7 +103,6 @@ export const LeagueStandings: React.FC = () => {
               <td className="py-3 px-6 text-center">{team.goals_for}</td>
               <td className="py-3 px-6 text-center">{team.goals_against}</td>
               <td className="py-3 px-6 text-center">{team.goal_difference}</td>
-              <td className="py-3 px-6 text-center font-bold">{team.points}</td>
             </tr>
           ))}
         </tbody>

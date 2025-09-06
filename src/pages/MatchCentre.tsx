@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
 import { parseMatchDateTime } from "../components/dateUtils";
+import Select, { MultiValue } from "react-select";
 
 type MatchCentreProps = {
   isAdmin: boolean;
@@ -48,6 +49,15 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [success, setSuccess] = useState<string | null>(null);
 
   const formRef = useRef<HTMLFormElement>(null);
+
+  type PlayerOption = {
+    value: number;
+    label: string;
+  };
+
+  const [selectedPlayers, setSelectedPlayers] = useState<
+    MultiValue<PlayerOption>
+  >([]);
 
   const API_BASE =
     process.env.NODE_ENV === "development"
@@ -157,41 +167,38 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const playerIdValue = formData.get("playerId");
-
-    const teamIdValue = selectedTeamId;
-
-    if (!playerIdValue || typeof playerIdValue !== "string") {
-      alert("Please select a valid player.");
+    // Instead of formData.get(), use your selectedPlayers state
+    if (!selectedPlayers || selectedPlayers.length === 0) {
+      alert("Please select at least one valid player.");
       return;
     }
-    if (teamIdValue === "") {
+
+    if (selectedTeamId === "") {
       alert("Please select a team.");
       return;
     }
 
-    const playerIdNum = Number(playerIdValue);
+    // Filter out players already added (assuming lineups is the current roster)
+    const alreadyAdded = selectedPlayers.some((p) =>
+      lineups.some((lp) => lp.id === p.value)
+    );
 
-    if (lineups.some((p) => p.id === playerIdNum)) {
-      alert("This player is already added to the match.");
-      return; // Stop submitting
-    }
-
-    if (!playerIdValue || typeof playerIdValue !== "string") {
-      alert("Please select a valid player.");
+    if (alreadyAdded) {
+      alert("One or more selected players are already added to the match.");
       return;
     }
 
     try {
+      // Extract player IDs as array for bulk API call
+      const playerIds = selectedPlayers.map((p) => p.value);
+
       const response = await fetch("/.netlify/functions/addPlayerToMatch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           match_id: match?.id,
-          player_id: playerIdNum,
-          team_id: teamIdValue,
+          team_id: selectedTeamId,
+          player_ids: playerIds, // bulk insert
         }),
       });
 
@@ -203,15 +210,16 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           const lineupData = await lineupRes.json();
           setLineups(lineupData || []);
         }
-        alert("Player successfully added to the match!");
-        formRef.current?.reset();
+        alert("Players successfully added to the match!");
+        // Reset selection and team dropdown
+        setSelectedPlayers([]);
         setSelectedTeamId("");
       } else {
         const errData = await response.json();
-        alert(`Failed to add player: ${errData.error || "Unknown error"}`);
+        alert(`Failed to add players: ${errData.error || "Unknown error"}`);
       }
     } catch (err) {
-      alert(`Error adding player: ${(err as Error).message}`);
+      alert(`Error adding players: ${(err as Error).message}`);
     }
   };
 
@@ -383,7 +391,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             )}
           </div>
         </div>
-
         <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
           <div className="flex justify-between mb-8 px-4">
             {/* Home/Red Team scorers */}
@@ -508,7 +515,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             </div>
           </div>
         </div>
-
         {isAdmin && (
           <section className="my-8 p-6 max-w-md mx-auto border rounded shadow-sm bg-white">
             <h2 className="text-xl font-semibold mb-4">Add Goal Scorer</h2>
@@ -641,7 +647,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             </form>
           </section>
         )}
-
         {/* Lineups Section */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-slate-900 mb-4 text-center">
@@ -700,34 +705,33 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             );
           })}
         </div>
-
         {isAdmin && (
           <form
             ref={formRef}
             onSubmit={handleSubmit}
             className="mb-6 flex flex-wrap items-center space-x-2"
           >
-            <label htmlFor="playerId" className="block mb-2 font-semibold">
-              Add Player to Match
+            <label htmlFor="playerIds" className="block mb-2 font-semibold">
+              Add Players to Match {/* Updated label */}
             </label>
 
-            <select
-              name="playerId"
-              id="playerId"
-              className="border rounded px-3 py-1"
+            {/* --- Enhanced Player Multi-Select Dropdown --- */}
+            <Select<PlayerOption, true> // <OptionType, isMulti = true>
+              options={allPlayers.map((player) => ({
+                value: player.id,
+                label: `${player.name} (${player.position})`,
+              }))}
+              isMulti
+              name="playerIds"
+              id="playerIds"
+              className="min-w-[200px] px-3 py-1"
+              value={selectedPlayers}
+              onChange={(selected) => setSelectedPlayers(selected ?? [])}
+              placeholder="Select players..."
               required
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Select a player
-              </option>
-              {allPlayers.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.name} ({player.position})
-                </option>
-              ))}
-            </select>
+            />
 
+            {/* --- Team Dropdown (unchanged except code cleanup) --- */}
             <select
               name="teamId"
               id="teamId"
@@ -752,7 +756,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               type="submit"
               className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
             >
-              Add Player
+              Add Players {/* Updated Button Text */}
             </button>
           </form>
         )}
