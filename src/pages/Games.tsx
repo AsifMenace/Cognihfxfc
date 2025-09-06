@@ -107,7 +107,7 @@ function GoalScorers({ matchId, match }: GoalScorersProps) {
   );
 
   return (
-    <div className="mt-4 p-4 bg-white rounded-lg shadow-md max-w-md mx-auto text-gray-700">
+    <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 via-blue-200 to-blue-50 rounded-xl shadow-xl max-w-md mx-auto text-gray-800 border border-blue-300 hover:shadow-2xl transition-shadow duration-300">
       <div className="font-semibold text-center mb-3 text-lg text-blue-700">
         Goal Scorers
       </div>
@@ -122,7 +122,7 @@ function GoalScorers({ matchId, match }: GoalScorersProps) {
               ))}
             </ul>
           ) : (
-            <div className="text-gray-400">No goals yet</div>
+            <div className="text-gray-400"> Not updated </div>
           )}
         </div>
         <div className="flex-1 text-right">
@@ -135,7 +135,7 @@ function GoalScorers({ matchId, match }: GoalScorersProps) {
               ))}
             </ul>
           ) : (
-            <div className="text-gray-400">No goals yet</div>
+            <div className="text-gray-400"> Not updated </div>
           )}
         </div>
       </div>
