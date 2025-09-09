@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import Scorecard from "../pages/Scorecard";
 
 type Scorer = {
   id: number;
@@ -51,7 +52,7 @@ export const LeagueStandings: React.FC = () => {
   const [topScorers, setTopScorers] = useState<Scorer[]>([]);
 
   useEffect(() => {
-    fetch("/.netlify/functions/getTopScorers?limit=20")
+    fetch("/.netlify/functions/getTopScorers?limit=10")
       .then((res) => res.json())
       .then((data) => setTopScorers(data));
   }, []);
@@ -152,6 +153,11 @@ export const LeagueStandings: React.FC = () => {
             </li>
           ))}
         </ul>
+      </div>
+      <div className="text-center mt-8">
+        <aside className="w-[320px]">
+          <Scorecard />
+        </aside>
       </div>
       {/* Back link */}
       <div className="text-center mt-8">
