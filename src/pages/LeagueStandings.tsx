@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Scorecard from "../pages/Scorecard";
+import HeadToHeadTrivia from "./HeadToHeadTrivia";
 
 type Scorer = {
   id: number;
@@ -154,11 +155,16 @@ export const LeagueStandings: React.FC = () => {
           ))}
         </ul>
       </div>
-      <div className="text-center mt-8">
+
+      <div className="text-center mt-8 flex gap-6 justify-center">
         <aside className="w-[320px]">
           <Scorecard />
         </aside>
+        <aside className="w-[320px]">
+          <HeadToHeadTrivia />
+        </aside>
       </div>
+
       {/* Back link */}
       <div className="text-center mt-8">
         <Link
