@@ -50,41 +50,43 @@ export default function HeadToHeadTrivia() {
     );
 
   return (
-    <div className="h2h-trivia p-4 bg-white rounded-lg shadow max-h-[450px] overflow-y-auto w-[320px] text-gray-900 font-sans">
-      <h2 className="text-xl font-bold mb-4 border-b pb-2 text-center">
+    <div className="h2h-trivia p-5 bg-white rounded-xl shadow-lg max-h-[450px] overflow-y-auto w-[320px] text-gray-900 font-sans">
+      <h2 className="text-2xl font-bold mb-6 border-b border-gray-300 pb-3 text-center">
         Head to Head Trivia
       </h2>
-      <ul className="space-y-3 text-base leading-relaxed">
+      <ul className="space-y-5">
         {h2hResults.map(
           (
             { team1, team2, total_matches, team1_wins, team2_wins, draws },
             i
-          ) => {
-            return (
-              <li key={i} className="flex flex-wrap gap-2">
-                <span className="font-semibold">
-                  {team1} vs {team2}:
-                </span>
-                <span>
-                  played <strong>{total_matches}</strong> match
-                  {total_matches !== 1 ? "es" : ""},
-                </span>
-                <span>
-                  <strong>{team1_wins}</strong> won by {team1},
-                </span>
-                <span>
+          ) => (
+            <li
+              key={i}
+              className="bg-gray-50 rounded-md border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow duration-300"
+            >
+              <div className="text-lg font-semibold mb-2 text-center">
+                {team1} vs {team2}
+              </div>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-gray-700">
+                <div>
+                  Played <strong>{total_matches}</strong> match
+                  {total_matches !== 1 ? "es" : ""}
+                </div>
+                <div>
+                  <strong>{team1_wins}</strong> won by {team1}
+                </div>
+                <div>
                   <strong>{team2_wins}</strong> won by {team2}
-                  {draws > 0 ? "," : "."}
-                </span>
+                </div>
                 {draws > 0 && (
-                  <span>
+                  <div>
                     <strong>{draws}</strong> drawn match
-                    {draws !== 1 ? "es" : ""}.
-                  </span>
+                    {draws !== 1 ? "es" : ""}
+                  </div>
                 )}
-              </li>
-            );
-          }
+              </div>
+            </li>
+          )
         )}
       </ul>
     </div>

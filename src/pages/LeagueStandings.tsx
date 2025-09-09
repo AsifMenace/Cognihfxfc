@@ -53,7 +53,7 @@ export const LeagueStandings: React.FC = () => {
   const [topScorers, setTopScorers] = useState<Scorer[]>([]);
 
   useEffect(() => {
-    fetch("/.netlify/functions/getTopScorers?limit=10")
+    fetch("/.netlify/functions/getTopScorers?limit=20")
       .then((res) => res.json())
       .then((data) => setTopScorers(data));
   }, []);
@@ -109,58 +109,59 @@ export const LeagueStandings: React.FC = () => {
           ))}
         </tbody>
       </table>
-      <div className="mt-8">
+      <div className="mt-8  bg-white rounded shadow p-4">
         <h3 className="text-lg font-bold mb-2">Top Scorers</h3>
-        <ul className="divide-y divide-gray-200">
-          {topScorers.map((player, idx) => (
-            <li
-              key={player.id}
-              className={`flex items-center py-2 space-x-3 rounded px-3 transition-shadow cursor-pointer ${
-                idx === 0
-                  ? "bg-yellow-100 border border-yellow-400 shadow-lg font-semibold"
-                  : "bg-white hover:shadow-md"
-              }`}
-            >
-              {player.photo ? (
-                <img
-                  src={player.photo}
-                  alt={player.name}
-                  className="w-8 h-8 rounded-full object-cover object-top"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold">
-                  {player.name[0]}
-                </div>
-              )}
-              <span className="font-bold">{idx + 1}.</span>
-              <span className="flex-1 uppercase">{player.name}</span>
-              <span className="flex items-center text-sm text-gray-500">
-                {" "}
-                {idx === 0 && (
-                  <span
-                    className="text-yellow-500 mr-1"
-                    role="img"
-                    aria-label="trophy"
-                  >
-                    🏆
-                  </span>
+        <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <ul className="divide-y divide-gray-200">
+            {topScorers.map((player, idx) => (
+              <li
+                key={player.id}
+                className={`flex items-center py-2 space-x-3 rounded px-3 transition-shadow cursor-pointer ${
+                  idx === 0
+                    ? "bg-yellow-100 border border-yellow-400 shadow-lg font-semibold"
+                    : "bg-white hover:shadow-md"
+                }`}
+              >
+                {player.photo ? (
+                  <img
+                    src={player.photo}
+                    alt={player.name}
+                    className="w-8 h-8 rounded-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold">
+                    {player.name[0]}
+                  </div>
                 )}
-                {player.position}
-              </span>
-              <span className="font-semibold">{player.goals} goals</span>
-              <span className="text-xs text-gray-400 ml-2">
-                ({player.appearances} apps)
-              </span>
-            </li>
-          ))}
-        </ul>
+                <span className="font-bold">{idx + 1}.</span>
+                <span className="flex-1 uppercase">{player.name}</span>
+                <span className="flex items-center text-sm text-gray-500">
+                  {idx === 0 && (
+                    <span
+                      className="text-yellow-500 mr-1"
+                      role="img"
+                      aria-label="trophy"
+                    >
+                      🏆
+                    </span>
+                  )}
+                  {player.position}
+                </span>
+                <span className="font-semibold">{player.goals} goals</span>
+                <span className="text-xs text-gray-400 ml-2">
+                  ({player.appearances} apps)
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      <div className="text-center mt-8 flex gap-6 justify-center">
-        <aside className="w-[320px]">
+      <div className="text-center mt-8 flex gap-6 justify-center overflow-x-auto">
+        <aside className="min-w-[320px] max-w-[340px] flex-shrink-0">
           <Scorecard />
         </aside>
-        <aside className="w-[320px]">
+        <aside className="min-w-[320px] max-w-[340px] flex-shrink-0">
           <HeadToHeadTrivia />
         </aside>
       </div>

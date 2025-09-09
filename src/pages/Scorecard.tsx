@@ -124,6 +124,7 @@ export default function Scorecard() {
                           color: home_team_color,
                           flexBasis: "35%",
                           flexShrink: 0,
+                          minWidth: 0, // important for truncate to work inside flex
                         }}
                         title={home_team_name}
                       >
@@ -148,6 +149,7 @@ export default function Scorecard() {
                           color: away_team_color,
                           flexBasis: "35%",
                           flexShrink: 0,
+                          minWidth: 0, // important for truncate to work inside flex
                         }}
                         title={away_team_name}
                       >
