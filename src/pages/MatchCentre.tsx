@@ -729,6 +729,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               onChange={(selected) => setSelectedPlayers(selected ?? [])}
               placeholder="Select players..."
               required
+              menuShouldScrollIntoView={false} // Prevent scroll jumps
+              menuPlacement="auto" // Better positioning on mobile
+              closeMenuOnSelect={false} // Keep open while selecting multiple
+              backspaceRemovesValue={true}
+              hideSelectedOptions={false}
             />
 
             {/* --- Team Dropdown (unchanged except code cleanup) --- */}
