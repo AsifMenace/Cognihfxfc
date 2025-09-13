@@ -33,6 +33,12 @@ interface Match {
   home_team_color?: string | null;
   away_team_name?: string | null;
   away_team_color?: string | null;
+  opponent_id?: number | null;
+  opponent_name?: string | null;
+  opponent_color?: string | null;
+  cogni_id?: number | null;
+  cogni_name?: string | null;
+  cogni_color?: string | null;
 }
 
 const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
@@ -235,21 +241,61 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     );
 
   const kickoffDate = parseMatchDateTime(match);
-  const teamMap: { [id: number]: { name: string; colorClass: string } } = {
-    1: { name: "Red", colorClass: "text-red-600" },
-    2: { name: "Black", colorClass: "text-gray-700" },
-    3: { name: "Blue", colorClass: "text-blue-600" },
-  };
+  // const teamMap: { [id: number]: { name: string; colorClass: string } } = {
+  //   1: { name: "Red", colorClass: "text-red-600" },
+  //   2: { name: "Black", colorClass: "text-gray-700" },
+  //   3: { name: "Blue", colorClass: "text-blue-600" },
+  // };
 
-  const playingTeamIds = [match?.home_team_id, match?.away_team_id].filter(
-    (id): id is number => typeof id === "number"
-  );
+  // const playingTeamIds = [match?.home_team_id, match?.away_team_id].filter(
+  //   (id): id is number => typeof id === "number"
+  // );
 
-  const groupedLineups = {
-    Red: lineups.filter((p) => p.team_id === 1),
-    Black: lineups.filter((p) => p.team_id === 2),
-    Blue: lineups.filter((p) => p.team_id === 3),
-  };
+  const playingTeamIds: number[] = [
+    match?.home_team_id,
+    match?.away_team_id,
+  ].filter((id): id is number => typeof id === "number");
+
+  const teamMap: { [id: number]: { name: string; colorClass: string } } = {};
+
+  playingTeamIds.forEach((teamId: number) => {
+    let teamName = "";
+    let teamColor = "";
+
+    if (teamId === match?.home_team_id) {
+      teamName = match.home_team_name || "";
+      teamColor = match.home_team_color || "";
+    } else if (teamId === match?.away_team_id) {
+      teamName = match.away_team_name || "";
+      teamColor = match.away_team_color || "";
+    }
+
+    teamMap[teamId] = {
+      name: teamName,
+      colorClass: teamColor ? `text-[${teamColor}]` : "text-black",
+    };
+  });
+
+  // const groupedLineups = {
+  //   Red: lineups.filter((p) => p.team_id === 1),
+  //   Black: lineups.filter((p) => p.team_id === 2),
+  //   Blue: lineups.filter((p) => p.team_id === 3),
+  // };
+
+  const groupedLineups: { [teamName: string]: Player[] } = {};
+
+  // Initialize empty arrays for each team name in teamMap
+  Object.values(teamMap).forEach(({ name }) => {
+    groupedLineups[name] = [];
+  });
+
+  // Populate groupedLineups by filtering players by team_id matching keys in teamMap
+  lineups.forEach((player) => {
+    const team = teamMap[player.team_id || 0];
+    if (team) {
+      groupedLineups[team.name].push(player);
+    }
+  });
 
   const homeScorers = scorers.filter(
     (s) => s.team_name === match?.home_team_name
@@ -257,6 +303,12 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const awayScorers = scorers.filter(
     (s) => s.team_name === match?.away_team_name
   );
+
+  const opponentScorers = scorers.filter(
+    (s) => s.team_name === match?.opponent_name
+  );
+
+  const cogniScorers = scorers.filter((s) => s.team_name === match?.cogni_name);
 
   async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -336,9 +388,12 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               </>
             ) : (
               <>
-                <span className="text-blue-600 font-bold">Cogni Hfx FC</span>
+                <span className="text-blue-600 font-bold">
+                  {" "}
+                  {match?.cogni_name}
+                </span>
                 <span className="text-slate-400 mx-2">vs</span>
-                <span>{match?.opponent}</span>
+                <span>{match?.opponent_name}</span>
               </>
             )}
           </div>
@@ -405,7 +460,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 GOAL SCORERS
                 <span className="block sm:w-20 w-30 h-1 bg-gradient-to-r from-red-500 to-red-700 rounded mt-1"></span>
               </h3>
-              {homeScorers.length === 0 ? (
+              {homeScorers.length === 0 && match.opponent_id === null ? (
                 <p className="text-gray-400">No goals yet</p>
               ) : (
                 <ul>
@@ -451,6 +506,52 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   ))}
                 </ul>
               )}
+              {cogniScorers.length === 0 && match.opponent_id != null ? (
+                <p className="text-gray-400">No goals yet new hello</p>
+              ) : (
+                <ul>
+                  {cogniScorers.map((scorer) => (
+                    <li
+                      key={scorer.id}
+                      className="flex justify-between items-center"
+                    >
+                      <span
+                        role="img"
+                        aria-label="soccer ball"
+                        className="mr-2"
+                      >
+                        ⚽
+                      </span>
+                      <span className="uppercase">{scorer.player_name}</span>
+                      {isAdmin && (
+                        <button
+                          onClick={() =>
+                            handleRemoveGoal(scorer.id, scorer.player_id)
+                          }
+                          aria-label={`Remove goal by ${scorer.player_name}`}
+                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                          type="button"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Away/Black Team scorers */}
@@ -466,11 +567,57 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 <span className="block sm:w-20 w-30 h-1 bg-gradient-to-r from-red-500 to-red-700 rounded mt-1"></span>
               </h3>
 
-              {awayScorers.length === 0 ? (
+              {awayScorers.length === 0 && match.opponent_id === null ? (
                 <p className="text-gray-400">No goals yet</p>
               ) : (
                 <ul>
                   {awayScorers.map((scorer) => (
+                    <li
+                      key={scorer.id}
+                      className="flex justify-between items-center"
+                    >
+                      <span
+                        role="img"
+                        aria-label="soccer ball"
+                        className="mr-2"
+                      >
+                        ⚽
+                      </span>
+                      <span className="uppercase">{scorer.player_name}</span>
+                      {isAdmin && (
+                        <button
+                          onClick={() =>
+                            handleRemoveGoal(scorer.id, scorer.player_id)
+                          }
+                          aria-label={`Remove goal by ${scorer.player_name}`}
+                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                          type="button"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {opponentScorers.length === 0 && match.opponent_id != null ? (
+                <p className="text-gray-400">No goals yet new change</p>
+              ) : (
+                <ul>
+                  {opponentScorers.map((scorer) => (
                     <li
                       key={scorer.id}
                       className="flex justify-between items-center"
@@ -572,6 +719,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     {match.away_team_name}
                   </option>
                 )}
+                {match?.cogni_id && (
+                  <option value={match.cogni_id}>{match.cogni_name}</option>
+                )}
+                {match?.opponent_id && (
+                  <option value={match.opponent_id}>
+                    {match.opponent_name}
+                  </option>
+                )}
               </select>
 
               <button
@@ -655,8 +810,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
           {playingTeamIds.map((teamId) => {
             const { name: teamName, colorClass } = teamMap[teamId];
-            const teamPlayers =
-              groupedLineups[teamName as keyof typeof groupedLineups] || [];
+            const teamPlayers = groupedLineups[teamName] || [];
+            //groupedLineups[teamName as keyof typeof groupedLineups] || [];
 
             return (
               <div key={teamId} className="mb-6">
@@ -752,9 +907,28 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               <option value="" disabled>
                 Select a team
               </option>
-              <option value={1}>Red</option>
-              <option value={2}>Black</option>
-              <option value={3}>Blue</option>
+              {playingTeamIds.map((teamId) => {
+                const { name } = teamMap[teamId] || {};
+                if (!name) return null;
+                return (
+                  <option key={teamId} value={teamId}>
+                    {name}
+                  </option>
+                );
+              })}
+              {/* Optionally include opponent and cogni if separate */}
+              {match?.cogni_id &&
+                match.cogni_name &&
+                !playingTeamIds.includes(match.cogni_id) && (
+                  <option value={match.cogni_id}>{match.cogni_name}</option>
+                )}
+              {match?.opponent_id &&
+                match.opponent_name &&
+                !playingTeamIds.includes(match.opponent_id) && (
+                  <option value={match.opponent_id}>
+                    {match.opponent_name}
+                  </option>
+                )}
             </select>
 
             <button

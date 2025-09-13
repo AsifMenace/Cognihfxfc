@@ -19,6 +19,7 @@ import { AdminLogin } from "./components/AdminLogin";
 import { AddMatch } from "./pages/AddMatch"; // create this page/component
 import MatchCentre from "./pages/MatchCentre";
 import { LeagueStandings } from "./pages/LeagueStandings";
+import { AddTeam } from "./pages/AddTeam";
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
@@ -78,6 +79,12 @@ function App() {
             path="/match/edit/:id"
             element={
               isAdmin ? <AddMatch /> : <Navigate to="/admin-login" replace />
+            }
+          />
+          <Route
+            path="/add-team"
+            element={
+              isAdmin ? <AddTeam /> : <Navigate to="/admin-login" replace />
             }
           />
         </Routes>

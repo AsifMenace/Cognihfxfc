@@ -10,6 +10,7 @@ import {
   CalendarPlus,
   Trophy,
   TrophyIcon,
+  ShieldPlus,
 } from "lucide-react";
 type HeaderProps = {
   isAdmin: boolean;
@@ -134,6 +135,20 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 {/* Use a relevant icon, for example a calendar or plus icon */}
                 <CalendarPlus size={18} className="flex-shrink-0 w-5 h-5" />
                 <span>Add Match</span>
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                to="/add-team"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  isActive("/add-match")
+                    ? "bg-green-600 text-white"
+                    : "hover:bg-slate-700 text-slate-300 hover:text-white"
+                }`}
+              >
+                {/* Use a relevant icon, for example a calendar or plus icon */}
+                <ShieldPlus size={18} className="flex-shrink-0 w-5 h-5" />
+                <span>Add Team</span>
               </Link>
             )}
 
@@ -280,6 +295,18 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 >
                   <CalendarPlus size={20} />
                   <span className="text-xs">Add Match</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  to="/add-team"
+                  className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                    isActive("/add-match") ? "text-green-400" : "text-slate-300"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <ShieldPlus size={20} />
+                  <span className="text-xs">Add Team</span>
                 </Link>
               )}
 

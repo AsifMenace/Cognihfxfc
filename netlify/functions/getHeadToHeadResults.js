@@ -44,7 +44,7 @@ export const handler = async () => {
             END
           ) AS draws
         FROM matches
-        WHERE result IS NOT NULL
+        WHERE result IS NOT NULL and and competition ILIKE 'League%'
         GROUP BY team1_id, team2_id
       )
       SELECT
