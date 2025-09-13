@@ -231,15 +231,28 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
             ))}
           </select>
 
-          <input
-            type="text"
+          <label className="block mb-1 font-semibold">
+            Opponent (for external matches)
+          </label>
+          <select
             name="opponent"
-            placeholder="Opponent (for external matches)"
             value={form.opponent}
             onChange={handleChange}
             disabled={!!form.home_team_id || !!form.away_team_id}
             className="w-full p-2 border rounded mb-3"
-          />
+          >
+            <option value="">-- Select Opponent --</option>
+            {teams
+              .filter(
+                (team) =>
+                  !["Red", "Blue", "Black", "Cogni HFX FC"].includes(team.name)
+              ) // Avoid league teams or your own club
+              .map((team) => (
+                <option key={team.id} value={team.name}>
+                  {team.name}
+                </option>
+              ))}
+          </select>
 
           <input
             type="text"

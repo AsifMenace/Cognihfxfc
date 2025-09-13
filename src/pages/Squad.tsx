@@ -32,7 +32,7 @@ const Squad: React.FC<SquadProps> = ({ isAdmin }) => {
   useEffect(() => {
     const API_URL =
       process.env.NODE_ENV === "development"
-        ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions/getPlayers"
+        ? "/.netlify/functions/getPlayers"
         : "/.netlify/functions/getPlayers";
     // const API_URL = 'https://db-integration--c  ognihfxfc.netlify.app/.netlify/functions/getPlayers';
 

@@ -9,6 +9,7 @@ export const handler = async () => {
              CAST(split_part(result, '-', 2) AS INTEGER) AS goals_against
       FROM matches
       WHERE home_team_id IS NOT NULL AND away_team_id IS NOT NULL AND result IS NOT NULL
+      and competition ILIKE 'League%'
 
       UNION ALL
 
@@ -17,6 +18,7 @@ export const handler = async () => {
              CAST(split_part(result, '-', 1) AS INTEGER) AS goals_against
       FROM matches
       WHERE home_team_id IS NOT NULL AND away_team_id IS NOT NULL AND result IS NOT NULL
+      and competition ILIKE 'League%'
     ),
 
     team_results AS (

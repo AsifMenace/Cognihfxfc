@@ -24,10 +24,15 @@ export const handler = async (event) => {
     const matches = await sql`
       SELECT m.*,
        t1.name AS home_team_name, t1.color AS home_team_color,
-       t2.name AS away_team_name, t2.color AS away_team_color
+       t2.name AS away_team_name, t2.color AS away_team_color,
+       t3.id AS opponent_id,
+       t3.name AS opponent_name, t3.color AS opponent_color,
+        t4.id AS cogni_id, t4.name AS cogni_name, t4.color AS cogni_color
 FROM matches m
 LEFT JOIN teams t1 ON m.home_team_id = t1.id
 LEFT JOIN teams t2 ON m.away_team_id = t2.id
+LEFT JOIN teams t3 ON m.opponent = t3.name
+Left join teamS t4 on t4.name='Cogni HFX FC' and m.opponent = t3.name
 WHERE m.id = ${matchId} LIMIT 1
     `;
 

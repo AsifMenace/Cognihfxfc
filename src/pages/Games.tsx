@@ -5,7 +5,7 @@ import { parseMatchDateTime } from "../components/dateUtils"; // Utility functio
 
 const API_BASE =
   process.env.NODE_ENV === "development"
-    ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
+    ? "/.netlify/functions"
     : "/.netlify/functions";
 
 type Match = {
@@ -23,6 +23,12 @@ type Match = {
   away_team_color?: string | null;
   home_team_id?: number | null; // Add this line
   away_team_id?: number | null; // Add this line
+  opponent_id?: number | null;
+  opponent_name?: string | null;
+  opponent_color?: string | null;
+  cogni_id?: number | null;
+  cogni_name?: string | null;
+  cogni_color?: string | null;
 };
 
 const formatDate = (match: Match) => {
@@ -79,6 +85,8 @@ interface GoalScorersProps {
   match: {
     home_team_id?: number | null;
     away_team_id?: number | null;
+    opponent_id?: number | null;
+    cogni_id?: number | null;
   };
 }
 
@@ -92,19 +100,32 @@ interface GoalDetail {
 
 function GoalScorers({ matchId, match }: GoalScorersProps) {
   const [goalDetails, setGoalDetails] = useState<GoalDetail[]>([]);
-
   useEffect(() => {
     fetch(`/.netlify/functions/getMatchGoals?matchId=${matchId}`)
       .then((res) => res.json())
-      .then((data) => setGoalDetails(data as GoalDetail[]));
+      .then((data) => {
+        console.log("Fetched goals for match", matchId, data); // <-- Add this line
+        setGoalDetails(data as GoalDetail[]);
+      });
   }, [matchId]);
 
-  const homeScorers = goalDetails.filter(
-    (g) => g.team_id === match.home_team_id
-  );
-  const awayScorers = goalDetails.filter(
-    (g) => g.team_id === match.away_team_id
-  );
+  const homeScorers = [];
+  const awayScorers = [];
+  if (match.home_team_id || match.cogni_id) {
+    homeScorers.push(
+      ...goalDetails.filter(
+        (g) => g.team_id == match.home_team_id || g.team_id == match.cogni_id
+      )
+    );
+  }
+
+  if (match.away_team_id || match.opponent_id) {
+    awayScorers.push(
+      ...goalDetails.filter(
+        (g) => g.team_id == match.away_team_id || g.team_id == match.opponent_id
+      )
+    );
+  }
 
   return (
     <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 via-blue-200 to-blue-50 rounded-xl shadow-xl max-w-md mx-auto text-gray-800 border border-blue-300 hover:shadow-2xl transition-shadow duration-300">
@@ -213,7 +234,6 @@ export function Games() {
         <div className="max-w-4xl mx-auto space-y-6">
           {orderedMatches.map((game, index) => {
             const isInternal = game.home_team_name && game.away_team_name;
-
             // Parse score parts once
             const scores = game.result ? game.result.split("-") : [];
 
@@ -276,7 +296,9 @@ export function Games() {
                         ) : (
                           <>
                             <span className="text-blue-600 font-bold">
-                              Cogni Hfx FC
+                              {game.isHome
+                                ? "Cogni Hfx FC"
+                                : game.cogni_name || "Cogni Hfx FC"}
                             </span>
                             <span className="mx-2 md:mx-4 text-slate-400">
                               vs
@@ -307,6 +329,8 @@ export function Games() {
                         match={{
                           home_team_id: game.home_team_id,
                           away_team_id: game.away_team_id,
+                          opponent_id: game.opponent_id,
+                          cogni_id: game.cogni_id,
                         }}
                       />
 
