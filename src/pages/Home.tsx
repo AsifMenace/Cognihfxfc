@@ -5,6 +5,7 @@ import { parseMatchDateTime } from "../components/dateUtils"; // adjust relative
 // Removed import of static upcomingGames; using real data now dummy
 import CountdownTimer from "../components/CountdownTimer";
 import { motion } from "framer-motion";
+import LatestNews from "./LatestNews";
 
 interface TopScorer {
   id: number;
@@ -309,6 +310,10 @@ const Home: React.FC = () => {
             )}
           </div>
         </motion.div>
+      </section>
+
+      <section className="py-8 md:py-16">
+        <LatestNews />
       </section>
 
       {/* Top Scorers Section */}
