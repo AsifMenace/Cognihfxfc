@@ -47,8 +47,14 @@ export default function UpcomingBookings() {
             b.end_time.length === 5 ? `${b.end_time}:00` : b.end_time;
 
           function buildDate(dateStr: string, timeStr: string) {
-            const date = new Date(dateStr); // parse ISO string e.g. 2025-10-03T03:00:00.000Z
+            // parse date portion as local year, month, day
+            const [year, month, day] = dateStr
+              .split("T")[0]
+              .split("-")
+              .map(Number);
+            const date = new Date(year, month - 1, day);
             const [hour, minute, second = 0] = timeStr.split(":").map(Number);
+            // set time on local date
             date.setHours(hour, minute, second, 0);
             return date;
           }
