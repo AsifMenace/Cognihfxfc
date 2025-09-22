@@ -11,7 +11,7 @@ export const handler = async () => {
   where booking_date > CURRENT_DATE
     OR (booking_date = CURRENT_DATE AND end_time >= CURRENT_TIME)
   ORDER BY booking_date ASC, start_time ASC
-  LIMIT 10
+  LIMIT 15
 `;
 
     return {
