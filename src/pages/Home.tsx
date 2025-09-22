@@ -49,8 +49,11 @@ interface Match {
   away_team_name?: string | null;
   away_team_color?: string | null;
 }
+type HomeProps = {
+  isAdmin: boolean;
+};
 
-const Home: React.FC = () => {
+const Home: React.FC<HomeProps> = ({ isAdmin }) => {
   // *** ADDED ***
   const [players, setPlayers] = useState<Player[]>([]);
   const [topScorers, setTopScorers] = useState<TopScorer[]>([]);
@@ -59,6 +62,8 @@ const Home: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  console.log("Home isAdmin:", isAdmin);
 
   const BASE_URL =
     process.env.NODE_ENV === "development"
@@ -196,7 +201,6 @@ const Home: React.FC = () => {
           </div>
         </div>
       </motion.section>
-
       {/* Next Match Section */}
       <section className="py-8 md:py-16">
         <motion.div
@@ -312,12 +316,10 @@ const Home: React.FC = () => {
           </div>
         </motion.div>
       </section>
-
       <section className="py-8 md:py-16">
         <LatestNews />
-        <UpcomingBookings />
+        <UpcomingBookings isAdmin={isAdmin} />
       </section>
-
       {/* Top Scorers Section */}
       {!loading && !error && (
         <section className="py-8 md:py-16 bg-white">
@@ -374,7 +376,6 @@ const Home: React.FC = () => {
           </div>
         </section>
       )}
-
       {/* Quick Stats Section */}
       <section className="py-8 md:py-16 bg-slate-900 text-white">
         <div className="container mx-auto px-4">

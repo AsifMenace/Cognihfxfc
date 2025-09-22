@@ -24,7 +24,7 @@ import AddBooking from "./pages/AddBooking";
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
-    () => localStorage.getItem("isAdmin") === "false"
+    () => localStorage.getItem("isAdmin") === "true"
   );
 
   const handleSetIsAdmin = (value: boolean) => {
@@ -40,7 +40,7 @@ function App() {
       <div className="min-h-screen bg-slate-50">
         <Header isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home isAdmin={isAdmin} />} />
           <Route path="/games" element={<Games />} />
           <Route path="/standings" element={<LeagueStandings />} />
           <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
