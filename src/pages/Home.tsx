@@ -6,6 +6,7 @@ import { parseMatchDateTime } from "../components/dateUtils"; // adjust relative
 import CountdownTimer from "../components/CountdownTimer";
 import { motion } from "framer-motion";
 import LatestNews from "./LatestNews";
+import UpcomingBookings from "./UpcomingBookings";
 
 interface TopScorer {
   id: number;
@@ -314,6 +315,7 @@ const Home: React.FC = () => {
 
       <section className="py-8 md:py-16">
         <LatestNews />
+        <UpcomingBookings />
       </section>
 
       {/* Top Scorers Section */}
