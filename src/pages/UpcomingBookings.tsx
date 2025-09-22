@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Sun, Moon, MapPin, Clock, X } from "lucide-react";
+import Calendar from "../components/Calendar";
 
 type Booking = {
   id: number;
@@ -30,6 +31,7 @@ function getDuration(start: string, end: string) {
 export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   console.log("UpcomingBookings isAdmin:", isAdmin);
+  const bookedDates = bookings.map((b) => b.booking_date.split("T")[0]);
   useEffect(() => {
     fetch("/.netlify/functions/getUpcomingBookings")
       .then((res) => res.json())
@@ -60,6 +62,7 @@ export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
         Upcoming Field Bookings
       </h2>
       <div className="space-y-4">
+        <Calendar bookedDates={bookedDates} />
         {bookings.map((b) => {
           const isMorning = b.session === "morning";
           const startTime =
