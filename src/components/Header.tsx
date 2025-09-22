@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import AddDropdown from "./AddDropDown";
 import {
   Home,
   Calendar,
@@ -11,6 +12,7 @@ import {
   Trophy,
   TrophyIcon,
   ShieldPlus,
+  Clock,
 } from "lucide-react";
 type HeaderProps = {
   isAdmin: boolean;
@@ -109,48 +111,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               <Mail size={18} />
               <span>Contact</span>
             </Link>
-            {isAdmin && (
-              <Link
-                to="/add-player"
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActive("/add-player")
-                    ? "bg-blue-600 text-white"
-                    : "hover:bg-slate-700 text-slate-300 hover:text-white"
-                }`}
-              >
-                {/* You can use any icon you like — here’s an example using the UserPlus icon */}
-                <UserPlus size={18} className="flex-shrink-0 w-5 h-5" />
-                <span>Add Player</span>
-              </Link>
-            )}
-            {isAdmin && (
-              <Link
-                to="/add-match"
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActive("/add-match")
-                    ? "bg-green-600 text-white"
-                    : "hover:bg-slate-700 text-slate-300 hover:text-white"
-                }`}
-              >
-                {/* Use a relevant icon, for example a calendar or plus icon */}
-                <CalendarPlus size={18} className="flex-shrink-0 w-5 h-5" />
-                <span>Add Match</span>
-              </Link>
-            )}
-            {isAdmin && (
-              <Link
-                to="/add-team"
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActive("/add-match")
-                    ? "bg-green-600 text-white"
-                    : "hover:bg-slate-700 text-slate-300 hover:text-white"
-                }`}
-              >
-                {/* Use a relevant icon, for example a calendar or plus icon */}
-                <ShieldPlus size={18} className="flex-shrink-0 w-5 h-5" />
-                <span>Add Team</span>
-              </Link>
-            )}
+            <AddDropdown isAdmin={isAdmin} />
 
             {isAdmin && (
               <button
@@ -307,6 +268,20 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 >
                   <ShieldPlus size={20} />
                   <span className="text-xs">Add Team</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  to="/add-booking"
+                  className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                    isActive("/add-booking")
+                      ? "text-green-400"
+                      : "text-slate-300"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Clock size={20} />
+                  <span className="text-xs">Add Booking</span>
                 </Link>
               )}
 

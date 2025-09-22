@@ -20,6 +20,7 @@ import { AddMatch } from "./pages/AddMatch"; // create this page/component
 import MatchCentre from "./pages/MatchCentre";
 import { LeagueStandings } from "./pages/LeagueStandings";
 import { AddTeam } from "./pages/AddTeam";
+import AddBooking from "./pages/AddBooking";
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
@@ -85,6 +86,12 @@ function App() {
             path="/add-team"
             element={
               isAdmin ? <AddTeam /> : <Navigate to="/admin-login" replace />
+            }
+          />
+          <Route
+            path="/add-booking"
+            element={
+              isAdmin ? <AddBooking /> : <Navigate to="/admin-login" replace />
             }
           />
         </Routes>

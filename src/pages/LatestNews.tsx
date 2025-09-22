@@ -18,7 +18,7 @@ export default function LatestNews() {
   }, []);
 
   return (
-    <div className="mt-10">
+    <div className="mt-10" max-w-6xl mx-auto>
       <h2 className="text-2xl font-bold mb-4 px-4">Latest News</h2>
       <div
         className="flex overflow-x-auto space-x-4 pb-4 no-scrollbar px-4 md:px-4"
@@ -27,12 +27,12 @@ export default function LatestNews() {
         {news.map(({ id, title, description, image_url }) => (
           <div
             key={id}
-            className="flex-shrink-0 w-64 rounded-lg shadow-lg bg-white scroll-snap-align-start"
+            className="flex-shrink-0 w-72 md:w-80 lg:w-96 rounded-lg shadow-lg bg-white scroll-snap-align-start"
           >
             <img
               src={image_url}
               alt={title}
-              className="w-full h-40 object-cover rounded-t-lg"
+              className="w-full h-48 md:h-56 lg:h-64 object-cover rounded-t-lg"
             />
             <div className="p-4">
               <h3 className="font-semibold text-lg mb-2">{title}</h3>
