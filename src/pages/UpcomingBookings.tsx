@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Sun, Moon, MapPin, Clock } from "lucide-react";
+import { Sun, Moon, MapPin, Clock, X } from "lucide-react";
 
 type Booking = {
   id: number;
@@ -8,6 +8,10 @@ type Booking = {
   end_time: string;
   session: "morning" | "night";
   field_number: number;
+};
+
+type UpcomingBookingsProps = {
+  isAdmin: boolean;
 };
 
 function getDuration(start: string, end: string) {
@@ -23,15 +27,32 @@ function getDuration(start: string, end: string) {
   return `${hours} hour${hours > 1 ? "s" : ""} ${mins} minutes`;
 }
 
-export default function UpcomingBookings() {
+export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
-
+  console.log("UpcomingBookings isAdmin:", isAdmin);
   useEffect(() => {
     fetch("/.netlify/functions/getUpcomingBookings")
       .then((res) => res.json())
       .then(setBookings)
       .catch(console.error);
   }, []);
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this booking?"))
+      return;
+
+    try {
+      const res = await fetch(`/.netlify/functions/deleteBooking?id=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setBookings((prev) => prev.filter((b) => b.id !== id));
+      } else {
+        alert("Failed to delete booking");
+      }
+    } catch {
+      alert("Network or server error on delete");
+    }
+  };
 
   return (
     <div className="mt-10 max-w-2xl mx-auto rounded-xl shadow-md bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6">
@@ -67,12 +88,23 @@ export default function UpcomingBookings() {
           return (
             <div
               key={b.id}
-              className={`flex items-center p-4 rounded-lg shadow transition ${
+              className={`relative flex items-center p-4 rounded-lg shadow transition ${
                 isMorning
                   ? "bg-yellow-50 border-l-4 border-yellow-400"
                   : "bg-blue-100 border-l-4 border-blue-500"
               }`}
             >
+              {isAdmin && (
+                <button
+                  onClick={() => handleDelete(b.id)}
+                  className="absolute top-2 right-2 p-1 rounded-full hover:bg-red-100 text-red-600"
+                  aria-label="Delete booking"
+                >
+                  {/* Use any cross icon, e.g., X from lucide-react */}
+                  <X size={16} />
+                </button>
+              )}
+
               <div className="mr-3">
                 {isMorning ? (
                   <Sun size={32} className="text-yellow-500" />
@@ -80,6 +112,7 @@ export default function UpcomingBookings() {
                   <Moon size={32} className="text-blue-700" />
                 )}
               </div>
+
               <div className="flex-1">
                 <div className="font-semibold text-lg">
                   {start.toLocaleDateString(undefined, {
