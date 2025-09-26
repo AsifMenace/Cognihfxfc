@@ -7,6 +7,7 @@ import CountdownTimer from "../components/CountdownTimer";
 import { motion } from "framer-motion";
 import LatestNews from "./LatestNews";
 import UpcomingBookings from "./UpcomingBookings";
+import BookingVotingWidget from "../components/BookingVotingWidget";
 
 interface TopScorer {
   id: number;
@@ -314,6 +315,10 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           </div>
         </motion.div>
       </section>
+      <section className="max-w-lg mx-auto my-12 p-4 sm:p-6 bg-white rounded-lg shadow-lg border border-gray-200">
+        <BookingVotingWidget />
+      </section>
+
       <section className="py-8 md:py-16">
         <LatestNews />
         <UpcomingBookings isAdmin={isAdmin} />

@@ -115,27 +115,29 @@ export const LeagueStandings: React.FC = () => {
           {topScorers.map((player, idx) => (
             <li
               key={player.id}
-              className={`flex items-center py-2 space-x-3 rounded px-3 transition-shadow cursor-pointer ${
+              className={`flex items-center py-2 space-x-3 rounded px-3 transition-shadow cursor-pointer overflow-x-auto ${
                 idx === 0
                   ? "bg-yellow-100 border border-yellow-400 shadow-lg font-semibold"
                   : "bg-white hover:shadow-md"
               }`}
+              style={{ WebkitOverflowScrolling: "touch" }}
             >
               {player.photo ? (
                 <img
                   src={player.photo}
                   alt={player.name}
-                  className="w-8 h-8 rounded-full object-cover object-top"
+                  className="w-8 h-8 rounded-full object-cover object-top flex-shrink-0"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold">
+                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold flex-shrink-0">
                   {player.name[0]}
                 </div>
               )}
-              <span className="font-bold">{idx + 1}.</span>
-              <span className="flex-1 uppercase">{player.name}</span>
-              <span className="flex items-center text-sm text-gray-500">
-                {" "}
+              <span className="font-bold flex-shrink-0">{idx + 1}.</span>
+              <span className="uppercase flex-1 whitespace-nowrap">
+                {player.name}
+              </span>
+              <span className="flex items-center text-sm text-gray-500 flex-shrink-0">
                 {idx === 0 && (
                   <span
                     className="text-yellow-500 mr-1"
@@ -147,8 +149,10 @@ export const LeagueStandings: React.FC = () => {
                 )}
                 {player.position}
               </span>
-              <span className="font-semibold">{player.goals} goals</span>
-              <span className="text-xs text-gray-400 ml-2">
+              <span className="font-semibold flex-shrink-0 whitespace-nowrap">
+                {player.goals} goals
+              </span>
+              <span className="text-xs text-gray-400 ml-2 flex-shrink-0 whitespace-nowrap">
                 ({player.appearances} apps)
               </span>
             </li>
