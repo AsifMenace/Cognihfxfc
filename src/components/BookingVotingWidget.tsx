@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Calendar, Clock } from "lucide-react"; // Using lucide-react icon library
 
 type Player = {
   id: number;
@@ -21,14 +20,24 @@ type BookingInfo = {
   end_time: string;
 };
 
-// Formatting function for time string "16:00:00" → "4pm"
+// Helper to build local Date object from date string and time string
+function buildDate(dateStr: string, timeStr: string): Date {
+  // Parse to local year, month, day numbers
+  const [year, month, day] = dateStr.split("T")[0].split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const [hour, minute, second = 0] = timeStr.split(":").map(Number);
+  date.setHours(hour, minute, second, 0);
+  return date;
+}
+
+// Format time like 16:00:00 -> "4pm" or "4:30pm"
 function formatTime(timeStr: string): string {
   const [hour, minute] = timeStr.split(":").map(Number);
   const suffix = hour >= 12 ? "pm" : "am";
-  const hour12 = ((hour + 11) % 12) + 1; // Convert to 12-hour format
-  return `${hour12}${
-    minute > 0 ? `:${minute.toString().padStart(2, "0")}` : ""
-  }${suffix}`;
+  const hour12 = ((hour + 11) % 12) + 1;
+  return minute === 0
+    ? `${hour12}${suffix}`
+    : `${hour12}:${minute.toString().padStart(2, "0")}${suffix}`;
 }
 
 export default function BookingVotingWidget() {
@@ -45,7 +54,7 @@ export default function BookingVotingWidget() {
   });
   const [loading, setLoading] = useState(false);
 
-  // Get next upcoming booking on mount
+  // Fetch next upcoming booking on mount
   useEffect(() => {
     async function fetchNextBooking() {
       try {
@@ -70,7 +79,7 @@ export default function BookingVotingWidget() {
     fetchNextBooking();
   }, []);
 
-  // Fetch players and vote results when bookingInfo changes
+  // Fetch players and vote results whenever bookingInfo changes
   useEffect(() => {
     if (!bookingInfo) return;
 
@@ -121,7 +130,7 @@ export default function BookingVotingWidget() {
       return;
     }
     if (voteStatus === vote) {
-      setError(`You have already voted '${vote.toUpperCase()}'.`);
+      setError(`You have already voted '${vote.toUpperCase()}'`);
       return;
     }
     setLoading(true);
@@ -162,34 +171,60 @@ export default function BookingVotingWidget() {
     );
   }
 
+  // Build dates for display to fix timezone issues
+  const startDate = buildDate(bookingInfo.booking_date, bookingInfo.start_time);
+  const endDate = buildDate(bookingInfo.booking_date, bookingInfo.end_time);
+
   return (
     <div className="max-w-md mx-auto bg-white rounded shadow p-6">
       <h3 className="text-xl font-bold mb-1 text-center">
         Vote Your Availability
       </h3>
-      {/* <p className="text-center text-gray-600 mb-4">
-        For booking on{" "}
-        {new Date(bookingInfo.booking_date).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}{" "}
-        from {bookingInfo.start_time} to {bookingInfo.end_time}
-      </p> */}
-
-      <p className="flex justify-center items-center space-x-3 text-gray-600 mb-4">
-        <Calendar className="w-5 h-5" />
-        <span>
-          {new Date(bookingInfo.booking_date).toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })}
+      <p className="flex justify-center items-center space-x-2 text-gray-600 mb-4">
+        <span className="flex items-center space-x-1">
+          {/* Calendar icon can be inserted here */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 inline-block"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z"
+            />
+          </svg>
+          <span>
+            {startDate.toLocaleDateString(undefined, {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </span>
         </span>
-        <Clock className="w-5 h-5" />
-        <span>
-          {formatTime(bookingInfo.start_time)} to{" "}
-          {formatTime(bookingInfo.end_time)}
+        <span className="flex items-center space-x-1">
+          {/* Clock icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 inline-block"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>
+            {formatTime(bookingInfo.start_time)} to{" "}
+            {formatTime(bookingInfo.end_time)}
+          </span>
         </span>
       </p>
 
