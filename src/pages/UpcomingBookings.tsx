@@ -63,6 +63,8 @@ export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
       </h2>
       <div className="space-y-4">
         <Calendar bookedDates={bookedDates} />
+      </div>
+      <div className="flex overflow-x-auto space-x-4 py-2">
         {bookings.map((b) => {
           const isMorning = b.session === "morning";
           const startTime =
@@ -78,7 +80,6 @@ export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
               .map(Number);
             const date = new Date(year, month - 1, day);
             const [hour, minute, second = 0] = timeStr.split(":").map(Number);
-            // set time on local date
             date.setHours(hour, minute, second, 0);
             return date;
           }
@@ -91,7 +92,7 @@ export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
           return (
             <div
               key={b.id}
-              className={`relative flex items-center p-4 rounded-lg shadow transition ${
+              className={`flex-shrink-0 w-80 relative flex items-center p-4 rounded-lg shadow transition ${
                 isMorning
                   ? "bg-yellow-50 border-l-4 border-yellow-400"
                   : "bg-blue-100 border-l-4 border-blue-500"
@@ -103,7 +104,6 @@ export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
                   className="absolute top-2 right-2 p-1 rounded-full hover:bg-red-100 text-red-600"
                   aria-label="Delete booking"
                 >
-                  {/* Use any cross icon, e.g., X from lucide-react */}
                   <X size={16} />
                 </button>
               )}
