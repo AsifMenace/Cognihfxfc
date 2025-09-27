@@ -53,6 +53,7 @@ export default function BookingVotingWidget() {
     outCount: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
 
   // Fetch next upcoming booking on mount
   useEffect(() => {
@@ -283,30 +284,78 @@ export default function BookingVotingWidget() {
 
       <div>
         <h4 className="font-semibold mb-2">IN ({voteResult.inCount})</h4>
-        <div className="flex overflow-x-auto space-x-2 mb-4">
+        <div className="flex overflow-x-auto whitespace-nowrap space-x-2 mb-4">
           {voteResult.in.map((player) => (
-            <img
+            <div
               key={player.id}
-              src={player.photo || ""}
-              alt={player.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-green-500"
-              title={player.name}
-              referrerPolicy="no-referrer"
-            />
+              className="flex flex-col items-center min-w-max"
+            >
+              <button
+                type="button"
+                className="focus:outline-none"
+                onClick={() => {
+                  setActivePlayerId(player.id);
+                  setTimeout(() => setActivePlayerId(null), 1800); // Hide after 1.8s
+                }}
+                aria-label={`Show name for ${player.name}`}
+              >
+                {player.photo ? (
+                  <img
+                    src={player.photo}
+                    alt={player.name}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-green-500"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold border-2 border-green-500">
+                    {player.name[0]}
+                  </div>
+                )}
+              </button>
+              {activePlayerId === player.id && (
+                <span className="mt-1 px-2 py-1 text-xs rounded bg-gray-900 text-white z-10 shadow transition">
+                  {player.name}
+                </span>
+              )}
+            </div>
           ))}
         </div>
 
         <h4 className="font-semibold mb-2">OUT ({voteResult.outCount})</h4>
-        <div className="flex overflow-x-auto space-x-2">
+        <div className="flex overflow-x-auto whitespace-nowrap space-x-2 mb-4">
           {voteResult.out.map((player) => (
-            <img
+            <div
               key={player.id}
-              src={player.photo || ""}
-              alt={player.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-red-500"
-              title={player.name}
-              referrerPolicy="no-referrer"
-            />
+              className="flex flex-col items-center min-w-max"
+            >
+              <button
+                type="button"
+                className="focus:outline-none"
+                onClick={() => {
+                  setActivePlayerId(player.id);
+                  setTimeout(() => setActivePlayerId(null), 1800);
+                }}
+                aria-label={`Show name for ${player.name}`}
+              >
+                {player.photo ? (
+                  <img
+                    src={player.photo}
+                    alt={player.name}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-red-500"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold border-2 border-red-500">
+                    {player.name[0]}
+                  </div>
+                )}
+              </button>
+              {activePlayerId === player.id && (
+                <span className="mt-1 px-2 py-1 text-xs rounded bg-gray-900 text-white z-10 shadow transition">
+                  {player.name}
+                </span>
+              )}
+            </div>
           ))}
         </div>
       </div>
