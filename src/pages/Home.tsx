@@ -145,6 +145,10 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
     return matchDateTime >= now;
   }).length;
 
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(
+    undefined
+  );
+
   // *** MODIFIED: Use nextGame from state; fallback message if none ***
   return (
     <div className="min-h-screen bg-slate-50">
@@ -321,7 +325,11 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
 
       <section className="py-8 md:py-16">
         <LatestNews />
-        <UpcomingBookings isAdmin={isAdmin} />
+        <UpcomingBookings
+          isAdmin={isAdmin}
+          selectedDate={selectedDate}
+          onDateSelect={setSelectedDate}
+        />
       </section>
       {/* Top Scorers Section */}
       {!loading && !error && (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Sun, Moon, MapPin, Clock, X } from "lucide-react";
 import Calendar from "../components/Calendar";
 
@@ -13,6 +13,8 @@ type Booking = {
 
 type UpcomingBookingsProps = {
   isAdmin: boolean;
+  selectedDate?: string;
+  onDateSelect?: (date: string) => void; // Add this here
 };
 
 function getDuration(start: string, end: string) {
@@ -28,7 +30,11 @@ function getDuration(start: string, end: string) {
   return `${hours} hour${hours > 1 ? "s" : ""} ${mins} minutes`;
 }
 
-export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
+export default function UpcomingBookings({
+  isAdmin,
+  selectedDate,
+  onDateSelect,
+}: UpcomingBookingsProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   console.log("UpcomingBookings isAdmin:", isAdmin);
   const bookedDates = bookings.map((b) => b.booking_date.split("T")[0]);
@@ -55,6 +61,19 @@ export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
       alert("Network or server error on delete");
     }
   };
+  const bookingsContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const targetEl = document.getElementById(`booking-${selectedDate}`);
+    if (targetEl && bookingsContainerRef.current) {
+      targetEl.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest", // prevents vertical scroll jump
+        inline: "center",
+      });
+    }
+  }, [selectedDate]);
 
   return (
     <div className="mt-10 max-w-2xl mx-auto rounded-xl shadow-md bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6">
@@ -62,9 +81,12 @@ export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
         Upcoming Field Bookings
       </h2>
       <div className="space-y-4">
-        <Calendar bookedDates={bookedDates} />
+        <Calendar bookedDates={bookedDates} onDateSelect={onDateSelect} />
       </div>
-      <div className="flex overflow-x-auto space-x-4 py-2">
+      <div
+        ref={bookingsContainerRef}
+        className="flex overflow-x-auto space-x-4 py-2"
+      >
         {bookings.map((b) => {
           const isMorning = b.session === "morning";
           const startTime =
@@ -92,6 +114,7 @@ export default function UpcomingBookings({ isAdmin }: UpcomingBookingsProps) {
           return (
             <div
               key={b.id}
+              id={`booking-${b.booking_date.split("T")[0]}`}
               className={`flex-shrink-0 w-80 relative flex items-center p-4 rounded-lg shadow transition ${
                 isMorning
                   ? "bg-yellow-50 border-l-4 border-yellow-400"

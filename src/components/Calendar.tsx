@@ -3,9 +3,10 @@ import { Calendar as CalendarIcon, Star } from "lucide-react";
 
 type CalendarProps = {
   bookedDates: string[]; // "YYYY-MM-DD" format booked dates
+  onDateSelect?: (date: string) => void; // New prop
 };
 
-const Calendar: React.FC<CalendarProps> = ({ bookedDates }) => {
+const Calendar: React.FC<CalendarProps> = ({ bookedDates, onDateSelect }) => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
 
@@ -99,6 +100,7 @@ const Calendar: React.FC<CalendarProps> = ({ bookedDates }) => {
           return (
             <div
               key={day}
+              onClick={() => onDateSelect && onDateSelect(isoDate)} // notify parent
               className={`rounded cursor-default p-1 flex items-center justify-center space-x-1 ${
                 booked
                   ? "bg-blue-600 text-white font-semibold"
