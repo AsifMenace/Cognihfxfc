@@ -13,6 +13,8 @@ import {
   TrophyIcon,
   ShieldPlus,
   Clock,
+  Bell,
+  BellIcon,
 } from "lucide-react";
 type HeaderProps = {
   isAdmin: boolean;
@@ -282,6 +284,21 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 >
                   <Clock size={20} />
                   <span className="text-xs">Add Booking</span>
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  to="/add-notification"
+                  className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                    isActive("/add-booking")
+                      ? "text-green-400"
+                      : "text-slate-300"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <BellIcon size={20} />
+                  <span className="text-xs">Add Notification</span>
                 </Link>
               )}
 

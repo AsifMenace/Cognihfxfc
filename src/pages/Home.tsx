@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import LatestNews from "./LatestNews";
 import UpcomingBookings from "./UpcomingBookings";
 import BookingVotingWidget from "../components/BookingVotingWidget";
+import PushSubscribeButton from "../components/PushSubscribeButton";
 
 interface TopScorer {
   id: number;
@@ -206,6 +207,11 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           </div>
         </div>
       </motion.section>
+      <div className="mt-6 text-center">
+        <p className="mb-2 text-lg">Get notified about new bookings & Polls</p>
+        <PushSubscribeButton />
+      </div>
+
       {/* Next Match Section */}
       <section className="py-8 md:py-16">
         <motion.div

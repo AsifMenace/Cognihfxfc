@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { UserPlus, CalendarPlus, ShieldPlus, Clock } from "lucide-react";
+import {
+  UserPlus,
+  CalendarPlus,
+  ShieldPlus,
+  Clock,
+  BellIcon,
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function AddDropdown({ isAdmin }: { isAdmin: boolean }) {
@@ -98,6 +104,18 @@ export default function AddDropdown({ isAdmin }: { isAdmin: boolean }) {
             >
               <Clock className="w-5 h-5" />
               <span>Add Booking</span>
+            </Link>
+
+            <Link
+              to="/add-notification"
+              className={`flex items-center space-x-2 px-4 py-2 text-sm hover:bg-purple-600 hover:text-white ${
+                isActive("/add-booking")
+                  ? "bg-purple-600 text-white"
+                  : "text-gray-700"
+              }`}
+            >
+              <BellIcon className="w-5 h-5" />
+              <span>Add Notification</span>
             </Link>
           </div>
         </div>
