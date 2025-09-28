@@ -21,6 +21,7 @@ import MatchCentre from "./pages/MatchCentre";
 import { LeagueStandings } from "./pages/LeagueStandings";
 import { AddTeam } from "./pages/AddTeam";
 import AddBooking from "./pages/AddBooking";
+import AdminNotification from "./pages/AdminNotificationPage";
 
 function App() {
   if ("serviceWorker" in navigator) {
@@ -105,6 +106,16 @@ function App() {
             path="/add-booking"
             element={
               isAdmin ? <AddBooking /> : <Navigate to="/admin-login" replace />
+            }
+          />
+          <Route
+            path="/add-notification"
+            element={
+              isAdmin ? (
+                <AdminNotification />
+              ) : (
+                <Navigate to="/admin-login" replace />
+              )
             }
           />
         </Routes>
