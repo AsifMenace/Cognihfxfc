@@ -1,6 +1,6 @@
 {
   "name": "Cogni HFX FC App",
-  "short_name": "ClubApp",
+  "short_name": "CogniHfxFc",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
