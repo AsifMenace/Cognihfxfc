@@ -28,6 +28,7 @@ export default function PushSubscribeButton() {
       applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
     });
     console.log("Push Subscription:", subscription);
+    console.log("Subscription JSON", JSON.stringify(subscription));
 
     await fetch("/.netlify/functions/save-subscription", {
       method: "POST",
