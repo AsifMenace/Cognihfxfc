@@ -11,99 +11,32 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
-type PushSubscribeButtonProps = {
-  addLog: (message: string) => void;
-};
-
-export default function PushSubscribeButton({
-  addLog,
-}: PushSubscribeButtonProps) {
+export default function PushSubscribeButton() {
   const subscribeUser = async () => {
-    try {
-      addLog("Starting subscription...");
-
-      if (!("serviceWorker" in navigator)) {
-        addLog("Service Worker is not supported by your browser.");
-        return;
-      }
-
-      addLog(`Current notification permission: ${Notification.permission}`);
-
-      if (Notification.permission === "denied") {
-        addLog(
-          "Notification permission denied previously, user must enable manually in browser settings."
-        );
-        return;
-      }
-
-      if (Notification.permission !== "granted") {
-        addLog("Requesting notification permission...");
-        const permission = await Notification.requestPermission();
-        addLog(`Notification permission result: ${permission}`);
-        if (permission !== "granted") {
-          addLog("Push Notifications permission denied.");
-          return;
-        }
-      }
-
-      addLog("Permission granted, proceeding with service worker registration");
-
-      addLog("Checking service worker registration state...");
-      navigator.serviceWorker.getRegistration().then((reg) => {
-        if (!reg) {
-          addLog("Service Worker not registered");
-        } else {
-          addLog(
-            "Service Worker state: " +
-              (reg.installing?.state ??
-                reg.waiting?.state ??
-                reg.active?.state ??
-                "unknown")
-          );
-        }
-      });
-
-      addLog("Waiting for Service Worker to be ready...");
-      const registration = await navigator.serviceWorker.ready;
-      addLog("Service worker ready.");
-
-      try {
-        addLog("Attempting pushManager.subscribe...");
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
-        });
-        addLog("Push subscription created.");
-        addLog(JSON.stringify(subscription));
-
-        addLog("Sending subscription to backend...");
-        const response = await fetch("/.netlify/functions/save-subscription", {
-          method: "POST",
-          body: JSON.stringify(subscription),
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `Failed to save subscription: ${response.status} - ${errorText}`
-          );
-        }
-        addLog("Subscription saved successfully!");
-      } catch (e: unknown) {
-        if (e instanceof Error) {
-          addLog("Subscription error: " + e.message);
-        } else {
-          addLog("Subscription unknown error occurred");
-        }
-      }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        addLog(`Subscription error: ${error.message}`);
-      } else {
-        addLog("Subscription unknown error occurred");
-      }
+    if (!("serviceWorker" in navigator)) {
+      alert("Service Worker is not supported by your browser.");
+      return;
     }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      alert("Push Notifications permission denied.");
+      return;
+    }
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+    });
+    console.log("Push Subscription:", subscription);
+    console.log("Subscription JSON", JSON.stringify(subscription));
+
+    await fetch("/.netlify/functions/save-subscription", {
+      method: "POST",
+      body: JSON.stringify(subscription),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    alert("Successfully subscribed to notifications!");
   };
 
   return (
@@ -113,8 +46,7 @@ export default function PushSubscribeButton({
       aria-label="Subscribe to push notifications"
       type="button"
     >
-      <Bell className="inline-block mr-2" />
-      Enable Notifications
+      🔔 Enable Notifications
     </button>
   );
 }

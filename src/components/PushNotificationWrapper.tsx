@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import PushSubscribeButton from "./PushSubscribeButton";
 
 export default function PushNotificationPage() {
   const [logs, setLogs] = useState<string[]>([]);
@@ -10,7 +9,6 @@ export default function PushNotificationPage() {
 
   return (
     <div>
-      <PushSubscribeButton addLog={addLog} />
       <div
         style={{
           whiteSpace: "pre-wrap",

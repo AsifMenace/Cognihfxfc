@@ -210,7 +210,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
       </motion.section>
       <div className="mt-6 text-center">
         <p className="mb-2 text-lg">Get notified about new bookings & Polls</p>
-        <PushNotificationPage />
+        <PushSubscribeButton />
       </div>
 
       {/* Next Match Section */}
