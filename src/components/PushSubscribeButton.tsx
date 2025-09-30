@@ -47,6 +47,22 @@ export default function PushSubscribeButton({
       }
 
       addLog("Permission granted, proceeding with service worker registration");
+
+      addLog("Checking service worker registration state...");
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (!reg) {
+          addLog("Service Worker not registered");
+        } else {
+          addLog(
+            "Service Worker state: " +
+              (reg.installing?.state ??
+                reg.waiting?.state ??
+                reg.active?.state ??
+                "unknown")
+          );
+        }
+      });
+
       addLog("Waiting for Service Worker to be ready...");
       const registration = await navigator.serviceWorker.ready;
       addLog("Service worker ready.");
