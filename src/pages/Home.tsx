@@ -9,6 +9,7 @@ import LatestNews from "./LatestNews";
 import UpcomingBookings from "./UpcomingBookings";
 import BookingVotingWidget from "../components/BookingVotingWidget";
 import PushSubscribeButton from "../components/PushSubscribeButton";
+import PushNotificationPage from "../components/PushNotificationWrapper";
 
 interface TopScorer {
   id: number;
@@ -209,7 +210,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
       </motion.section>
       <div className="mt-6 text-center">
         <p className="mb-2 text-lg">Get notified about new bookings & Polls</p>
-        <PushSubscribeButton />
+        <PushNotificationPage />
       </div>
 
       {/* Next Match Section */}

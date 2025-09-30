@@ -11,32 +11,59 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
-export default function PushSubscribeButton() {
+type PushSubscribeButtonProps = {
+  addLog: (message: string) => void;
+};
+
+export default function PushSubscribeButton({
+  addLog,
+}: PushSubscribeButtonProps) {
   const subscribeUser = async () => {
-    if (!("serviceWorker" in navigator)) {
-      alert("Service Worker is not supported by your browser.");
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      alert("Push Notifications permission denied.");
-      return;
-    }
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
-    });
-    console.log("Push Subscription:", subscription);
-    console.log("Subscription JSON", JSON.stringify(subscription));
+    try {
+      addLog("Starting subscription...");
+      if (!("serviceWorker" in navigator)) {
+        addLog("Service Worker is not supported by your browser.");
+        return;
+      }
 
-    await fetch("/.netlify/functions/save-subscription", {
-      method: "POST",
-      body: JSON.stringify(subscription),
-      headers: { "Content-Type": "application/json" },
-    });
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        addLog("Push Notifications permission denied.");
+        return;
+      }
 
-    alert("Successfully subscribed to notifications!");
+      const registration = await navigator.serviceWorker.ready;
+      if (!registration) {
+        addLog("Service Worker registration not ready.");
+        return;
+      }
+      addLog("Service worker ready.");
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+      });
+
+      addLog("Push subscription created.");
+      addLog(JSON.stringify(subscription));
+
+      const response = await fetch("/.netlify/functions/save-subscription", {
+        method: "POST",
+        body: JSON.stringify(subscription),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to save subscription: ${response.status} - ${errorText}`
+        );
+      }
+
+      addLog("Subscription saved successfully!");
+    } catch (error) {
+      addLog(`Subscription error: ${error}`);
+    }
   };
 
   return (
@@ -46,7 +73,8 @@ export default function PushSubscribeButton() {
       aria-label="Subscribe to push notifications"
       type="button"
     >
-      🔔 Enable Notifications
+      <Bell className="inline-block mr-2" />
+      Enable Notifications
     </button>
   );
 }
