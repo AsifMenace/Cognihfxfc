@@ -31,7 +31,7 @@ export default function PushSubscribeButton({
 
       if (Notification.permission === "denied") {
         addLog(
-          "Notification permission has been denied previously. Please enable it manually in settings."
+          "Notification permission denied previously, user must enable manually in browser settings."
         );
         return;
       }
@@ -47,10 +47,6 @@ export default function PushSubscribeButton({
       }
 
       const registration = await navigator.serviceWorker.ready;
-      if (!registration) {
-        addLog("Service Worker registration not ready.");
-        return;
-      }
       addLog("Service worker ready.");
 
       const subscription = await registration.pushManager.subscribe({
@@ -79,4 +75,16 @@ export default function PushSubscribeButton({
       addLog(`Subscription error: ${error.message}`);
     }
   };
+
+  return (
+    <button
+      onClick={subscribeUser}
+      className="bg-red-600 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform duration-200 ease-in-out"
+      aria-label="Subscribe to push notifications"
+      type="button"
+    >
+      <Bell className="inline-block mr-2" />
+      Enable Notifications
+    </button>
+  );
 }
