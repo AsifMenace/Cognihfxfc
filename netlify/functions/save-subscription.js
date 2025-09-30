@@ -22,7 +22,7 @@ export const handler = async (event) => {
       };
     }
 
-    // Upsert subscription by endpoint
+    // Insert new subscription or update existing subscription keys if endpoint exists
     await sql`
       INSERT INTO push_subscriptions (endpoint, p256dh, auth)
       VALUES (${endpoint}, ${keys.p256dh}, ${keys.auth})
@@ -30,11 +30,14 @@ export const handler = async (event) => {
       DO UPDATE SET p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth
     `;
 
+    console.log("Subscription saved or updated for endpoint:", endpoint);
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "Subscription saved" }),
+      body: JSON.stringify({ message: "Subscription saved or updated" }),
     };
   } catch (error) {
+    console.error("Error saving subscription:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message }),

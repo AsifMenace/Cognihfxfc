@@ -9,6 +9,7 @@ import LatestNews from "./LatestNews";
 import UpcomingBookings from "./UpcomingBookings";
 import BookingVotingWidget from "../components/BookingVotingWidget";
 import PushSubscribeButton from "../components/PushSubscribeButton";
+import PushNotificationPage from "../components/PushNotificationWrapper";
 
 interface TopScorer {
   id: number;
