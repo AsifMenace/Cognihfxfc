@@ -3,6 +3,7 @@ import { neon } from "@netlify/neon";
 const sql = neon();
 
 export const handler = async (event) => {
+  console.log("Received subscription save request");
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,

@@ -160,11 +160,11 @@ export const LeagueStandings: React.FC = () => {
         </ul>
       </div>
 
-      <div className="text-center mt-8 flex gap-6 justify-center overflow-x-auto">
-        <aside className="min-w-[320px] max-w-[340px] flex-shrink-0">
+      <div className="text-center mt-8 flex flex-col gap-4 items-center sm:flex-row sm:gap-6 sm:justify-center sm:overflow-x-auto">
+        <aside className="w-full max-w-xs sm:min-w-[320px] sm:max-w-[340px] flex-shrink-0">
           <Scorecard />
         </aside>
-        <aside className="min-w-[320px] max-w-[340px] flex-shrink-0">
+        <aside className="w-full max-w-xs sm:min-w-[320px] sm:max-w-[340px] flex-shrink-0 overflow-visible">
           <HeadToHeadTrivia />
         </aside>
       </div>
