@@ -46,33 +46,47 @@ export default function PushSubscribeButton({
         }
       }
 
+      addLog("Permission granted, proceeding with service worker registration");
+      addLog("Waiting for Service Worker to be ready...");
       const registration = await navigator.serviceWorker.ready;
       addLog("Service worker ready.");
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
-      });
+      try {
+        addLog("Attempting pushManager.subscribe...");
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+        });
+        addLog("Push subscription created.");
+        addLog(JSON.stringify(subscription));
 
-      addLog("Push subscription created.");
-      addLog(JSON.stringify(subscription));
+        addLog("Sending subscription to backend...");
+        const response = await fetch("/.netlify/functions/save-subscription", {
+          method: "POST",
+          body: JSON.stringify(subscription),
+          headers: { "Content-Type": "application/json" },
+        });
 
-      const response = await fetch("/.netlify/functions/save-subscription", {
-        method: "POST",
-        body: JSON.stringify(subscription),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to save subscription: ${response.status} - ${errorText}`
-        );
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Failed to save subscription: ${response.status} - ${errorText}`
+          );
+        }
+        addLog("Subscription saved successfully!");
+      } catch (e: unknown) {
+        if (e instanceof Error) {
+          addLog("Subscription error: " + e.message);
+        } else {
+          addLog("Subscription unknown error occurred");
+        }
       }
-
-      addLog("Subscription saved successfully!"); // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      addLog(`Subscription error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        addLog(`Subscription error: ${error.message}`);
+      } else {
+        addLog("Subscription unknown error occurred");
+      }
     }
   };
 
