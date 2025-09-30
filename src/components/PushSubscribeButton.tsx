@@ -21,15 +21,29 @@ export default function PushSubscribeButton({
   const subscribeUser = async () => {
     try {
       addLog("Starting subscription...");
+
       if (!("serviceWorker" in navigator)) {
         addLog("Service Worker is not supported by your browser.");
         return;
       }
 
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        addLog("Push Notifications permission denied.");
+      addLog(`Current notification permission: ${Notification.permission}`);
+
+      if (Notification.permission === "denied") {
+        addLog(
+          "Notification permission has been denied previously. Please enable it manually in settings."
+        );
         return;
+      }
+
+      if (Notification.permission !== "granted") {
+        addLog("Requesting notification permission...");
+        const permission = await Notification.requestPermission();
+        addLog(`Notification permission result: ${permission}`);
+        if (permission !== "granted") {
+          addLog("Push Notifications permission denied.");
+          return;
+        }
       }
 
       const registration = await navigator.serviceWorker.ready;
@@ -60,21 +74,9 @@ export default function PushSubscribeButton({
         );
       }
 
-      addLog("Subscription saved successfully!");
-    } catch (error) {
-      addLog(`Subscription error: ${error}`);
+      addLog("Subscription saved successfully!"); // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      addLog(`Subscription error: ${error.message}`);
     }
   };
-
-  return (
-    <button
-      onClick={subscribeUser}
-      className="bg-red-600 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform duration-200 ease-in-out"
-      aria-label="Subscribe to push notifications"
-      type="button"
-    >
-      <Bell className="inline-block mr-2" />
-      Enable Notifications
-    </button>
-  );
 }
