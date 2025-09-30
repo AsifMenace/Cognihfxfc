@@ -80,91 +80,104 @@ export default function Scorecard() {
     );
 
   return (
-    <div className="scorecard p-6 bg-white rounded-lg shadow-lg max-h-[450px] overflow-y-auto w-[320px] text-gray-900 font-sans">
-      {Object.entries(groupedResults)
-        .sort(([a], [b]) => {
-          const numA = parseInt(a.split(" ")[1], 10);
-          const numB = parseInt(b.split(" ")[1], 10);
-          return numB - numA;
-        })
-        .map(([dayLabel, matches]) => (
-          <div key={dayLabel} className="mb-6">
-            <div className="mb-3 text-lg font-extrabold tracking-wider text-blue-700 border-b-2 border-blue-400 pb-1">
-              {dayLabel}
+    <div
+      className="scorecard bg-white rounded-lg shadow-lg w-full max-w-xs sm:w-[320px] p-6 text-gray-900 font-sans
+  overflow-visible sm:overflow-y-auto sm:max-h-[450px]"
+    >
+      <div
+        className="
+    flex flex-row gap-4 overflow-x-auto flex-nowrap
+    sm:flex-col sm:gap-0 sm:overflow-x-visible
+  "
+      >
+        {Object.entries(groupedResults)
+          .sort(([a], [b]) => {
+            const numA = parseInt(a.split(" ")[1], 10);
+            const numB = parseInt(b.split(" ")[1], 10);
+            return numB - numA;
+          })
+          .map(([dayLabel, matches]) => (
+            <div
+              key={dayLabel}
+              className="min-w-[270px] max-w-[320px] flex-shrink-0 mb-0 sm:min-w-0 sm:max-w-full sm:mb-6"
+            >
+              <div className="mb-3 text-lg font-extrabold tracking-wider text-blue-700 border-b-2 border-blue-400 pb-1">
+                {dayLabel}
+              </div>
+              <ul className="space-y-3">
+                {matches.map(
+                  (
+                    {
+                      home_team_name,
+                      away_team_name,
+                      result,
+                      home_team_color,
+                      away_team_color,
+                    }: MatchResult,
+                    i
+                  ) => {
+                    const [homeScoreStr, awayScoreStr] = result.split("-");
+                    const homeScore = parseInt(homeScoreStr, 10);
+                    const awayScore = parseInt(awayScoreStr, 10);
+
+                    const homeIsWinner = homeScore > awayScore;
+                    const awayIsWinner = awayScore > homeScore;
+
+                    return (
+                      <li
+                        key={i}
+                        className="flex items-center rounded-md p-3 bg-gradient-to-r from-blue-50 to-white shadow-sm hover:shadow-md transition-shadow duration-300"
+                      >
+                        <div
+                          className={`font-semibold text-md truncate flex items-center gap-1 ${
+                            homeIsWinner ? "bg-yellow-100 rounded px-1" : ""
+                          }`}
+                          style={{
+                            color: home_team_color,
+                            flexBasis: "35%",
+                            flexShrink: 0,
+                            minWidth: 0,
+                          }}
+                          title={home_team_name}
+                        >
+                          {home_team_name}
+                          {homeIsWinner && (
+                            <FaTrophy className="text-yellow-500" />
+                          )}
+                        </div>
+
+                        <div
+                          className="text-gray-800 font-mono font-bold text-lg text-center"
+                          style={{ flexBasis: "30%", flexShrink: 0 }}
+                        >
+                          {homeScore} – {awayScore}
+                        </div>
+
+                        <div
+                          className={`font-semibold text-md truncate text-right flex items-center justify-end gap-1 ${
+                            awayIsWinner ? "bg-yellow-100 rounded px-1" : ""
+                          }`}
+                          style={{
+                            color: away_team_color,
+                            flexBasis: "35%",
+                            flexShrink: 0,
+                            minWidth: 0,
+                          }}
+                          title={away_team_name}
+                        >
+                          {awayIsWinner && (
+                            <FaTrophy className="text-yellow-500" />
+                          )}
+                          {away_team_name}
+                        </div>
+                      </li>
+                    );
+                  }
+                )}
+              </ul>
             </div>
-            <ul className="space-y-3">
-              {matches.map(
-                (
-                  {
-                    home_team_name,
-                    away_team_name,
-                    result,
-                    home_team_color,
-                    away_team_color,
-                  }: MatchResult,
-                  i
-                ) => {
-                  const [homeScoreStr, awayScoreStr] = result.split("-");
-                  const homeScore = parseInt(homeScoreStr, 10);
-                  const awayScore = parseInt(awayScoreStr, 10);
-
-                  const homeIsWinner = homeScore > awayScore;
-                  const awayIsWinner = awayScore > homeScore;
-
-                  return (
-                    <li
-                      key={i}
-                      className="flex items-center rounded-md p-3 bg-gradient-to-r from-blue-50 to-white shadow-sm hover:shadow-md transition-shadow duration-300"
-                    >
-                      <div
-                        className={`font-semibold text-md truncate flex items-center gap-1 ${
-                          homeIsWinner ? "bg-yellow-100 rounded px-1" : ""
-                        }`}
-                        style={{
-                          color: home_team_color,
-                          flexBasis: "35%",
-                          flexShrink: 0,
-                          minWidth: 0, // important for truncate to work inside flex
-                        }}
-                        title={home_team_name}
-                      >
-                        {home_team_name}
-                        {homeIsWinner && (
-                          <FaTrophy className="text-yellow-500" />
-                        )}
-                      </div>
-
-                      <div
-                        className="text-gray-800 font-mono font-bold text-lg text-center"
-                        style={{ flexBasis: "30%", flexShrink: 0 }}
-                      >
-                        {homeScore} – {awayScore}
-                      </div>
-
-                      <div
-                        className={`font-semibold text-md truncate text-right flex items-center justify-end gap-1 ${
-                          awayIsWinner ? "bg-yellow-100 rounded px-1" : ""
-                        }`}
-                        style={{
-                          color: away_team_color,
-                          flexBasis: "35%",
-                          flexShrink: 0,
-                          minWidth: 0, // important for truncate to work inside flex
-                        }}
-                        title={away_team_name}
-                      >
-                        {awayIsWinner && (
-                          <FaTrophy className="text-yellow-500" />
-                        )}
-                        {away_team_name}
-                      </div>
-                    </li>
-                  );
-                }
-              )}
-            </ul>
-          </div>
-        ))}
+          ))}
+      </div>
     </div>
   );
 }

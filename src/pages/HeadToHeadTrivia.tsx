@@ -50,7 +50,7 @@ export default function HeadToHeadTrivia() {
     );
 
   return (
-    <div className="h2h-trivia p-5 bg-white rounded-xl shadow-lg max-h-[450px] overflow-y-auto w-[320px] text-gray-900 font-sans">
+    <div className="h2h-trivia p-5 bg-white rounded-xl shadow-lg  full max-w-xs text-gray-900 font-sans">
       <h2 className="text-2xl font-bold mb-6 border-b border-gray-300 pb-3 text-center">
         Head to Head Trivia
       </h2>
