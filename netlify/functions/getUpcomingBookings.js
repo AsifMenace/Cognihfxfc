@@ -7,12 +7,11 @@ export const handler = async () => {
     const now = new Date();
     const bookings = await sql`
   SELECT id, booking_date, start_time, end_time, session, field_number
-  FROM field_bookings
-  WHERE booking_date > (now() AT TIME ZONE 'America/Halifax')::date
-   OR (booking_date = (now() AT TIME ZONE 'America/Halifax')::date
-       AND start_time >= (now() AT TIME ZONE 'America/Halifax')::time)
-  ORDER BY booking_date ASC, start_time ASC
-  LIMIT 25
+FROM field_bookings
+WHERE (booking_date + start_time) >= (now() AT TIME ZONE 'America/Halifax')
+ORDER BY booking_date ASC, start_time ASC
+LIMIT 25;
+
 `;
 
     return {
