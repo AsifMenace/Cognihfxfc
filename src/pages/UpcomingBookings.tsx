@@ -37,7 +37,10 @@ export default function UpcomingBookings({
 }: UpcomingBookingsProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   console.log("UpcomingBookings isAdmin:", isAdmin);
-  const bookedDates = bookings.map((b) => b.booking_date);
+  const bookedDates = bookings.map((b) => {
+    const d = new Date(b.booking_date); // interpret as UTC
+    return d.toLocaleDateString("en-CA"); // "YYYY-MM-DD" in local timezone
+  });
   useEffect(() => {
     fetch("/.netlify/functions/getUpcomingBookings")
       .then((res) => res.json())
