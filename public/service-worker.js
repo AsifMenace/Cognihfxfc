@@ -55,6 +55,13 @@ self.addEventListener("activate", (event) => {
 // Fetch Event
 // --------------------
 self.addEventListener("fetch", (event) => {
+  const requestURL = new URL(event.request.url);
+
+  // Skip caching for non-http(s) requests like chrome-extension://
+  if (requestURL.protocol !== "http:" && requestURL.protocol !== "https:") {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -62,14 +69,14 @@ self.addEventListener("fetch", (event) => {
       }
       return fetch(event.request)
         .then((networkResponse) => {
-          // ✅ Optionally cache new responses
+          // Optionally cache new responses
           return caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, networkResponse.clone());
             return networkResponse;
           });
         })
         .catch(() => {
-          // 🛑 Offline fallback (if index.html available)
+          // Offline fallback (if index.html available)
           if (event.request.mode === "navigate") {
             return caches.match("/index.html");
           }
