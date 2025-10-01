@@ -37,7 +37,7 @@ export default function UpcomingBookings({
 }: UpcomingBookingsProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   console.log("UpcomingBookings isAdmin:", isAdmin);
-  const bookedDates = bookings.map((b) => b.booking_date.split("T")[0]);
+  const bookedDates = bookings.map((b) => b.booking_date);
   useEffect(() => {
     fetch("/.netlify/functions/getUpcomingBookings")
       .then((res) => res.json())
