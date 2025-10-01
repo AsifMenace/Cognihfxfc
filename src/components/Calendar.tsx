@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Calendar as CalendarIcon, Star } from "lucide-react";
 
 type CalendarProps = {
-  bookedDates: string[]; // "YYYY-MM-DD" format booked dates
-  onDateSelect?: (date: string) => void; // New prop
+  bookedDates: string[]; // "YYYY-MM-DD" format booked dates (ISO date strings)
+  onDateSelect?: (date: string) => void;
 };
 
 const Calendar: React.FC<CalendarProps> = ({ bookedDates, onDateSelect }) => {
@@ -14,25 +14,21 @@ const Calendar: React.FC<CalendarProps> = ({ bookedDates, onDateSelect }) => {
 
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const FootballEmoji = () => (
-    <span
-      role="img"
-      aria-label="football"
-      className="absolute bottom-1 right-1 text-yellow-400 text-lg select-none"
-      style={{ lineHeight: 1 }}
-    >
-      ⚽
-    </span>
-  );
-
-  // Format a day to "YYYY-MM-DD"
+  // Format a day to "YYYY-MM-DD" with zero padding
   const formatDate = (day: number) =>
     `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(
       day
     ).padStart(2, "0")}`;
 
-  // Check if the given date string exists in bookedDates
-  const isBooked = (date: string) => bookedDates.some((b) => b === date); // string comparison
+  // Normalize bookedDates to ensure strict "YYYY-MM-DD" format for comparison
+  const normalizedBookedDates = bookedDates.map((dateStr) => {
+    if (!dateStr) return ""; // guard empty string
+    const dateOnly = dateStr.split("T")[0]; // In case of ISO datetime, keep only date part
+    return dateOnly;
+  });
+
+  // Check if the given date string exists in normalizedBookedDates
+  const isBooked = (date: string) => normalizedBookedDates.includes(date);
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
@@ -99,10 +95,11 @@ const Calendar: React.FC<CalendarProps> = ({ bookedDates, onDateSelect }) => {
         {daysArray.map((day) => {
           const isoDate = formatDate(day);
           const booked = isBooked(isoDate);
+
           return (
             <div
               key={day}
-              onClick={() => onDateSelect && onDateSelect(isoDate)} // notify parent
+              onClick={() => onDateSelect && onDateSelect(isoDate)}
               className={`rounded cursor-default p-1 flex items-center justify-center space-x-1 ${
                 booked
                   ? "bg-blue-600 text-white font-semibold"

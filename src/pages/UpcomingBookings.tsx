@@ -37,25 +37,13 @@ export default function UpcomingBookings({
 }: UpcomingBookingsProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   console.log("UpcomingBookings isAdmin:", isAdmin);
-  const bookedDates = bookings.map((b) => {
-    const [year, month, day] = b.booking_date.split("-").map(Number);
-    const dateObj = new Date(year, month - 1, day);
-    return dateObj.toLocaleDateString("en-CA"); // "YYYY-MM-DD" in local TZ
-  });
-
+  const bookedDates = bookings.map((b) => b.booking_date.split("T")[0]);
   useEffect(() => {
-    console.log("UpcomingBookings useEffect triggered");
     fetch("/.netlify/functions/getUpcomingBookings")
       .then((res) => res.json())
-      .then((data) => {
-        console.log("asif Fetched bookings:", data); // Added log
-        setBookings(data);
-      })
-      .catch((error) => {
-        console.error("Error fetching bookings:", error);
-      });
+      .then(setBookings)
+      .catch(console.error);
   }, []);
-
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this booking?"))
       return;
