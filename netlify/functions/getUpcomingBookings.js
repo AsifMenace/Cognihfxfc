@@ -1,6 +1,13 @@
 import { neon } from "@netlify/neon";
 
 const sql = neon();
+const now = new Date();
+console.log(
+  "Now:",
+  now.toISOString(),
+  "Local Offset:",
+  now.getTimezoneOffset()
+);
 
 export const handler = async () => {
   try {
