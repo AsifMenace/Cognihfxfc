@@ -44,11 +44,18 @@ export default function UpcomingBookings({
   });
 
   useEffect(() => {
+    console.log("UpcomingBookings useEffect triggered");
     fetch("/.netlify/functions/getUpcomingBookings")
       .then((res) => res.json())
-      .then(setBookings)
-      .catch(console.error);
+      .then((data) => {
+        console.log("asif Fetched bookings:", data); // Added log
+        setBookings(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching bookings:", error);
+      });
   }, []);
+
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this booking?"))
       return;
