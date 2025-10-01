@@ -25,12 +25,14 @@ const Calendar: React.FC<CalendarProps> = ({ bookedDates, onDateSelect }) => {
     </span>
   );
 
+  // Format a day to "YYYY-MM-DD"
   const formatDate = (day: number) =>
-    `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${day
-      .toString()
-      .padStart(2, "0")}`;
+    `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(
+      day
+    ).padStart(2, "0")}`;
 
-  const isBooked = (date: string) => bookedDates.includes(date);
+  // Check if the given date string exists in bookedDates
+  const isBooked = (date: string) => bookedDates.some((b) => b === date); // string comparison
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
