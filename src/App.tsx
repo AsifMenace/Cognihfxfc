@@ -28,13 +28,53 @@ function App() {
     navigator.serviceWorker
       .register("/service-worker.js", { scope: "/" })
       .then((registration) => {
-        console.log("Service Worker registered:", registration);
+        console.log("✅ Service Worker registered:", registration);
+
+        // 🔄 Listen for updates
+        registration.onupdatefound = () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.onstatechange = () => {
+              if (
+                newWorker.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
+                console.log("⚡ New service worker available");
+
+                // 👉 Show custom UI prompt (toast/banner)
+                const updateToast = document.createElement("div");
+                updateToast.innerText =
+                  "A new version is available. Click to refresh.";
+                updateToast.style.cssText = `
+                position: fixed;
+                bottom: 16px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: #fff;
+                padding: 12px 20px;
+                border-radius: 8px;
+                cursor: pointer;
+                z-index: 9999;
+                font-family: sans-serif;
+                font-size: 14px;
+              `;
+                document.body.appendChild(updateToast);
+
+                updateToast.onclick = () => {
+                  newWorker.postMessage({ action: "skipWaiting" });
+                  window.location.reload();
+                };
+              }
+            };
+          }
+        };
       })
       .catch((error) => {
-        console.error("Service Worker registration failed:", error);
+        console.error("❌ Service Worker registration failed:", error);
       });
   } else {
-    console.warn("Service workers not supported");
+    console.warn("⚠️ Service workers not supported");
   }
 
   const [isAdmin, setIsAdmin] = useState(
