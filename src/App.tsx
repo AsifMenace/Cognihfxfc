@@ -24,17 +24,33 @@ import AddBooking from "./pages/AddBooking";
 import AdminNotification from "./pages/AdminNotificationPage";
 
 function App() {
-  if ("serviceWorker" in navigator) {
+  if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
     navigator.serviceWorker
       .register("/service-worker.js", { scope: "/" })
       .then((registration) => {
-        console.log("Service Worker registered:", registration);
+        console.log("✅ Service Worker registered:", registration);
+
+        // Your update found & prompt code here
+        registration.onupdatefound = () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.onstatechange = () => {
+              if (
+                newWorker.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
+                console.log("⚡ New service worker available");
+                // Show user update prompt...
+              }
+            };
+          }
+        };
       })
       .catch((error) => {
-        console.error("Service Worker registration failed:", error);
+        console.error("❌ Service Worker registration failed:", error);
       });
   } else {
-    console.warn("Service workers not supported");
+    console.warn("⚠️ Service workers not supported or disabled in dev mode");
   }
 
   const [isAdmin, setIsAdmin] = useState(
