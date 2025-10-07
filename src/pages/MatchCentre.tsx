@@ -4,6 +4,8 @@ import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
 import { parseMatchDateTime } from "../components/dateUtils";
 import Select, { MultiValue } from "react-select";
+import MatchVideoEmbed from "../components/MatchVideoEmbed";
+import { SectionHeader } from "../components/SectionHeader";
 
 type MatchCentreProps = {
   isAdmin: boolean;
@@ -39,6 +41,7 @@ interface Match {
   cogni_id?: number | null;
   cogni_name?: string | null;
   cogni_color?: string | null;
+  video_url?: string | null;
 }
 
 const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
@@ -272,7 +275,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
     teamMap[teamId] = {
       name: teamName,
-      colorClass: teamColor ? `text-[${teamColor}]` : "text-black",
+      colorClass: teamColor || "black",
     };
   });
 
@@ -662,6 +665,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             </div>
           </div>
         </div>
+        <div className="max-w-4xl mx-auto mt-8">
+          <SectionHeader title="Match Video" />
+          <MatchVideoEmbed videoUrl={match.video_url ?? null} />
+        </div>
+
         {isAdmin && (
           <section className="my-8 p-6 max-w-md mx-auto border rounded shadow-sm bg-white">
             <h2 className="text-xl font-semibold mb-4">Add Goal Scorer</h2>
@@ -815,17 +823,21 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
             return (
               <div key={teamId} className="mb-6">
-                <h3 className={`font-bold mb-2 ${colorClass}`}>
-                  {teamName} Team
+                <h3 className="font-bold mb-2" style={{ color: colorClass }}>
+                  {teamName}
                 </h3>
                 {teamPlayers.length === 0 ? (
                   <div className="text-slate-500 text-center">
                     No players assigned.
                   </div>
                 ) : (
-                  <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="flex space-x-4 overflow-x-auto py-2">
                     {teamPlayers.map((player) => (
-                      <div key={player.id} className="relative group">
+                      <div
+                        key={player.id}
+                        className="relative group flex-shrink-0 w-40"
+                      >
+                        {/* Player card stays the same */}
                         <Link
                           to={`/player/${player.id}`}
                           className="block bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition"
@@ -842,7 +854,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                             </div>
                           </div>
                         </Link>
-
                         {isAdmin && (
                           <button
                             onClick={() => handleRemovePlayer(player.id)}

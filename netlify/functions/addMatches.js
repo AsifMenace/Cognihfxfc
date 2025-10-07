@@ -1,4 +1,5 @@
 import { neon } from "@netlify/neon";
+import fetch from "node-fetch";
 
 const sql = neon();
 
@@ -93,6 +94,23 @@ export const handler = async (event) => {
           ${typeof isHome === "boolean" ? isHome : true}
         )
       `;
+
+      // Notify subscribers about the new match
+      const notifPayload = JSON.stringify({
+        title: "New Match Added!",
+        body: `Date: ${date} Time: ${time} Venue: ${
+          venue || "TBD"
+        }. Check the app for more details.`,
+      });
+
+      const baseUrl = process.env.URL || "http://localhost:8888"; // Netlify sets URL in prod
+      const sendNotificationUrl = `${baseUrl}/.netlify/functions/send-notifications`;
+
+      await fetch(sendNotificationUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: notifPayload,
+      });
     }
 
     return {

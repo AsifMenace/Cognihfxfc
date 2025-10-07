@@ -10,6 +10,7 @@ import UpcomingBookings from "./UpcomingBookings";
 import BookingVotingWidget from "../components/BookingVotingWidget";
 import PushSubscribeButton from "../components/PushSubscribeButton";
 import PushNotificationPage from "../components/PushNotificationWrapper";
+import RecentMatchVideo from "../components/RecentMatchVideo";
 
 interface TopScorer {
   id: number;
@@ -326,6 +327,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           </div>
         </motion.div>
       </section>
+      <RecentMatchVideo matches={matches} />
       <section className="max-w-lg mx-auto my-6 p-4 sm:p-6 bg-white rounded-lg shadow-lg border border-gray-200">
         <BookingVotingWidget />
       </section>
