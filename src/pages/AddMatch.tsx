@@ -22,6 +22,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
     isHome: true,
     home_team_id: "" as number | "",
     away_team_id: "" as number | "",
+    video_url: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,6 +59,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
               isHome: data.match.isHome ?? true,
               home_team_id: data.match.home_team_id ?? "",
               away_team_id: data.match.away_team_id ?? "",
+              video_url: data.match.video_url ?? "", // <-- add this
             });
           }
         })
@@ -137,6 +139,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
       away_team_id: form.away_team_id === "" ? null : form.away_team_id,
       opponent: form.opponent === "" ? null : form.opponent,
       isHome: form.isHome,
+      video_url: form.video_url === "" ? null : form.video_url, // <-- add this
     };
 
     try {
@@ -160,6 +163,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
             isHome: true,
             home_team_id: "",
             away_team_id: "",
+            video_url: "",
           });
         }
         if (onMatchAdded) onMatchAdded();
@@ -279,6 +283,15 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
             placeholder="Competition"
             className="w-full p-2 border rounded mb-3"
           />
+          <input
+            type="url"
+            name="video_url"
+            value={form.video_url}
+            onChange={handleChange}
+            placeholder="Video URL (YouTube or others)"
+            className="w-full p-2 border rounded mb-3"
+          />
+
           <label className="flex items-center mb-3">
             <input
               type="checkbox"
