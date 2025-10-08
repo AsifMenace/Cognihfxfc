@@ -78,13 +78,13 @@ export const handler = async (event) => {
           home_team_id = ${home_team_id || null},
           away_team_id = ${away_team_id || null},
           isHome = ${typeof isHome === "boolean" ? isHome : true},
-           video_url = ${video_url || null}        // <----- add here
+           video_url = ${video_url || null}
         WHERE id = ${id}
       `;
     } else {
       // Insert new match
       await sql`
-        INSERT INTO matches (date, time, opponent, venue, result, competition, home_team_id, away_team_id, isHome)
+        INSERT INTO matches (date, time, opponent, venue, result, competition, home_team_id, away_team_id, isHome, video_url)
         VALUES (
           ${date},
           ${time},
@@ -95,7 +95,7 @@ export const handler = async (event) => {
           ${home_team_id || null},
           ${away_team_id || null},
           ${typeof isHome === "boolean" ? isHome : true},
-          ${video_url || null}         // <----- add here
+          ${video_url || null}
         )
       `;
 

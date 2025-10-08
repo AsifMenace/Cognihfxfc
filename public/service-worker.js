@@ -1,4 +1,4 @@
-const SW_VERSION = "v1.0.5";
+const SW_VERSION = "v1.0.9";
 const CACHE_NAME = `my-app-cache-${SW_VERSION}`;
 
 const APP_SHELL = [
@@ -14,7 +14,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
-  self.skipWaiting();
+  self.skipWaiting(); // Immediately activate new SW
 });
 
 self.addEventListener("activate", (event) => {
@@ -30,13 +30,13 @@ self.addEventListener("activate", (event) => {
         )
       )
   );
-  self.clients.claim();
+  self.clients.claim(); // Take control immediately
 });
 
+// Respond with cache, then network and cache new
 self.addEventListener("fetch", (event) => {
   const requestURL = new URL(event.request.url);
 
-  // Skip caching and serve API data always fresh for serverless functions
   if (requestURL.pathname.startsWith("/.netlify/functions/")) {
     event.respondWith(fetch(event.request));
     return;
@@ -61,6 +61,7 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+// Push Notification logic unchanged
 self.addEventListener("push", (event) => {
   let data = {};
   try {
@@ -94,4 +95,11 @@ self.addEventListener("notificationclick", (event) => {
         }
       })
   );
+});
+
+// ** Add this message listener for in-app update prompt support **
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });

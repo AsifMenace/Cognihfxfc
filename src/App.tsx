@@ -22,6 +22,7 @@ import { LeagueStandings } from "./pages/LeagueStandings";
 import { AddTeam } from "./pages/AddTeam";
 import AddBooking from "./pages/AddBooking";
 import AdminNotification from "./pages/AdminNotificationPage";
+import { UpdatePrompt } from "./components/UpdatePrompt"; //
 
 function App() {
   if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
@@ -68,6 +69,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
+        <UpdatePrompt />
         <Header isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
         <Routes>
           <Route path="/" element={<Home isAdmin={isAdmin} />} />
