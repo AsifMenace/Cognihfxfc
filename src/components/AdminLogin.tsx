@@ -23,21 +23,30 @@ export function AdminLogin({ setIsAdmin }: AdminLoginProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4">
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Admin password"
-        className="border p-2 rounded mr-2"
-      />
-      <button
-        type="submit"
-        className="bg-blue-600 text-white px-3 py-2 rounded"
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded shadow-md w-full max-w-sm"
       >
-        Login
-      </button>
-      {error && <p className="text-red-600 mt-2">{error}</p>}
-    </form>
+        <label htmlFor="admin-password" className="block mb-2 font-bold">
+          Admin Password
+        </label>
+        <input
+          id="admin-password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter admin password"
+          className="border p-2 rounded w-full mb-4"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-3 py-2 rounded w-full"
+        >
+          Login
+        </button>
+        {error && <p className="text-red-600 mt-2">{error}</p>}
+      </form>
+    </div>
   );
 }
