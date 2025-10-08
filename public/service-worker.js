@@ -1,4 +1,4 @@
-const SW_VERSION = "v1.0.9";
+const SW_VERSION = "v1.1.1";
 const CACHE_NAME = `my-app-cache-${SW_VERSION}`;
 
 const APP_SHELL = [

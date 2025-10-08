@@ -55,13 +55,25 @@ export function AddTeam() {
         required
       />
 
-      <label className="block mb-1 font-semibold">Team Color (hex code)</label>
-      <input
-        type="color"
-        value={color}
-        onChange={(e) => setColor(e.target.value)}
-        className="w-full mb-3 p-1 border rounded"
-      />
+      <div className="mb-4">
+        <label className="block mb-2 text-sm font-semibold text-gray-700 tracking-wide">
+          Team Color
+        </label>
+        <div className="flex items-center gap-3 p-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl shadow-inner border border-gray-200 hover:border-blue-400 transition-all duration-200">
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            className="w-12 h-12 rounded-full cursor-pointer border-2 border-white shadow-md hover:scale-105 transition-transform duration-150"
+          />
+          <div className="flex flex-col flex-1">
+            <span className="text-sm text-gray-600">Selected Color</span>
+            <span className="font-mono text-base font-semibold text-gray-800">
+              {color.toUpperCase()}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <textarea
         placeholder="Team Description"
