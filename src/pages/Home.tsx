@@ -178,7 +178,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1, duration: 0.6 }}
             >
-              Unity, Grit, Glory
+              Courage, Commitment, Celebration
             </motion.p>
 
             <motion.div
