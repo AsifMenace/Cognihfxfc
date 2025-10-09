@@ -27,11 +27,12 @@ export default function MatchCentre() {
         if (matchRes.ok) {
           const data = await matchRes.json();
           setMatch(data);
+          
           if (data.teams) {
             setPlayingTeamIds(data.teams.map((t: any) => t.id));
             const teamObj: any = {};
             data.teams.forEach((t: any) => {
-            teamObj[t.id] = { id: t.id, name: t.name || 'Team ${t.id}' };
+            teamObj[t.id] = { id: t.id, name: t.name || `Team ${t.id}` };
             });
             setTeamMap(teamObj);
             
