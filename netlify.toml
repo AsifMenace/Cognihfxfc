@@ -1,0 +1,30 @@
+# netlify.toml
+
+[build]
+  command = "node update-sw-version.cjs && npm run build"
+  publish = "dist" # or "build" if you're using Create React App
+  functions = "netlify/functions"
+
+# 👇 Ensure SPA routes (React Router) work on refresh
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 👇 Critical: Always revalidate service worker file
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# 👇 Optional: Short cache for HTML (forces revalidation)
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# 👇 Optional: Long cache for static assets (safe for hashed files)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

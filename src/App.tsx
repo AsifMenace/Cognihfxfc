@@ -23,37 +23,9 @@ import { AddTeam } from "./pages/AddTeam";
 import AddBooking from "./pages/AddBooking";
 import AdminNotification from "./pages/AdminNotificationPage";
 import { UpdatePrompt } from "./components/UpdatePrompt"; //
+import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
 
 function App() {
-  if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
-    navigator.serviceWorker
-      .register("/service-worker.js", { scope: "/" })
-      .then((registration) => {
-        console.log("✅ Service Worker registered:", registration);
-
-        // Your update found & prompt code here
-        registration.onupdatefound = () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.onstatechange = () => {
-              if (
-                newWorker.state === "installed" &&
-                navigator.serviceWorker.controller
-              ) {
-                console.log("⚡ New service worker available");
-                // Show user update prompt...
-              }
-            };
-          }
-        };
-      })
-      .catch((error) => {
-        console.error("❌ Service Worker registration failed:", error);
-      });
-  } else {
-    console.warn("⚠️ Service workers not supported or disabled in dev mode");
-  }
-
   const [isAdmin, setIsAdmin] = useState(
     () => localStorage.getItem("isAdmin") === "true"
   );
@@ -66,10 +38,11 @@ function App() {
       localStorage.removeItem("isAdmin");
     }
   };
+  const { updateAvailable, handleRefresh } = useServiceWorkerUpdate();
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
-        <UpdatePrompt />
+        <UpdatePrompt show={updateAvailable} onRefresh={handleRefresh} />
         <Header isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
         <Routes>
           <Route path="/" element={<Home isAdmin={isAdmin} />} />
