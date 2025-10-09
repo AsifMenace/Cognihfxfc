@@ -1,967 +1,205 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Calendar, MapPin, Clock } from "lucide-react";
-import CountdownTimer from "../components/CountdownTimer";
-import { parseMatchDateTime } from "../components/dateUtils";
-import Select, { MultiValue } from "react-select";
-import MatchVideoEmbed from "../components/MatchVideoEmbed";
-import { SectionHeader } from "../components/SectionHeader";
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 
-type MatchCentreProps = {
-  isAdmin: boolean;
-};
+const API_BASE = "/.netlify/functions";
 
-interface Player {
-  id: number;
-  name: string;
-  photo: string;
-  position: string;
-  jerseyNumber: number;
-  team_id?: number | null;
-}
-
-interface Match {
-  id: number;
-  date: string;
-  time: string;
-  opponent?: string | null;
-  venue: string;
-  competition: string;
-  isHome: boolean;
-  result?: string;
-  home_team_id?: number | null;
-  away_team_id?: number | null;
-  home_team_name?: string | null;
-  home_team_color?: string | null;
-  away_team_name?: string | null;
-  away_team_color?: string | null;
-  opponent_id?: number | null;
-  opponent_name?: string | null;
-  opponent_color?: string | null;
-  cogni_id?: number | null;
-  cogni_name?: string | null;
-  cogni_color?: string | null;
-  video_url?: string | null;
-}
-
-const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
+export default function MatchCentre() {
   const { id } = useParams<{ id: string }>();
-  const [match, setMatch] = useState<Match | null>(null);
-  const [lineups, setLineups] = useState<Player[]>([]);
-  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [match, setMatch] = useState<any>(null);
+  const [players, setPlayers] = useState<any[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [selectedTeamId, setSelectedTeamId] = useState<number | "">("");
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
-  const [loadingAdd, setLoadingAdd] = useState(false); // for submission state
-  const [success, setSuccess] = useState<string | null>(null);
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [assigningTeam, setAssigningTeam] = useState<"home" | "away" | null>(
+    null
+  );
 
-  type PlayerOption = {
-    value: number;
-    label: string;
-  };
+  const isAdmin = true; // replace with your real auth
 
-  const [selectedPlayers, setSelectedPlayers] = useState<
-    MultiValue<PlayerOption>
-  >([]);
-
-  const API_BASE =
-    process.env.NODE_ENV === "development"
-      ? "/.netlify/functions"
-      : "/.netlify/functions";
-
-  // Fetch all players
+  // Fetch match + players
   useEffect(() => {
-    async function fetchPlayers() {
-      try {
-        const res = await fetch(`${API_BASE}/getPlayers`);
-        if (!res.ok) throw new Error("Failed to fetch players");
-        const data = await res.json();
-        setAllPlayers(data);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    fetchPlayers();
-  }, [API_BASE]);
+    const fetchData = async () => {
+      const matchResp = await fetch(`${API_BASE}/getMatch?id=${id}`);
+      const matchData = await matchResp.json();
+      setMatch(matchData);
 
-  // Fetch match and lineup
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [matchRes, lineupRes] = await Promise.all([
-          fetch(`/.netlify/functions/getMatch?id=${id}`),
-          fetch(`${API_BASE}/getLineup?match_id=${id}`),
-        ]);
-
-        if (!matchRes.ok) throw new Error("Failed to fetch match details");
-        if (!lineupRes.ok) throw new Error("Failed to fetch lineup");
-
-        const matchData = await matchRes.json();
-        const lineupData = await lineupRes.json();
-
-        setMatch(matchData.match || null);
-        setLineups(lineupData || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [id, API_BASE]);
-
-  type Scorer = {
-    id: number;
-    player_id: number;
-    player_name: string;
-    team_name: string;
-    team_id: number;
-  };
-
-  const [scorers, setScorers] = useState<Scorer[]>([]);
-
-  async function fetchScorers() {
-    if (!match) return;
-    try {
-      const res = await fetch(
-        `/.netlify/functions/getMatchGoals?matchId=${match.id}`
-      );
-      if (!res.ok) throw new Error("Failed to fetch goal scorers");
-      const data: Scorer[] = await res.json();
-      setScorers(data);
-    } catch (e) {
-      console.error("Failed to load scorers", e);
-    }
-  }
-
-  useEffect(() => {
-    fetchScorers();
-  }, [match]);
-
-  // Remove player handler
-  async function handleRemovePlayer(playerId: number) {
-    if (
-      !window.confirm(
-        "Are you sure you want to remove this player from the match?"
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const res = await fetch("/.netlify/functions/removePlayerFromMatch", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ match_id: match?.id, player_id: playerId }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setLineups(data.lineup); // update lineup state with fresh data
-        alert(data.message || "Player removed successfully");
-      } else {
-        const data = await res.json();
-        alert(`Failed to remove player: ${data.error || res.statusText}`);
-      }
-    } catch (error) {
-      alert(`Failed to remove player: ${(error as Error).message}`);
-    }
-  }
-
-  // Handle add player form submit
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    // Instead of formData.get(), use your selectedPlayers state
-    if (!selectedPlayers || selectedPlayers.length === 0) {
-      alert("Please select at least one valid player.");
-      return;
-    }
-
-    if (selectedTeamId === "") {
-      alert("Please select a team.");
-      return;
-    }
-
-    // Filter out players already added (assuming lineups is the current roster)
-    const alreadyAdded = selectedPlayers.some((p) =>
-      lineups.some((lp) => lp.id === p.value)
-    );
-
-    if (alreadyAdded) {
-      alert("One or more selected players are already added to the match.");
-      return;
-    }
-
-    try {
-      // Extract player IDs as array for bulk API call
-      const playerIds = selectedPlayers.map((p) => p.value);
-
-      const response = await fetch("/.netlify/functions/addPlayerToMatch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          match_id: match?.id,
-          team_id: selectedTeamId,
-          player_ids: playerIds, // bulk insert
-        }),
-      });
-
-      if (response.ok) {
-        const lineupRes = await fetch(
-          `${API_BASE}/getLineup?match_id=${match?.id}`
-        );
-        if (lineupRes.ok) {
-          const lineupData = await lineupRes.json();
-          setLineups(lineupData || []);
-        }
-        alert("Players successfully added to the match!");
-        // Reset selection and team dropdown
-        setSelectedPlayers([]);
-        setSelectedTeamId("");
-      } else {
-        const errData = await response.json();
-        alert(`Failed to add players: ${errData.error || "Unknown error"}`);
-      }
-    } catch (err) {
-      alert(`Error adding players: ${(err as Error).message}`);
-    }
-  };
-
-  if (loading)
-    return <div className="text-center py-12">Loading match details...</div>;
-
-  if (error)
-    return <div className="text-center py-12 text-red-600">Error: {error}</div>;
-
-  if (!match)
-    return (
-      <div className="text-center py-12 text-red-600">Match not found.</div>
-    );
-
-  const kickoffDate = parseMatchDateTime(match);
-  // const teamMap: { [id: number]: { name: string; colorClass: string } } = {
-  //   1: { name: "Red", colorClass: "text-red-600" },
-  //   2: { name: "Black", colorClass: "text-gray-700" },
-  //   3: { name: "Blue", colorClass: "text-blue-600" },
-  // };
-
-  // const playingTeamIds = [match?.home_team_id, match?.away_team_id].filter(
-  //   (id): id is number => typeof id === "number"
-  // );
-
-  const playingTeamIds: number[] = [
-    match?.home_team_id,
-    match?.away_team_id,
-  ].filter((id): id is number => typeof id === "number");
-
-  const teamMap: { [id: number]: { name: string; colorClass: string } } = {};
-
-  playingTeamIds.forEach((teamId: number) => {
-    let teamName = "";
-    let teamColor = "";
-
-    if (teamId === match?.home_team_id) {
-      teamName = match.home_team_name || "";
-      teamColor = match.home_team_color || "";
-    } else if (teamId === match?.away_team_id) {
-      teamName = match.away_team_name || "";
-      teamColor = match.away_team_color || "";
-    }
-
-    teamMap[teamId] = {
-      name: teamName,
-      colorClass: teamColor || "black",
+      const playersResp = await fetch(`${API_BASE}/getPlayers`);
+      const playersData = await playersResp.json();
+      setPlayers(playersData);
     };
-  });
+    fetchData();
+  }, [id]);
 
-  // const groupedLineups = {
-  //   Red: lineups.filter((p) => p.team_id === 1),
-  //   Black: lineups.filter((p) => p.team_id === 2),
-  //   Blue: lineups.filter((p) => p.team_id === 3),
-  // };
+  // Pre-check players already assigned when opening modal
+  useEffect(() => {
+    if (assigningTeam && match) {
+      const alreadyAssigned =
+        assigningTeam === "home"
+          ? match.home_players?.map((p: any) => p.id.toString()) || []
+          : match.away_players?.map((p: any) => p.id.toString()) || [];
 
-  const groupedLineups: { [teamName: string]: Player[] } = {};
-
-  // Initialize empty arrays for each team name in teamMap
-  Object.values(teamMap).forEach(({ name }) => {
-    groupedLineups[name] = [];
-  });
-
-  // Populate groupedLineups by filtering players by team_id matching keys in teamMap
-  lineups.forEach((player) => {
-    const team = teamMap[player.team_id || 0];
-    if (team) {
-      groupedLineups[team.name].push(player);
+      setSelectedPlayers(alreadyAssigned);
     }
-  });
+  }, [assigningTeam, match]);
 
-  const homeScorers = scorers.filter(
-    (s) => s.team_name === match?.home_team_name
-  );
-  const awayScorers = scorers.filter(
-    (s) => s.team_name === match?.away_team_name
-  );
+  // Assign players
+  const handleAssignPlayers = async () => {
+    if (!match || !assigningTeam) return;
 
-  const opponentScorers = scorers.filter(
-    (s) => s.team_name === match?.opponent_name
-  );
+    const resp = await fetch(`${API_BASE}/assignPlayersToMatch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        matchId: match.id,
+        players: selectedPlayers,
+        team: assigningTeam,
+      }),
+    });
 
-  const cogniScorers = scorers.filter((s) => s.team_name === match?.cogni_name);
+    if (resp.ok) {
+      const updatedMatch = await resp.json();
+      setMatch(updatedMatch);
+      setSuccessMessage(
+        `Players assigned successfully to ${assigningTeam} team!`
+      );
+      setTimeout(() => setSuccessMessage(null), 3000);
 
-  async function handleAddGoal(e: React.FormEvent) {
-    e.preventDefault();
-    if (!match) return;
-
-    setLoadingAdd(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const res = await fetch("/.netlify/functions/addMatchGoal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          match_id: match.id,
-          player_id: Number(selectedPlayerId),
-          team_id: Number(selectedTeamId),
-        }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to add goal scorer");
-      }
-
-      setSuccess("Goal scorer added successfully!");
-      await fetchScorers();
-      // Optionally reset selections
-      setSelectedPlayerId("");
-      setSelectedTeamId("");
-
-      // TODO: Refresh goal scorers list here (covered in step 2)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoadingAdd(false);
+      setIsPlayerModalOpen(false);
+      setAssigningTeam(null);
+      setSelectedPlayers([]);
+    } else {
+      console.error("Error assigning players");
     }
-  }
+  };
 
-  async function handleRemoveGoal(goalId: number, playerId: number) {
-    if (!window.confirm("Are you sure you want to remove this goal?")) return;
-
-    try {
-      const res = await fetch("/.netlify/functions/removeMatchGoal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goal_id: goalId, player_id: playerId }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to remove goal");
-      }
-
-      // Refresh the scorer list after removing
-      await fetchScorers();
-    } catch (error) {
-      alert(`Error removing goal: ${(error as Error).message}`);
-    }
+  if (!match) {
+    return <p className="text-center mt-10">Loading match...</p>;
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="container mx-auto px-4 max-w-3xl">
-        {/* Match Header */}
-        <div className="bg-white rounded-xl shadow-lg mb-8 p-6 flex flex-col items-center">
-          <div className="text-2xl md:text-3xl font-bold mb-2 text-blue-900 flex justify-center items-center space-x-4">
-            {match?.home_team_name && match?.away_team_name ? (
-              <>
-                <span style={{ color: match?.home_team_color ?? "black" }}>
-                  {match?.home_team_name}
-                </span>
-                <span className="text-slate-400">vs</span>
-                <span style={{ color: match?.away_team_color ?? "black" }}>
-                  {match?.away_team_name}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="text-blue-600 font-bold">
-                  {" "}
-                  {match?.cogni_name}
-                </span>
-                <span className="text-slate-400 mx-2">vs</span>
-                <span>{match?.opponent_name}</span>
-              </>
-            )}
-          </div>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">{match.competition}</h1>
+      <p className="mb-2">
+        {match.date} @ {match.time} — {match.venue}
+      </p>
+      <p className="mb-4">
+        {match.home_team} vs {match.away_team}
+      </p>
 
-          <div className="text-xl md:text-2xl font-semibold text-green-700 mb-4">
-            {match.result ? `Result: ${match.result}` : "Result not available"}
-          </div>
-
-          <CountdownTimer kickOff={kickoffDate} />
-
-          <div className="flex flex-wrap justify-center space-x-4 text-slate-700 mb-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-              {match.competition}
-            </span>
-            <span className="flex items-center">
-              <Calendar size={16} className="mr-1 text-blue-600" />
-              {kickoffDate.toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
-            <span className="flex items-center">
-              <Clock size={16} className="mr-1 text-blue-600" />
-              {match.time}
-            </span>
-            <span className="flex items-center">
-              <MapPin size={16} className="mr-1 text-blue-600" />
-              {match.venue}
-            </span>
-            <span
-              className={`px-2 py-1 rounded text-xs font-bold ${
-                match.isHome
-                  ? "bg-green-100 text-green-800"
-                  : "bg-orange-100 text-orange-800"
-              }`}
-            >
-              {match.isHome ? "Home" : "Away"}
-            </span>
-          </div>
-          <div>
-            {isAdmin && (
-              <Link
-                to={`/match/edit/${match.id}`}
-                className="inline-block px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
-              >
-                Edit Match
-              </Link>
-            )}
-          </div>
+      {successMessage && (
+        <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
+          {successMessage}
         </div>
-        <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
-          <div className="flex justify-between mb-8 px-4">
-            {/* Home/Red Team scorers */}
-            <div
-              className="w-1/3 text-left "
-              style={{ color: match?.home_team_color ?? "black" }}
-            >
-              <h3
-                className="text-xl sm:text-2xl font-extrabold mb-4 relative inline-block tracking-wide uppercase drop-shadow-sm"
-                style={{ color: match?.home_team_color ?? "red" }}
-              >
-                GOAL SCORERS
-                <span className="block sm:w-20 w-30 h-1 bg-gradient-to-r from-red-500 to-red-700 rounded mt-1"></span>
-              </h3>
-              {homeScorers.length === 0 && match.opponent_id === null ? (
-                <p className="text-gray-400">No goals yet</p>
-              ) : (
-                <ul>
-                  {homeScorers.map((scorer) => (
-                    <li
-                      key={scorer.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span
-                        role="img"
-                        aria-label="soccer ball"
-                        className="mr-2"
-                      >
-                        ⚽
-                      </span>
-                      <span className="uppercase">{scorer.player_name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleRemoveGoal(scorer.id, scorer.player_id)
-                          }
-                          aria-label={`Remove goal by ${scorer.player_name}`}
-                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                          type="button"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-gray-600 hover:text-gray-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {cogniScorers.length === 0 && match.opponent_id != null ? (
-                <p className="text-gray-400">No goals yet new hello</p>
-              ) : (
-                <ul>
-                  {cogniScorers.map((scorer) => (
-                    <li
-                      key={scorer.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span
-                        role="img"
-                        aria-label="soccer ball"
-                        className="mr-2"
-                      >
-                        ⚽
-                      </span>
-                      <span className="uppercase">{scorer.player_name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleRemoveGoal(scorer.id, scorer.player_id)
-                          }
-                          aria-label={`Remove goal by ${scorer.player_name}`}
-                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                          type="button"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+      )}
 
-            {/* Away/Black Team scorers */}
-            <div
-              className="w-1/3 text-right"
-              style={{ color: match?.away_team_color ?? "black" }}
-            >
-              <h3
-                className="text-xl sm:text-2xl font-extrabold mb-4 relative inline-block tracking-wide uppercase drop-shadow-sm"
-                style={{ color: match?.away_team_color ?? "red" }}
-              >
-                GOAL SCORERS
-                <span className="block sm:w-20 w-30 h-1 bg-gradient-to-r from-red-500 to-red-700 rounded mt-1"></span>
-              </h3>
-
-              {awayScorers.length === 0 && match.opponent_id === null ? (
-                <p className="text-gray-400">No goals yet</p>
-              ) : (
-                <ul>
-                  {awayScorers.map((scorer) => (
-                    <li
-                      key={scorer.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span
-                        role="img"
-                        aria-label="soccer ball"
-                        className="mr-2"
-                      >
-                        ⚽
-                      </span>
-                      <span className="uppercase">{scorer.player_name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleRemoveGoal(scorer.id, scorer.player_id)
-                          }
-                          aria-label={`Remove goal by ${scorer.player_name}`}
-                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                          type="button"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {opponentScorers.length === 0 && match.opponent_id != null ? (
-                <p className="text-gray-400">No goals yet new change</p>
-              ) : (
-                <ul>
-                  {opponentScorers.map((scorer) => (
-                    <li
-                      key={scorer.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span
-                        role="img"
-                        aria-label="soccer ball"
-                        className="mr-2"
-                      >
-                        ⚽
-                      </span>
-                      <span className="uppercase">{scorer.player_name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleRemoveGoal(scorer.id, scorer.player_id)
-                          }
-                          aria-label={`Remove goal by ${scorer.player_name}`}
-                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                          type="button"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="max-w-4xl mx-auto mt-8">
-          <SectionHeader title="Match Video" />
-          <MatchVideoEmbed videoUrl={match.video_url ?? null} />
-        </div>
-
-        {isAdmin && (
-          <section className="my-8 p-6 max-w-md mx-auto border rounded shadow-sm bg-white">
-            <h2 className="text-xl font-semibold mb-4">Add Goal Scorer</h2>
-
-            <form
-              onSubmit={handleAddGoal}
-              className="mb-6 flex flex-wrap items-center space-x-2"
-            >
-              <label htmlFor="playerId" className="block mb-2 font-semibold">
-                Select Player:
-              </label>
-
-              <select
-                id="playerId"
-                value={selectedPlayerId}
-                onChange={(e) => setSelectedPlayerId(e.target.value)}
-                className="border rounded px-3 py-1"
-                required
-              >
-                <option value="" disabled>
-                  Select a player
-                </option>
-                {allPlayers.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.name} ({player.position})
-                  </option>
-                ))}
-              </select>
-
-              <label htmlFor="teamId" className="block mb-2 font-semibold">
-                Select Team:
-              </label>
-
-              <select
-                id="teamId"
-                value={selectedTeamId}
-                onChange={(e) =>
-                  setSelectedTeamId(
-                    e.target.value === "" ? "" : Number(e.target.value)
-                  )
-                }
-                className="border rounded px-3 py-1"
-                required
-              >
-                <option value="" disabled>
-                  Select a team
-                </option>
-                {match?.home_team_id && (
-                  <option value={match.home_team_id}>
-                    {match.home_team_name}
-                  </option>
-                )}
-                {match?.away_team_id && (
-                  <option value={match.away_team_id}>
-                    {match.away_team_name}
-                  </option>
-                )}
-                {match?.cogni_id && (
-                  <option value={match.cogni_id}>{match.cogni_name}</option>
-                )}
-                {match?.opponent_id && (
-                  <option value={match.opponent_id}>
-                    {match.opponent_name}
-                  </option>
-                )}
-              </select>
-
-              <button
-                type="submit"
-                disabled={loadingAdd}
-                className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loadingAdd ? "Adding..." : "Add Goal Scorer"}
-              </button>
-              {error && (
-                <div className="mb-4 p-2 text-red-800 bg-red-100 rounded">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="mb-4 p-2 text-green-800 bg-green-100 rounded">
-                  {success}
-                </div>
-              )}
-            </form>
-          </section>
-        )}
-        {isAdmin && (
-          <section className="my-8 p-6 max-w-md mx-auto border rounded shadow-sm bg-white">
-            <h2 className="text-xl font-semibold mb-4">Update Match Result</h2>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const resultValue = formData.get("result");
-
-                if (resultValue === null || typeof resultValue !== "string") {
-                  return;
-                }
-
-                const resp = await fetch(`${API_BASE}/updateMatchResult`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ id: match.id, result: resultValue }),
-                });
-
-                if (resp.ok) {
-                  setMatch({ ...match, result: resultValue });
-                  setSuccessMessage("Match result updated successfully!");
-                  setTimeout(() => setSuccessMessage(null), 3000);
-                }
-              }}
-            >
-              {successMessage && (
-                <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
-                  {successMessage}
-                </div>
-              )}
-
-              <label className="block mb-2 font-semibold">
-                Update Result:
-                <input
-                  name="result"
-                  defaultValue={match.result || ""}
-                  placeholder="e.g. 2-1"
-                  className="border rounded ml-2 px-3 py-1"
-                />
-              </label>
-
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Save
-              </button>
-            </form>
-          </section>
-        )}
-        {/* Lineups Section */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4 text-center">
-            Line Ups
-          </h2>
-
-          {playingTeamIds.map((teamId) => {
-            const { name: teamName, colorClass } = teamMap[teamId];
-            const teamPlayers = groupedLineups[teamName] || [];
-            //groupedLineups[teamName as keyof typeof groupedLineups] || [];
-
-            return (
-              <div key={teamId} className="mb-6">
-                <h3 className="font-bold mb-2" style={{ color: colorClass }}>
-                  {teamName}
-                </h3>
-                {teamPlayers.length === 0 ? (
-                  <div className="text-slate-500 text-center">
-                    No players assigned.
-                  </div>
-                ) : (
-                  <div className="flex space-x-4 overflow-x-auto py-2">
-                    {teamPlayers.map((player) => (
-                      <div
-                        key={player.id}
-                        className="relative group flex-shrink-0 w-40"
-                      >
-                        {/* Player card stays the same */}
-                        <Link
-                          to={`/player/${player.id}`}
-                          className="block bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition"
-                        >
-                          <div className="mb-4">
-                            <img
-                              src={player.photo}
-                              alt={player.name}
-                              className="w-16 h-16 rounded-full mx-auto object-cover mb-2 object-top"
-                            />
-                            <div className="font-bold">{player.name}</div>
-                            <div className="text-xs text-slate-600 mb-1">
-                              {player.position} #{player.jerseyNumber}
-                            </div>
-                          </div>
-                        </Link>
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleRemovePlayer(player.id)}
-                            className="absolute top-2 right-2 text-red-600 hover:text-red-800"
-                            title="Remove player from match"
-                          >
-                            ✖
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {isAdmin && (
-          <form
-            ref={formRef}
-            onSubmit={handleSubmit}
-            className="mb-6 flex flex-wrap items-center space-x-2"
+      {/* Admin Controls */}
+      {isAdmin && (
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => {
+              setAssigningTeam("home");
+              setIsPlayerModalOpen(true);
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
-            <label htmlFor="playerIds" className="block mb-2 font-semibold">
-              Add Players to Match {/* Updated label */}
-            </label>
+            Assign Home Team Players
+          </button>
 
-            {/* --- Enhanced Player Multi-Select Dropdown --- */}
-            <Select<PlayerOption, true> // <OptionType, isMulti = true>
-              options={allPlayers.map((player) => ({
-                value: player.id,
-                label: `${player.name} (${player.position})`,
-              }))}
-              isMulti
-              name="playerIds"
-              id="playerIds"
-              className="min-w-[200px] px-3 py-1"
-              value={selectedPlayers}
-              onChange={(selected) => setSelectedPlayers(selected ?? [])}
-              placeholder="Select players..."
-              required
-              menuShouldScrollIntoView={false} // Prevent scroll jumps
-              menuPlacement="auto" // Better positioning on mobile
-              closeMenuOnSelect={false} // Keep open while selecting multiple
-              backspaceRemovesValue={true}
-              hideSelectedOptions={false}
-            />
-
-            {/* --- Team Dropdown (unchanged except code cleanup) --- */}
-            <select
-              name="teamId"
-              id="teamId"
-              className="border rounded px-3 py-1"
-              required
-              value={selectedTeamId}
-              onChange={(e) =>
-                setSelectedTeamId(
-                  e.target.value === "" ? "" : Number(e.target.value)
-                )
-              }
-            >
-              <option value="" disabled>
-                Select a team
-              </option>
-              {playingTeamIds.map((teamId) => {
-                const { name } = teamMap[teamId] || {};
-                if (!name) return null;
-                return (
-                  <option key={teamId} value={teamId}>
-                    {name}
-                  </option>
-                );
-              })}
-              {/* Optionally include opponent and cogni if separate */}
-              {match?.cogni_id &&
-                match.cogni_name &&
-                !playingTeamIds.includes(match.cogni_id) && (
-                  <option value={match.cogni_id}>{match.cogni_name}</option>
-                )}
-              {match?.opponent_id &&
-                match.opponent_name &&
-                !playingTeamIds.includes(match.opponent_id) && (
-                  <option value={match.opponent_id}>
-                    {match.opponent_name}
-                  </option>
-                )}
-            </select>
-
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
-            >
-              Add Players {/* Updated Button Text */}
-            </button>
-          </form>
-        )}
-        {/* Back link */}
-        <div className="text-center mt-8">
-          <Link
-            to="/games"
-            className="inline-block px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition"
+          <button
+            onClick={() => {
+              setAssigningTeam("away");
+              setIsPlayerModalOpen(true);
+            }}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
           >
-            ← Back to Games
-          </Link>
+            Assign Away Team Players
+          </button>
+        </div>
+      )}
+
+      {/* Show Home / Away Players */}
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <h2 className="font-semibold text-lg mb-2">Home Team</h2>
+          <ul className="list-disc list-inside">
+            {match.home_players?.map((p: any) => (
+              <li key={p.id}>{p.name}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h2 className="font-semibold text-lg mb-2">Away Team</h2>
+          <ul className="list-disc list-inside">
+            {match.away_players?.map((p: any) => (
+              <li key={p.id}>{p.name}</li>
+            ))}
+          </ul>
         </div>
       </div>
+
+      {/* Modal */}
+      {isPlayerModalOpen && assigningTeam && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+            <h2 className="text-xl font-semibold mb-4">
+              Select {assigningTeam === "home" ? "Home" : "Away"} Team Players
+            </h2>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAssignPlayers();
+              }}
+            >
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {players.map((p) => (
+                  <label key={p.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      value={p.id}
+                      checked={selectedPlayers.includes(p.id.toString())}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedPlayers([
+                            ...selectedPlayers,
+                            p.id.toString(),
+                          ]);
+                        } else {
+                          setSelectedPlayers(
+                            selectedPlayers.filter((id) => id !== p.id.toString())
+                          );
+                        }
+                      }}
+                    />
+                    <span>{p.name}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex justify-end mt-4 space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPlayerModalOpen(false);
+                    setAssigningTeam(null);
+                    setSelectedPlayers([]);
+                  }}
+                  className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                >
+                  Assign
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default MatchCentre;
+}
