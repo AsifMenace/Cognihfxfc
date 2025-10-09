@@ -30,8 +30,11 @@ export default function MatchCentre() {
           if (data.teams) {
             setPlayingTeamIds(data.teams.map((t: any) => t.id));
             const teamObj: any = {};
-            data.teams.forEach((t: any) => (teamObj[t.id] = t));
+            data.teams.forEach((t: any) => {
+            teamObj[t.id] = { id: t.id, name: t.name || `Team ${t.id}` };
+            });
             setTeamMap(teamObj);
+            
           }
         }
 
@@ -48,6 +51,9 @@ export default function MatchCentre() {
           const lineupData = await lineupRes.json();
           setLineups(lineupData || []);
         }
+
+  
+
       } catch (err) {
         console.error("Error fetching match centre data", err);
       }
