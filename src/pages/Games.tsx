@@ -29,6 +29,7 @@ type Match = {
   cogni_id?: number | null;
   cogni_name?: string | null;
   cogni_color?: string | null;
+  video_url?: string | null;
 };
 
 const formatDate = (match: Match) => {
@@ -352,6 +353,33 @@ export function Games() {
                           <span>{game.venue}</span>
                         </div>
                       </div>
+                      {game.video_url && (
+                        <a
+                          href={game.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-red-100 hover:bg-red-200 shadow-lg transition duration-300 ease-in-out transform hover:scale-105 text-red-600 font-bold text-lg"
+                          title="Watch on YouTube"
+                          style={{ minHeight: "48px" }}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="w-5 h-5"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              fill="currentColor"
+                            />
+                            <polygon points="9,8 9,16 17,12" fill="#fff" />
+                          </svg>
+                          Watch
+                        </a>
+                      )}
                     </div>
 
                     {/* Match Priority Indicator */}
