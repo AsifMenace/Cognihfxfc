@@ -24,6 +24,7 @@ import AddBooking from "./pages/AddBooking";
 import AdminNotification from "./pages/AdminNotificationPage";
 import { UpdatePrompt } from "./components/UpdatePrompt"; //
 import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
+import AddNews from "./pages/AddNews";
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
@@ -97,6 +98,12 @@ function App() {
             path="/add-booking"
             element={
               isAdmin ? <AddBooking /> : <Navigate to="/admin-login" replace />
+            }
+          />
+          <Route
+            path="/add-news"
+            element={
+              isAdmin ? <AddNews /> : <Navigate to="/admin-login" replace />
             }
           />
           <Route
