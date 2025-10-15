@@ -15,6 +15,7 @@ import {
   Clock,
   Bell,
   BellIcon,
+  Newspaper,
 } from "lucide-react";
 type HeaderProps = {
   isAdmin: boolean;
@@ -264,7 +265,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 <Link
                   to="/add-team"
                   className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                    isActive("/add-match") ? "text-green-400" : "text-slate-300"
+                    isActive("/add-team") ? "text-red-400" : "text-slate-300"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -277,7 +278,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                   to="/add-booking"
                   className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
                     isActive("/add-booking")
-                      ? "text-green-400"
+                      ? "text-orange-400"
                       : "text-slate-300"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -291,14 +292,27 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                 <Link
                   to="/add-notification"
                   className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
-                    isActive("/add-booking")
-                      ? "text-green-400"
+                    isActive("/add-notification")
+                      ? "text-purple-400"
                       : "text-slate-300"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <BellIcon size={20} />
                   <span className="text-xs">Add Notification</span>
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  to="/add-news"
+                  className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg ${
+                    isActive("/add-news") ? "text-cyan-400" : "text-slate-300"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Newspaper size={20} />
+                  <span className="text-xs">Add News</span>
                 </Link>
               )}
 
