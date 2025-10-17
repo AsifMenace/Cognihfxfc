@@ -95,7 +95,7 @@ export const LeagueStandings: React.FC = () => {
                   className="inline-block w-4 h-4 rounded-full"
                   style={{ backgroundColor: team.team_color || "#888" }}
                 />
-                <span>{team.team_name}</span>
+                <span className="whitespace-nowrap">{team.team_name}</span>
               </td>
               <td className="py-3 px-6 text-center font-bold">{team.points}</td>
               <td className="py-3 px-6 text-center">{team.played}</td>
