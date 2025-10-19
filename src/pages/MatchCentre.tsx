@@ -6,6 +6,8 @@ import { parseMatchDateTime } from "../components/dateUtils";
 import Select, { MultiValue } from "react-select";
 import MatchVideoEmbed from "../components/MatchVideoEmbed";
 import { SectionHeader } from "../components/SectionHeader";
+import { SetPlayerOfTheMatch } from "../components/SetPlayerOfTheMatch";
+import { PlayerOfTheMatch } from "./PlayerOfTheMatch";
 
 type MatchCentreProps = {
   isAdmin: boolean;
@@ -665,6 +667,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             </div>
           </div>
         </div>
+        <div className="flex flex-col items-center mt-10">
+          <PlayerOfTheMatch matchId={match.id} />
+        </div>
         <div className="max-w-4xl mx-auto mt-8">
           <SectionHeader title="Match Video" />
           <MatchVideoEmbed videoUrl={match.video_url ?? null} />
@@ -808,6 +813,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 Save
               </button>
             </form>
+          </section>
+        )}
+        {isAdmin && (
+          <section className="mt-6">
+            <SetPlayerOfTheMatch matchId={match.id} isAdmin={isAdmin} />
           </section>
         )}
         {/* Lineups Section */}

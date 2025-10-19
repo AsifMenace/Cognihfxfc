@@ -126,63 +126,64 @@ export default function Scorecard() {
                     return (
                       <li
                         key={i}
-                        className="flex items-center rounded-md p-3 bg-gradient-to-r from-blue-50 to-white shadow-sm hover:shadow-md transition-shadow duration-300"
+                        className="flex flex-col rounded-md p-3 bg-gradient-to-r from-blue-50 to-white shadow-sm hover:shadow-md transition-shadow duration-300 w-full"
                       >
+                        {/* Home team row */}
                         <div
-                          className={`font-semibold text-md flex items-center gap-1 ${
+                          className={`flex items-center justify-between ${
                             homeIsWinner ? "bg-yellow-100 rounded px-1" : ""
                           }`}
-                          style={{
-                            color: home_team_color,
-                            flexBasis: "35%",
-                            flexShrink: 0,
-                            minWidth: 0,
-                          }}
-                          title={home_team_name}
                         >
-                          <span className="whitespace-nowrap max-w-[120px] inline-block">
+                          <div
+                            className="font-semibold text-md flex items-center"
+                            style={{
+                              color: home_team_color,
+                              minWidth: 0,
+                            }}
+                            title={home_team_name}
+                          >
                             {home_team_name}
-                          </span>
-                          {homeIsWinner && (
-                            <span
-                              className="flex-shrink-0 flex items-center pl-1"
-                              style={{ width: 22 }}
-                            >
-                              <FaTrophy className="text-yellow-500 w-5 h-5" />
-                            </span>
-                          )}
+                            {homeIsWinner && (
+                              <span
+                                className="flex-shrink-0 flex items-center pl-2 ml-1"
+                                style={{ width: 22 }}
+                              >
+                                <FaTrophy className="text-yellow-500 w-5 h-5" />
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-gray-800 font-mono font-bold text-lg ml-2">
+                            {homeScore}
+                          </div>
                         </div>
 
+                        {/* Away team row */}
                         <div
-                          className="text-gray-800 font-mono font-bold text-lg text-center ml-[-15px]"
-                          style={{ flexBasis: "30%", flexShrink: 0 }}
-                        >
-                          {homeScore} – {awayScore}
-                        </div>
-
-                        <div
-                          className={`font-semibold text-md text-right flex items-center justify-end gap-1 ml-5 ${
+                          className={`mt-1 flex items-center justify-between ${
                             awayIsWinner ? "bg-yellow-100 rounded px-1" : ""
                           }`}
-                          style={{
-                            color: away_team_color,
-                            flexBasis: "35%",
-                            flexShrink: 0,
-                            minWidth: 0,
-                          }}
-                          title={away_team_name}
                         >
-                          {awayIsWinner && (
-                            <span
-                              className="flex-shrink-0 flex items-center pr-1 ml-3"
-                              style={{ width: 22 }}
-                            >
-                              <FaTrophy className="text-yellow-500 w-5 h-5" />
-                            </span>
-                          )}
-                          <span className="whitespace-nowrap max-w-[120px] inline-block">
+                          <div
+                            className="font-semibold text-md flex items-center"
+                            style={{
+                              color: away_team_color,
+                              minWidth: 0,
+                            }}
+                            title={away_team_name}
+                          >
+                            {awayIsWinner && (
+                              <span
+                                className="flex-shrink-0 flex items-center pr-2 mr-1"
+                                style={{ width: 22 }}
+                              >
+                                <FaTrophy className="text-yellow-500 w-5 h-5" />
+                              </span>
+                            )}
                             {away_team_name}
-                          </span>
+                          </div>
+                          <div className="text-gray-800 font-mono font-bold text-lg ml-2">
+                            {awayScore}
+                          </div>
                         </div>
                       </li>
                     );
