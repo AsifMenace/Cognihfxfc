@@ -62,7 +62,25 @@ export default function BookingVotingWidget() {
         const res = await fetch("/.netlify/functions/getUpcomingBookings");
         const bookings = await res.json();
         if (bookings.length > 0) {
-          const booking = bookings[0];
+          // Find the most recent future booking (including today)
+          const now = new Date();
+          const nowDateStr = now.toISOString().split("T")[0];
+          // Filter bookings for today or future
+          interface Booking {
+            id: number;
+            booking_date: string;
+            start_time: string;
+            end_time: string;
+          }
+          const futureBookings = (bookings as Booking[]).filter(
+            (b: Booking) => {
+              // Compare booking_date (YYYY-MM-DD) with today
+              return b.booking_date >= nowDateStr;
+            }
+          );
+          // If there are future bookings, pick the earliest one
+          const booking =
+            futureBookings.length > 0 ? futureBookings[0] : bookings[0];
           setBookingInfo({
             id: booking.id,
             booking_date: booking.booking_date,

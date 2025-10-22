@@ -8,8 +8,7 @@ export const handler = async () => {
     const bookings = await sql`
   SELECT id, booking_date, start_time, end_time, session, field_number
   FROM field_bookings
-  where booking_date > CURRENT_DATE
-    OR (booking_date = CURRENT_DATE AND end_time >= CURRENT_TIME)
+
   ORDER BY booking_date ASC, start_time ASC
   LIMIT 25
 `;
