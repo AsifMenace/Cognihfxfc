@@ -7,6 +7,10 @@ type CalendarProps = {
 };
 
 const Calendar: React.FC<CalendarProps> = ({ bookedDates, onDateSelect }) => {
+  const today = new Date();
+  const todayISO = `${today.getFullYear()}-${(today.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`;
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
 
@@ -97,18 +101,21 @@ const Calendar: React.FC<CalendarProps> = ({ bookedDates, onDateSelect }) => {
         {daysArray.map((day) => {
           const isoDate = formatDate(day);
           const booked = isBooked(isoDate);
+          const isToday = isoDate === todayISO;
+          let dayBgClass = "hover:bg-gray-100";
+          if (isToday) {
+            dayBgClass = "bg-red-600 text-white font-semibold";
+          } else if (booked) {
+            dayBgClass = "bg-blue-500 text-white font-semibold";
+          }
           return (
             <div
               key={day}
               onClick={() => onDateSelect && onDateSelect(isoDate)} // notify parent
-              className={`rounded cursor-default p-1 flex items-center justify-center space-x-1 ${
-                booked
-                  ? "bg-blue-600 text-white font-semibold"
-                  : "hover:bg-gray-100"
-              }`}
-              title={booked ? "Booking Scheduled" : ""}
+              className={`rounded cursor-default p-1 flex items-center justify-center space-x-1 ${dayBgClass}`}
+              title={booked ? "Booking Scheduled" : isToday ? "Today" : ""}
             >
-              <span>{day}</span>
+              <span className={isToday ? "font-bold" : undefined}>{day}</span>
               {booked && (
                 <Star
                   className="w-4 h-4 text-yellow-300 flex-shrink-0"
