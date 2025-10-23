@@ -59,7 +59,7 @@ export const GetLastMatch: React.FC = () => {
           return;
         }
 
-        // Pick the most recent played match as first element
+        // Pick the most recent played match as first element abc
         const lastMatch = playedMatches[0];
         setMatch(lastMatch);
 
