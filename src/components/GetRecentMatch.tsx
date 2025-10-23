@@ -34,7 +34,7 @@ function formatDate(dateStr: string) {
   });
 }
 
-export const GetLastMatch: React.FC = () => {
+export const GetRecentMatch: React.FC = () => {
   const [match, setMatch] = useState<Match | null>(null);
   const [homeGoals, setHomeGoals] = useState<Goal[]>([]);
   const [awayGoals, setAwayGoals] = useState<Goal[]>([]);
