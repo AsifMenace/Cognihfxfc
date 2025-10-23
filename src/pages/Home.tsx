@@ -332,7 +332,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
       <div className="flex flex-col items-center mt-10">
         <PlayerOfTheMatch />
       </div>
-      <div className="flex flex-col items-center mt-10">
+      <div className="max-w-lg mx-auto my-6 p-4 sm:p-6 bg-white rounded-lg shadow-lg border border-gray-200">
         <GetRecentMatch />
       </div>
       <RecentMatchVideo matches={matches} />
