@@ -98,14 +98,14 @@ export const GetRecentMatch: React.FC = () => {
   const [homeScore, awayScore] = match.result.split("-").map((s) => s.trim());
 
   return (
-    <div className="max-w-md mx-auto bg-blue-900 rounded-3xl shadow-lg p-6 text-white font-sans">
+    <div className="max-w-md mx-auto rounded shadow p-6 bg-blue-900  text-white font-sans">
       <div className="text-center text-xs uppercase tracking-widest mb-3 opacity-80">
         Last Match {match.competition && `• ${match.competition}`}
       </div>
 
       <div className="flex items-center justify-between mb-6 px-4">
         <div
-          className="rounded-xl shadow-md px-4 py-2 font-semibold max-w-[45%] text-center "
+          className="rounded-xl shadow-md px-2 py-2 font-semibold max-w-[45%] text-center "
           style={{ backgroundColor: match.home_team_color }}
           title={match.home_team_name}
         >
@@ -123,7 +123,7 @@ export const GetRecentMatch: React.FC = () => {
         </div>
 
         <div
-          className="rounded-xl shadow-md px-4 py-2 font-semibold max-w-[45%] text-center "
+          className="rounded-xl shadow-md px-2 py-2 font-semibold max-w-[45%] text-center "
           style={{ backgroundColor: match.away_team_color }}
           title={match.away_team_name}
         >
