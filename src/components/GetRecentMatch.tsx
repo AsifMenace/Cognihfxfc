@@ -103,7 +103,7 @@ export const GetRecentMatch: React.FC = () => {
         Last Match {match.competition && `• ${match.competition}`}
       </div>
 
-      <div className="flex items-center justify-between mb-6 px-4">
+      <div className="flex items-center mx-auto justify-between mb-6 px-4">
         <div
           className="rounded-xl shadow-md px-2 py-2 font-semibold max-w-[45%] text-center "
           style={{ backgroundColor: match.home_team_color }}
