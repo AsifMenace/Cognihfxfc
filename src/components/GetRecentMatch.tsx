@@ -98,32 +98,28 @@ export const GetRecentMatch: React.FC = () => {
   const [homeScore, awayScore] = match.result.split("-").map((s) => s.trim());
 
   return (
-    <div className="max-w-md mx-auto rounded shadow p-6 bg-blue-900  text-white font-sans">
+    <div className="max-w-md mx-auto rounded shadow p-4 bg-blue-900 text-white font-sans overflow-hidden">
       <div className="text-center text-xs uppercase tracking-widest mb-3 opacity-80">
         Last Match {match.competition && `• ${match.competition}`}
       </div>
 
-      <div className="flex items-center mx-auto justify-between mb-6 px-4">
+      <div className="flex items-center justify-between mb-6 px-2 sm:px-4 min-w-0">
         <div
-          className="rounded-xl shadow-md px-2 py-2 font-semibold max-w-[45%] text-center "
+          className="rounded-xl shadow-md px-2 py-2 font-semibold max-w-[45%] text-left min-w-0"
           style={{ backgroundColor: match.home_team_color }}
           title={match.home_team_name}
         >
           {match.home_team_name}
         </div>
 
-        <div className="text-4xl font-extrabold px-6 text-white-800 select-none">
-          {homeScore}
-        </div>
-
-        <span className="text-4xl font-bold text-white-600 select-none">-</span>
-
-        <div className="text-4xl font-extrabold px-6 text-white-800 select-none">
-          {awayScore}
+        <div className="flex items-center px-2 sm:px-6 select-none">
+          <div className="text-4xl font-extrabold text-white">{homeScore}</div>
+          <div className="text-4xl font-bold text-white mx-2">-</div>
+          <div className="text-4xl font-extrabold text-white">{awayScore}</div>
         </div>
 
         <div
-          className="rounded-xl shadow-md px-2 py-2 font-semibold max-w-[45%] text-center "
+          className="rounded-xl shadow-md px-2 py-2 font-semibold max-w-[45%] text-right  min-w-0"
           style={{ backgroundColor: match.away_team_color }}
           title={match.away_team_name}
         >
@@ -131,8 +127,8 @@ export const GetRecentMatch: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex justify-between px-4 space-x-4 text-sm select-none">
-        <div className="w-1/2">
+      <div className="flex justify-between px-2 sm:px-4 space-x-4 text-sm select-none min-w-0">
+        <div className="w-1/2 min-w-0">
           {homeGoals.length > 0 ? (
             homeGoals.map((goal) => (
               <div key={goal.id} className="truncate" title={goal.player_name}>
@@ -145,7 +141,7 @@ export const GetRecentMatch: React.FC = () => {
           )}
         </div>
 
-        <div className="w-1/2 text-right">
+        <div className="w-1/2 text-right min-w-0">
           {awayGoals.length > 0 ? (
             awayGoals.map((goal) => (
               <div key={goal.id} className="truncate" title={goal.player_name}>
