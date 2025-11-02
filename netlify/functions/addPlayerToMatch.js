@@ -39,6 +39,12 @@ export const handler = async (event) => {
         VALUES (${match_id}, ${player_id}, ${team_id})
         ON CONFLICT (match_id, player_id) DO UPDATE SET team_id = EXCLUDED.team_id
       `;
+
+      await sql`
+      UPDATE players
+      SET appearances = appearances + 1
+      WHERE id = ${player_id};
+    `;
     }
 
     return {

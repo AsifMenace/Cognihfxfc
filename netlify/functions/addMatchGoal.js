@@ -20,7 +20,7 @@ export const handler = async (event) => {
     // Increment the goals count for the player
     await sql`
       UPDATE players
-      SET goals = goals + 1, appearances = appearances + 1
+      SET goals = goals + 1
       WHERE id = ${player_id};
     `;
 
