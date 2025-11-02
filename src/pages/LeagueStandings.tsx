@@ -62,60 +62,66 @@ export const LeagueStandings: React.FC = () => {
   if (error) return <p className="text-red-600">Error: {error}</p>;
 
   return (
-    <div className="overflow-auto max-w-4xl mx-auto mt-8">
+    <div className="max-w-4xl mx-auto mt-8">
       <h2 className="text-2xl uppercase font-bold mb-4 text-center">
         League Standings
       </h2>
-      <table className="min-w-full bg-white border rounded shadow">
-        <thead>
-          <tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
-            <th className="py-3 px-6 text-center">Pos</th>{" "}
-            {/* New position column */}
-            <th className="py-3 px-6 text-left">Team</th>
-            <th className="py-3 px-6 text-center">Pts</th>
-            <th className="py-3 px-6 text-center">P</th>
-            <th className="py-3 px-6 text-center">W</th>
-            <th className="py-3 px-6 text-center">D</th>
-            <th className="py-3 px-6 text-center">L</th>
-            <th className="py-3 px-6 text-center">GF</th>
-            <th className="py-3 px-6 text-center">GA</th>
-            <th className="py-3 px-6 text-center">GD</th>
-          </tr>
-        </thead>
-        <tbody>
-          {standings.map((team, index) => (
-            <tr
-              key={team.team_id}
-              className="text-gray-600 uppercase hover:bg-gray-50"
-            >
-              <td className="py-3 px-6 text-center font-bold">{index + 1}</td>{" "}
-              {/* Position */}
-              <td className="py-3 px-6 flex items-center space-x-3">
-                <span
-                  className="inline-block w-4 h-4 rounded-full"
-                  style={{ backgroundColor: team.team_color || "#888" }}
-                />
-                <span className="whitespace-nowrap">{team.team_name}</span>
-              </td>
-              <td className="py-3 px-6 text-center font-bold">{team.points}</td>
-              <td className="py-3 px-6 text-center">{team.played}</td>
-              <td className="py-3 px-6 text-center">{team.wins}</td>
-              <td className="py-3 px-6 text-center">{team.draws}</td>
-              <td className="py-3 px-6 text-center">{team.losses}</td>
-              <td className="py-3 px-6 text-center">{team.goals_for}</td>
-              <td className="py-3 px-6 text-center">{team.goals_against}</td>
-              <td className="py-3 px-6 text-center">{team.goal_difference}</td>
+      <div className="overflow-x-auto">
+        <table className="min-w-[720px] bg-white border rounded shadow w-full">
+          <thead>
+            <tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
+              <th className="py-3 px-6 text-center">Pos</th>{" "}
+              {/* New position column */}
+              <th className="py-3 px-6 text-left">Team</th>
+              <th className="py-3 px-6 text-center">Pts</th>
+              <th className="py-3 px-6 text-center">P</th>
+              <th className="py-3 px-6 text-center">W</th>
+              <th className="py-3 px-6 text-center">D</th>
+              <th className="py-3 px-6 text-center">L</th>
+              <th className="py-3 px-6 text-center">GF</th>
+              <th className="py-3 px-6 text-center">GA</th>
+              <th className="py-3 px-6 text-center">GD</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {standings.map((team, index) => (
+              <tr
+                key={team.team_id}
+                className="text-gray-600 uppercase hover:bg-gray-50"
+              >
+                <td className="py-3 px-6 text-center font-bold">{index + 1}</td>{" "}
+                {/* Position */}
+                <td className="py-3 px-6 flex items-center space-x-3">
+                  <span
+                    className="inline-block w-4 h-4 rounded-full"
+                    style={{ backgroundColor: team.team_color || "#888" }}
+                  />
+                  <span className="whitespace-nowrap">{team.team_name}</span>
+                </td>
+                <td className="py-3 px-6 text-center font-bold">
+                  {team.points}
+                </td>
+                <td className="py-3 px-6 text-center">{team.played}</td>
+                <td className="py-3 px-6 text-center">{team.wins}</td>
+                <td className="py-3 px-6 text-center">{team.draws}</td>
+                <td className="py-3 px-6 text-center">{team.losses}</td>
+                <td className="py-3 px-6 text-center">{team.goals_for}</td>
+                <td className="py-3 px-6 text-center">{team.goals_against}</td>
+                <td className="py-3 px-6 text-center">
+                  {team.goal_difference}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="mt-8">
         <h3 className="text-lg font-bold mb-2">Top Scorers</h3>
         <ul className="divide-y divide-gray-200">
           {topScorers.map((player, idx) => (
             <li
               key={player.id}
-              className={`flex items-center py-2 space-x-3 rounded px-3 transition-shadow cursor-pointer overflow-x-auto ${
+              className={`flex items-center py-2 space-x-3 rounded px-3 transition-shadow cursor-pointer overflow-hidden ${
                 idx === 0
                   ? "bg-yellow-100 border border-yellow-400 shadow-lg font-semibold"
                   : "bg-white hover:shadow-md"
@@ -134,9 +140,7 @@ export const LeagueStandings: React.FC = () => {
                 </div>
               )}
               <span className="font-bold flex-shrink-0">{idx + 1}.</span>
-              <span className="uppercase flex-1 whitespace-nowrap">
-                {player.name}
-              </span>
+              <span className="uppercase flex-1 truncate">{player.name}</span>
               <span className="flex items-center text-sm text-gray-500 flex-shrink-0">
                 {idx === 0 && (
                   <span

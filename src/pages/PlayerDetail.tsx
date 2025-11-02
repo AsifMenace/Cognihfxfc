@@ -122,11 +122,14 @@ const PlayerDetail: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
             <div className="lg:flex">
               <div className="lg:w-1/3">
-                <div className="relative">
+                <div
+                  className="relative"
+                  style={{ width: "100%", aspectRatio: "3/4", maxHeight: 800 }}
+                >
                   <img
                     src={player.photo}
                     alt={player.name}
-                    className="w-full h-64 md:h-80 lg:h-full object-cover object-top"
+                    className="w-full h-full object-cover object-center"
                   />
                   <div className="absolute top-4 right-4 bg-blue-600 text-white w-12 md:w-16 h-12 md:h-16 rounded-full flex items-center justify-center text-lg md:text-2xl font-bold">
                     {player.jerseyNumber}
