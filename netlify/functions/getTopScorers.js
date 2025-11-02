@@ -18,7 +18,7 @@ export const handler = async (event) => {
 
   const limit = event.queryStringParameters?.limit
     ? Number(event.queryStringParameters.limit)
-    : 5; // Default to 5
+    : 10; // Default to 5
 
   try {
     const topScorers = await sql`
@@ -31,7 +31,7 @@ export const handler = async (event) => {
         photo
       FROM players
       ORDER BY goals DESC, appearances ASC
-      LIMIT ${limit};
+      LIMIT 10;
     `;
 
     return {
