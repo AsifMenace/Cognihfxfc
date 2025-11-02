@@ -24,6 +24,12 @@ export const handler = async (event) => {
       DELETE FROM match_players
       WHERE match_id = ${match_id} AND player_id = ${player_id}
     `;
+    // Decrement player's appearances count
+    await sql`
+      UPDATE players
+      SET appearances = GREATEST(appearances - 1, 0)
+      WHERE id = ${player_id};
+    `;
 
     // Fetch updated lineup
     const lineup = await sql`

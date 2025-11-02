@@ -230,7 +230,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           <div className="max-w-2xl mx-auto">
             {/* *** MODIFIED: dynamically render nextGame data or fallback *** */}
             {nextGame ? (
-              <div className="bg-white rounded-xl shadow-lg p-4 md:p-8 border-l-4 border-blue-600">
+              <div className="bg-white rounded-xl shadow-lg p-4 md:p-8 border-l-4">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
                     <Calendar className="text-blue-600" size={24} />
@@ -355,38 +355,44 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-slate-900">
               Top Scorers
             </h2>
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              {topScorers.map((player, i) => (
-                <motion.div
-                  key={player.id}
-                  className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-xl hover:-translate-y-1 transition"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.1, duration: 0.8 }}
-                >
-                  <Link
+            {/* Horizontal, portrait-style Top Scorers (scrollable) */}
+            <div className="max-w-4xl mx-auto overflow-x-auto py-2">
+              <div className="flex space-x-4 px-4">
+                {topScorers.map((player, i) => (
+                  <motion.div
                     key={player.id}
-                    to={`/player/${player.id}`}
-                    className="group"
+                    className="flex-shrink-0 w-44 sm:w-56 md:w-64 bg-slate-50 rounded-xl p-4 text-center hover:shadow-xl hover:-translate-y-1 transition"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + i * 0.1, duration: 0.8 }}
                   >
-                    <div className="bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition">
-                      <div className="relative mb-4">
-                        <img
-                          src={player.photo}
-                          alt={player.name}
-                          className="w-16 h-16 rounded-full mx-auto object-cover object-top"
-                        />
-                        {i === 0 && (
-                          <div className="absolute -top-1 -right-1 bg-yellow-400 text-yellow-900 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
-                            👑
-                          </div>
-                        )}
+                    <Link to={`/player/${player.id}`} className="group block">
+                      <div className="mb-3">
+                        <div
+                          className="relative mx-auto rounded-lg overflow-hidden bg-slate-100"
+                          style={{ width: "100px", aspectRatio: "3/4" }}
+                        >
+                          <img
+                            src={player.photo}
+                            alt={player.name}
+                            className="w-full h-full object-cover object-center"
+                          />
+                          {i === 0 && (
+                            <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold">
+                              👑
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <h3 className="font-bold">{player.name}</h3>
-                      <p className="text-slate-600 text-xs mb-3">
+
+                      <h3 className="font-bold text-sm md:text-base truncate">
+                        {player.name}
+                      </h3>
+                      <p className="text-slate-600 text-xs mb-2 truncate">
                         {player.position}
                       </p>
-                      <div className="flex items-center justify-center space-x-4">
+
+                      <div className="flex items-center justify-center space-x-3 text-sm">
                         <div className="flex items-center space-x-1">
                           <Target className="text-blue-600" size={16} />
                           <span className="font-bold">{player.goals}</span>
@@ -396,10 +402,10 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                           {player.appearances} apps
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
         </section>

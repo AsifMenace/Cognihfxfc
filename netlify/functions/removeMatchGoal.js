@@ -18,7 +18,7 @@ export const handler = async (event) => {
     // Decrement player's goals count safely
     await sql`
       UPDATE players
-      SET goals = GREATEST(goals - 1, 0), appearances = GREATEST(appearances - 1, 0)
+      SET goals = GREATEST(goals - 1, 0)
       WHERE id = ${player_id};
     `;
 

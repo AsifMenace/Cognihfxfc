@@ -32,8 +32,8 @@ const Squad: React.FC<SquadProps> = ({ isAdmin }) => {
   useEffect(() => {
     const API_URL =
       process.env.NODE_ENV === "development"
-        ? "/.netlify/functions/getPlayers"
-        : "/.netlify/functions/getPlayers";
+        ? "/.netlify/functions/getPlayers?sortBy=appearances&order=DESC"
+        : "/.netlify/functions/getPlayers?sortBy=appearances&order=DESC";
     // const API_URL = 'https://db-integration--c  ognihfxfc.netlify.app/.netlify/functions/getPlayers';
 
     const fetchPlayers = async () => {
