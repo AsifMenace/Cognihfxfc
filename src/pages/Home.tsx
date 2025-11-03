@@ -158,27 +158,58 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Hero Section */}
+      {/* Image Section - Full Width Hero */}
+      <motion.section
+        className="relative overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.7 }}
+      >
+        {/* Mobile Background Image */}
+        <div className="block md:hidden h-[23vh] sm:h-[60vh] overflow-hidden">
+          <div className="w-full h-full scale-[1] origin-center">
+            <img
+              src="/images/hero-mobile.jpg"
+              alt="Cogni HFX FC"
+              className="w-full h-full object-cover object-[85%_30%]"
+            />
+          </div>
+        </div>
+
+        {/* Desktop Background Image */}
+        <div className="hidden md:block h-[60vh] lg:h-[60vh] overflow-hidden">
+          <div className="w-full h-full scale-[1] origin-center">
+            <img
+              src="/images/hero-desktop.jpg"
+              alt="Cogni HFX FC"
+              className="w-full h-full object-cover object-[center_38%]"
+            />
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Text and Buttons Section - Below Image */}
       <motion.section
         className="bg-gradient-to-br from-blue-900 via-slate-800 to-blue-800 text-white"
-        initial={{ opacity: 0, y: -40 }}
+        initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
+        transition={{ delay: 0.3, duration: 0.7 }}
       >
         <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="max-w-4xl mx-auto text-center">
             <motion.h1
-              className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6 drop-shadow-xl"
+              className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.7 }}
+              transition={{ delay: 0.5, duration: 0.7 }}
             >
-              Cogni Hfx FC
+              COGNI HFX FC
             </motion.h1>
             <motion.p
               className="text-lg sm:text-xl md:text-2xl mb-6 md:mb-8 text-blue-100"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 1, duration: 0.6 }}
+              transition={{ delay: 0.7, duration: 0.6 }}
             >
               Built on Belief. Driven by Passion.
             </motion.p>
@@ -187,23 +218,23 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
               className="flex flex-col sm:flex-row gap-4 justify-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.5 }}
+              transition={{ delay: 0.9, duration: 0.5 }}
             >
               <Link
                 to="/games"
-                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors shadow-lg transform hover:scale-105"
+                className="bg-blue-600 hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg transform hover:scale-105"
               >
                 View Fixtures
               </Link>
               <Link
                 to="/squad"
-                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors shadow-lg transform hover:scale-105"
+                className="bg-blue-600 hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg transform hover:scale-105"
               >
                 Meet the Squad
               </Link>
               <Link
                 to="/standings"
-                className="bg-blue-600  hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-colors shadow-lg transform hover:scale-105"
+                className="bg-blue-600 hover:bg-white hover:text-slate-900 px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg transform hover:scale-105"
               >
                 View League Standings
               </Link>
@@ -211,6 +242,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           </div>
         </div>
       </motion.section>
+
       <div className="mt-6 text-center">
         <p className="mb-2 text-lg">Get notified about new bookings & Polls</p>
         <PushSubscribeButton />
