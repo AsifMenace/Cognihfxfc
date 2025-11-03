@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Cogni Hfx FC</h1>
+              <h1 className="text-xl font-bold">COGNI HFX FC</h1>
               <p className="text-sm text-slate-300">Football Club</p>
             </div>
           </Link>
