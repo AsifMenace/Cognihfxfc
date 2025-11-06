@@ -41,10 +41,11 @@ function formatTime(timeStr: string): string {
 }
 
 export default function BookingVotingWidget() {
+  // change this constant to update the maximum IN slots in one place
+  const MAX_IN_SLOTS = 14;
   const [bookingInfo, setBookingInfo] = useState<BookingInfo | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | "">("");
-  const [voteStatus, setVoteStatus] = useState<"in" | "out" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [voteResult, setVoteResult] = useState<VoteResult>({
     in: [],
@@ -52,6 +53,10 @@ export default function BookingVotingWidget() {
     inCount: 0,
     outCount: 0,
   });
+  const [lastVote, setLastVote] = useState<{
+    playerId: number;
+    vote: "in" | "out";
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
 
@@ -134,9 +139,18 @@ export default function BookingVotingWidget() {
     fetchPlayers();
     fetchVoteResults();
     setSelectedPlayerId("");
-    setVoteStatus(null);
     setError(null);
   }, [bookingInfo]);
+
+  // derived helpers for button states
+  const selectedId =
+    typeof selectedPlayerId === "number" ? selectedPlayerId : null;
+  const isSelectedIn =
+    selectedId !== null && voteResult.in.some((p) => p.id === selectedId);
+  const isSelectedOut =
+    selectedId !== null && voteResult.out.some((p) => p.id === selectedId);
+  const inSlotsFull = voteResult.inCount >= MAX_IN_SLOTS;
+  const remainingSlots = Math.max(0, MAX_IN_SLOTS - voteResult.inCount);
 
   const handleVote = async (vote: "in" | "out") => {
     if (!bookingInfo) {
@@ -148,8 +162,29 @@ export default function BookingVotingWidget() {
       setError("Please select your name.");
       return;
     }
-    if (voteStatus === vote) {
-      setError(`You have already voted '${vote.toUpperCase()}'`);
+    // Prevent adding more than MAX_IN_SLOTS "IN" votes
+    if (vote === "in" && voteResult.inCount >= MAX_IN_SLOTS) {
+      setError("Slots are full");
+      return;
+    }
+
+    const selectedId =
+      typeof selectedPlayerId === "number" ? selectedPlayerId : null;
+    // Prevent same player from being added twice to same list
+    if (
+      vote === "in" &&
+      selectedId !== null &&
+      voteResult.in.some((p) => p.id === selectedId)
+    ) {
+      setError("Player is already marked IN");
+      return;
+    }
+    if (
+      vote === "out" &&
+      selectedId !== null &&
+      voteResult.out.some((p) => p.id === selectedId)
+    ) {
+      setError("Player is already marked OUT");
       return;
     }
     setLoading(true);
@@ -169,13 +204,14 @@ export default function BookingVotingWidget() {
         setLoading(false);
         return;
       }
-      setVoteStatus(vote);
       setVoteResult({
         in: data.inPlayers || voteResult.in,
         out: data.outPlayers || voteResult.out,
         inCount: data.inCount || voteResult.inCount,
         outCount: data.outCount || voteResult.outCount,
       });
+      // store last vote for a transient confirmation message
+      setLastVote({ playerId: Number(selectedPlayerId), vote });
     } catch (err) {
       setError("Network or server error");
     }
@@ -192,12 +228,11 @@ export default function BookingVotingWidget() {
 
   // Build dates for display to fix timezone issues
   const startDate = buildDate(bookingInfo.booking_date, bookingInfo.start_time);
-  const endDate = buildDate(bookingInfo.booking_date, bookingInfo.end_time);
 
   return (
     <div className="max-w-md mx-auto bg-white rounded shadow p-6">
       <h3 className="text-xl font-bold mb-1 text-center">
-        Vote Your Availability
+        {`Vote Your Availability (MAX ${MAX_IN_SLOTS})`}
       </h3>
       <p className="flex justify-center items-center space-x-2 text-gray-600 mb-4">
         <span className="flex items-center space-x-1">
@@ -254,7 +289,11 @@ export default function BookingVotingWidget() {
         id="player-select"
         aria-label="Select Player Name"
         value={selectedPlayerId}
-        onChange={(e) => setSelectedPlayerId(Number(e.target.value))}
+        onChange={(e) => {
+          setSelectedPlayerId(Number(e.target.value));
+          setError(null);
+          setLastVote(null);
+        }}
         className="w-full mb-4 border rounded px-3 py-2"
       >
         <option value="">-- Select Player --</option>
@@ -267,10 +306,10 @@ export default function BookingVotingWidget() {
 
       <div className="flex justify-center space-x-4 mb-3">
         <button
-          disabled={!selectedPlayerId || voteStatus === "in" || loading}
+          disabled={!selectedPlayerId || isSelectedIn || loading || inSlotsFull}
           onClick={() => handleVote("in")}
           className={`px-5 py-2 rounded font-semibold text-white ${
-            voteStatus === "in"
+            isSelectedIn || inSlotsFull
               ? "bg-green-500 opacity-50 cursor-not-allowed"
               : "bg-green-600 hover:bg-green-700"
           }`}
@@ -278,10 +317,10 @@ export default function BookingVotingWidget() {
           IN
         </button>
         <button
-          disabled={!selectedPlayerId || voteStatus === "out" || loading}
+          disabled={!selectedPlayerId || isSelectedOut || loading}
           onClick={() => handleVote("out")}
           className={`px-5 py-2 rounded font-semibold text-white ${
-            voteStatus === "out"
+            isSelectedOut
               ? "bg-red-500 opacity-50 cursor-not-allowed"
               : "bg-red-600 hover:bg-red-700"
           }`}
@@ -290,11 +329,23 @@ export default function BookingVotingWidget() {
         </button>
       </div>
 
+      {/* show remaining slots or full message */}
+      {inSlotsFull ? (
+        <p className="text-center text-red-600 font-semibold mb-3">
+          Slots are full
+        </p>
+      ) : (
+        <p className="text-center text-slate-600 mb-3">{`${remainingSlots} slots left`}</p>
+      )}
+
       {error && <p className="text-center text-red-600 mb-3">{error}</p>}
-      {voteStatus && !error && (
+      {lastVote && !error && (
         <p className="text-center text-green-600 font-semibold mb-3">
-          Your vote has been recorded as{" "}
-          <span className="uppercase">{voteStatus}</span>.
+          {`Recorded ${lastVote.vote.toUpperCase()} for `}
+          <span className="font-bold">
+            {players.find((p) => p.id === lastVote.playerId)?.name || "Player"}
+          </span>
+          .
         </p>
       )}
 
