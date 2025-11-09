@@ -12,6 +12,7 @@
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.0",
+    "@lucide/lab": "^0.1.2",
     "@netlify/neon": "^0.1.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.344.0",
