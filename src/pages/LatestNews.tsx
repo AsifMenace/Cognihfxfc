@@ -52,11 +52,11 @@ export default function LatestNews() {
 
   return (
     <>
-      <section className="py-10 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-10 bg-black">
+        <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-7xl md:text-8xl font-black text-center mb-8 tracking-tighter">
             <span className="text-yellow-400 drop-shadow-lg">LATEST</span>
-            <span className="text-black"> NEWS</span>
+            <span className="text-white"> NEWS</span>
           </h2>
 
           <div className="flex overflow-x-auto gap-8 pb-4 no-scrollbar snap-x snap-mandatory">
@@ -66,39 +66,38 @@ export default function LatestNews() {
                 onClick={() =>
                   setSelectedNews({ id, title, description, image_url })
                 }
-                className="flex-shrink-0 w-96 snap-center cursor-pointer"
+                className="flex-shrink-0 w-[90vw] max-w-[380px] sm:w-96 snap-center cursor-pointer"
               >
-                <div className="relative h-[640px] bg-gradient-to-b from-gray-900 to-black rounded-2xl overflow-hidden border-4 border-yellow-500 shadow-2xl">
-                  {/* Image Section - NO HOVER EFFECTS */}
-                  <div className="relative h-64 overflow-hidden">
+                <div className="relative h-[520px] sm:h-[580px] bg-gradient-to-b from-gray-900 to-black rounded-xl sm:rounded-2xl overflow-hidden border-3 sm:border-4 border-yellow-500 shadow-2xl">
+                  {/* Image Section */}
+                  <div className="relative h-44 sm:h-52 overflow-hidden">
                     <img
                       src={image_url}
                       alt={title}
-                      className="w-full h-full object-cover object-center"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute bg-gradient-to-t from-white via-transparent to-transparent" />
                   </div>
 
-                  {/* Content Section */}
-                  <div className="relative h-[356px] p-6">
+                  {/* Content Section - WITH PADDING FOR BUTTON */}
+                  <div className="relative h-[calc(100%-11rem)] sm:h-[calc(100%-13rem)] p-4 sm:p-6 pb-20">
                     {/* Title */}
-                    <h3 className="text-3xl font-black text-yellow-400 mb-4 leading-snug tracking-tight">
+                    <h3 className="text-3xl sm:text-2xl font-black text-yellow-400 mb-2 sm:mb-3 leading-tight tracking-tight">
                       {title.toUpperCase()}
                     </h3>
 
-                    {/* Description */}
-                    <div className="pb-16 h-[calc(100%-4rem)]">
-                      <p className="text-gray-200 text-lg leading-relaxed font-medium line-clamp-6">
+                    {/* Description - With overflow hidden */}
+                    <div className="overflow-hidden">
+                      <p className="text-gray-200 text-sm sm:text-base leading-relaxed font-medium line-clamp-6">
                         {description}
                       </p>
                     </div>
+                  </div>
 
-                    {/* Button */}
-                    <div className="absolute bottom-1 left-6 right-6">
-                      <button className="w-full px-6 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-500 transition-colors duration-300 shadow-lg">
-                        READ MORE
-                      </button>
-                    </div>
+                  {/* Button - ABSOLUTE POSITIONED AT BOTTOM */}
+                  <div className="absolute bottom-2 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6">
+                    <button className="w-full px-6 py-2.5 sm:py-3 bg-yellow-400 text-black font-bold text-sm rounded-lg hover:bg-yellow-500 transition-colors duration-300 shadow-lg">
+                      READ MORE
+                    </button>
                   </div>
                 </div>
               </article>
