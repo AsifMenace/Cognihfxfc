@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react"; // or use any close icon
+import { X } from "lucide-react";
 
 interface NewsItem {
   id: number;
@@ -52,64 +52,53 @@ export default function LatestNews() {
 
   return (
     <>
-      <section className="py-18 bg-black">
+      <section className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-6xl md:text-8xl font-black text-center mb-8 tracking-tighter">
+          <h2 className="text-7xl md:text-8xl font-black text-center mb-8 tracking-tighter">
             <span className="text-yellow-400 drop-shadow-lg">LATEST</span>
-            <span className="text-white"> NEWS</span>
+            <span className="text-black"> NEWS</span>
           </h2>
 
-          <div className="flex overflow-x-auto gap-8 pb-12 no-scrollbar snap-x snap-mandatory">
+          <div className="flex overflow-x-auto gap-8 pb-4 no-scrollbar snap-x snap-mandatory">
             {news.map(({ id, title, description, image_url }) => (
               <article
                 key={id}
                 onClick={() =>
                   setSelectedNews({ id, title, description, image_url })
                 }
-                className="group flex-shrink-0 w-96 snap-center cursor-pointer"
+                className="flex-shrink-0 w-96 snap-center cursor-pointer"
               >
-                <div className="relative h-full transition-all duration-500 group-hover:translate-y-[-20px] group-hover:scale-[1.03]">
-                  <div className="relative h-[640px] bg-gradient-to-b from-gray-900 to-black rounded-2xl overflow-hidden border-4 border-yellow-500 shadow-2xl">
-                    {/* Image Section */}
-                    <div className="relative h-64 overflow-hidden">
-                      <img
-                        src={image_url}
-                        alt={title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-125"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-                      <div className="absolute inset-0 bg-yellow-400 mix-blend-overlay opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
+                <div className="relative h-[640px] bg-gradient-to-b from-gray-900 to-black rounded-2xl overflow-hidden border-4 border-yellow-500 shadow-2xl">
+                  {/* Image Section - NO HOVER EFFECTS */}
+                  <div className="relative h-64 overflow-hidden">
+                    <img
+                      src={image_url}
+                      alt={title}
+                      className="w-full h-full object-cover object-center"
+                    />
+                    <div className="absolute bg-gradient-to-t from-white via-transparent to-transparent" />
+                  </div>
+
+                  {/* Content Section */}
+                  <div className="relative h-[356px] p-6">
+                    {/* Title */}
+                    <h3 className="text-3xl font-black text-yellow-400 mb-4 leading-snug tracking-tight">
+                      {title.toUpperCase()}
+                    </h3>
+
+                    {/* Description */}
+                    <div className="pb-16 h-[calc(100%-4rem)]">
+                      <p className="text-gray-200 text-lg leading-relaxed font-medium line-clamp-6">
+                        {description}
+                      </p>
                     </div>
 
-                    {/* Content Section - FIXED */}
-                    <div className="relative h-[356px] p-6">
-                      {/* Title */}
-                      <h3 className="text-3xl font-black text-yellow-400 mb-4 leading-snug tracking-tight">
-                        {title.toUpperCase()}
-                      </h3>
-
-                      {/* Description with padding for button */}
-                      <div className="pb-16 h-[calc(100%-4rem)]">
-                        <p className="text-gray-200 text-lg leading-relaxed font-medium line-clamp-6">
-                          {description}
-                        </p>
-                      </div>
-
-                      {/* Button - ABSOLUTE POSITIONED at bottom */}
-                      <div className="absolute bottom-1 left-6 right-6">
-                        <button className="w-full px-6 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-500 transition-all duration-300 transform group-hover:scale-105 shadow-lg">
-                          READ MORE
-                        </button>
-                      </div>
+                    {/* Button */}
+                    <div className="absolute bottom-1 left-6 right-6">
+                      <button className="w-full px-6 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-500 transition-colors duration-300 shadow-lg">
+                        READ MORE
+                      </button>
                     </div>
-
-                    {/* Decorative Glow */}
-                    <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none">
-                      <div className="absolute top-0 right-0 w-40 h-40 bg-yellow-400 rounded-full blur-3xl opacity-60 group-hover:opacity-90 transition-opacity" />
-                    </div>
-
-                    {/* Hover Ring Effect */}
-                    <div className="absolute inset-0 rounded-2xl ring-4 ring-yellow-400/0 group-hover:ring-yellow-400/50 transition-all duration-500 pointer-events-none" />
                   </div>
                 </div>
               </article>
@@ -121,7 +110,7 @@ export default function LatestNews() {
             {news.map((_, i) => (
               <div
                 key={i}
-                className="w-4 h-4 rounded-full bg-yellow-400/30 transition-all hover:bg-yellow-400 hover:scale-150 duration-300 cursor-pointer"
+                className="w-4 h-4 rounded-full bg-yellow-400/30 hover:bg-yellow-400 transition-colors duration-300 cursor-pointer"
               />
             ))}
           </div>
@@ -172,9 +161,6 @@ export default function LatestNews() {
                 </p>
               </div>
             </div>
-
-            {/* Decorative Glow */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-yellow-400 rounded-full blur-3xl opacity-30 pointer-events-none" />
           </div>
         </div>
       )}
