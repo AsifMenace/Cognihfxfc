@@ -12,6 +12,9 @@ import {
   Weight,
   Pencil,
 } from "lucide-react";
+import ThemeProvider from "../components/ThemeProvider";
+import Card from "../components/Card";
+import Title from "../components/Title";
 
 interface Player {
   id: number;
@@ -55,302 +58,284 @@ const PlayerDetail: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchPlayer();
   }, [id]);
 
   const getPositionColor = (position: string) => {
     switch (position) {
       case "Goalkeeper":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-600/20 text-yellow-400 border border-yellow-600/40";
       case "Defender":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-blue-600/20 text-blue-400 border border-blue-600/40";
       case "Midfielder":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-600/20 text-green-400 border border-green-600/40";
       case "Forward":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-600/20 text-red-400 border border-red-600/40";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-600/20 text-gray-400 border border-gray-600/40";
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
+      <ThemeProvider>
+        <div className="flex items-center justify-center py-32">
+          <div className="text-3xl font-black text-yellow-400 animate-pulse">
+            LOADING PLAYER...
+          </div>
+        </div>
+      </ThemeProvider>
     );
   }
 
   if (error || !player) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">
-            {error || "Player Not Found"}
-          </h1>
-          <Link
-            to="/squad"
-            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span>Back to Squad</span>
-          </Link>
+      <ThemeProvider>
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center space-y-6">
+            <h1 className="text-3xl font-black text-red-400">
+              {error || "PLAYER NOT FOUND"}
+            </h1>
+            <Link
+              to="/squad"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg"
+            >
+              <ArrowLeft size={20} />
+              BACK TO SQUAD
+            </Link>
+          </div>
         </div>
-      </div>
+      </ThemeProvider>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-6">
-          <Link
-            to="/squad"
-            className="inline-flex items-center space-x-2 text-slate-600 hover:text-blue-600 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span>Back to Squad</span>
-          </Link>
-        </div>
-      </div>
+    <ThemeProvider>
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {/* Back Button */}
+        <Link
+          to="/squad"
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-yellow-400 transition-colors font-medium"
+        >
+          <ArrowLeft size={20} />
+          BACK TO SQUAD
+        </Link>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Player Header */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
-            <div className="lg:flex">
-              <div className="lg:w-1/3">
-                <div
-                  className="relative"
-                  style={{ width: "100%", aspectRatio: "3/4", maxHeight: 800 }}
-                >
-                  <img
-                    src={player.photo}
-                    alt={player.name}
-                    className="w-full h-full object-cover object-center"
-                  />
-                  <div className="absolute top-4 right-4 bg-blue-600 text-white w-12 md:w-16 h-12 md:h-16 rounded-full flex items-center justify-center text-lg md:text-2xl font-bold">
-                    {player.jerseyNumber}
-                  </div>
+        {/* Player Header Card */}
+        <Card className="border-yellow-500/30 overflow-hidden">
+          <div className="lg:flex">
+            {/* Photo */}
+            <div className="lg:w-1/3">
+              <div className="relative aspect-[3/4] overflow-hidden">
+                <img
+                  src={player.photo}
+                  alt={player.name}
+                  className="w-full h-full object-cover object-top"
+                />
+                {/* Jersey Number */}
+                <div className="absolute top-6 right-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black shadow-xl">
+                  {player.jerseyNumber}
                 </div>
-              </div>
-
-              <div className="lg:w-2/3 p-4 md:p-6 lg:p-8">
-                <div className="mb-4">
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getPositionColor(
-                      player.position
-                    )}`}
-                  >
-                    {player.position}
-                  </span>
-                </div>
-
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 mb-4 md:mb-6">
-                  {player.name}
-                </h1>
-
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-4 md:mb-6">
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="text-slate-400" size={16} />
-                    <div>
-                      <div className="text-xs md:text-sm text-slate-600">
-                        Age
-                      </div>
-                      <div className="text-sm md:text-base font-semibold text-slate-900">
-                        {player.age}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="text-slate-400" size={16} />
-                    <div>
-                      <div className="text-xs md:text-sm text-slate-600">
-                        Nationality
-                      </div>
-                      <div className="text-sm md:text-base font-semibold text-slate-900">
-                        {player.nationality}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Ruler className="text-slate-400" size={16} />
-                    <div>
-                      <div className="text-xs md:text-sm text-slate-600">
-                        Height
-                      </div>
-                      <div className="text-sm md:text-base font-semibold text-slate-900">
-                        {player.height}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Weight className="text-slate-400" size={16} />
-                    <div>
-                      <div className="text-xs md:text-sm text-slate-600">
-                        Weight
-                      </div>
-                      <div className="text-sm md:text-base font-semibold text-slate-900">
-                        {player.weight}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <User className="text-slate-400" size={16} />
-                    <div>
-                      <div className="text-xs md:text-sm text-slate-600">
-                        Jersey
-                      </div>
-                      <div className="text-sm md:text-base font-semibold text-slate-900">
-                        #{player.jerseyNumber}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Users className="text-slate-400" size={16} />
-                    <div>
-                      <div className="text-xs md:text-sm text-slate-600">
-                        Appearances
-                      </div>
-                      <div className="text-sm md:text-base font-semibold text-slate-900">
-                        {player.appearances}
-                      </div>
-                    </div>
+                {/* Position Badge — Creative & Bold */}
+                <div className="absolute bottom-6 left-6">
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-amber-500 blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
+                    <span
+                      className={`relative px-5 py-2 rounded-full text-sm font-black tracking-wider uppercase shadow-2xl ${getPositionColor(
+                        player.position
+                      )}`}
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6))",
+                        border: `2px solid`,
+                        borderImage: `linear-gradient(135deg, ${
+                          getPositionColor(player.position).match(
+                            /bg-([a-z]+)-/
+                          )?.[1] || "yellow"
+                        }-400, ${
+                          getPositionColor(player.position).match(
+                            /bg-([a-z]+)-/
+                          )?.[1] || "amber"
+                        }-600) 1`,
+                        textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+                      }}
+                    >
+                      {player.position}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-              {player.name}
-            </h1>
 
-            {/* Edit button */}
-            <Link
-              to={`/edit-player/${player.id}`}
-              className="mt-3 md:mt-0 inline-flex items-center justify-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700 transition-colors"
-            >
-              <Pencil size={18} />
-              <span>Edit</span>
-            </Link>
-          </div>
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Season Statistics */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-lg p-4 md:p-6 lg:p-8 mb-6 md:mb-8">
-                <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-4 md:mb-6">
-                  Season Statistics
-                </h2>
-                <div className="grid grid-cols-3 gap-3 md:gap-6">
-                  <div className="text-center">
-                    <div className="w-12 md:w-16 h-12 md:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
-                      <Target className="text-blue-600" size={20} />
-                    </div>
-                    <div className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">
-                      {player.goals}
-                    </div>
-                    <div className="text-xs md:text-base text-slate-600">
-                      Goals
+            {/* Info */}
+            <div className="lg:w-2/3 p-6 md:p-8">
+              <h1 className="text-3xl md:text-4xl font-black text-white mb-6">
+                <Title>{player.name}</Title>
+              </h1>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
+                <div className="flex items-center gap-3">
+                  <Calendar className="text-yellow-400" size={20} />
+                  <div>
+                    <div className="text-gray-400">Age</div>
+                    <div className="font-bold text-white">{player.age}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MapPin className="text-yellow-400" size={20} />
+                  <div>
+                    <div className="text-gray-400">Nationality</div>
+                    <div className="font-bold text-white">
+                      {player.nationality}
                     </div>
                   </div>
-
-                  <div className="text-center">
-                    <div className="w-12 md:w-16 h-12 md:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
-                      <Trophy className="text-green-600" size={20} />
-                    </div>
-                    <div className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">
-                      {player.assists}
-                    </div>
-                    <div className="text-xs md:text-base text-slate-600">
-                      Assists
+                </div>
+                <div className="flex items-center gap-3">
+                  <Ruler className="text-yellow-400" size={20} />
+                  <div>
+                    <div className="text-gray-400">Height</div>
+                    <div className="font-bold text-white">{player.height}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Weight className="text-yellow-400" size={20} />
+                  <div>
+                    <div className="text-gray-400">Weight</div>
+                    <div className="font-bold text-white">{player.weight}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <User className="text-yellow-400" size={20} />
+                  <div>
+                    <div className="text-gray-400">Jersey</div>
+                    <div className="font-bold text-white">
+                      #{player.jerseyNumber}
                     </div>
                   </div>
-
-                  <div className="text-center">
-                    <div className="w-12 md:w-16 h-12 md:h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
-                      <Users className="text-purple-600" size={20} />
-                    </div>
-                    <div className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">
+                </div>
+                <div className="flex items-center gap-3">
+                  <Users className="text-yellow-400" size={20} />
+                  <div>
+                    <div className="text-gray-400">Appearances</div>
+                    <div className="font-bold text-white">
                       {player.appearances}
                     </div>
-                    <div className="text-xs md:text-base text-slate-600">
-                      Appearances
-                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Player Bio */}
-              <div className="bg-white rounded-xl shadow-lg p-4 md:p-6 lg:p-8">
-                <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-4">
-                  About {player.name}
-                </h2>
-                <p className="text-sm md:text-base text-slate-700 leading-relaxed">
-                  {player.bio}
-                </p>
+              {/* Edit Button */}
+              <div className="mt-8">
+                <Link
+                  to={`/edit-player/${player.id}`}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg"
+                >
+                  <Pencil size={18} />
+                  EDIT PLAYER
+                </Link>
               </div>
             </div>
+          </div>
+        </Card>
 
-            {/* Quick Stats */}
-            <div className="space-y-4 md:space-y-6">
-              <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
-                <h3 className="text-base md:text-lg font-bold text-slate-900 mb-4">
-                  Quick Stats
+        {/* Stats + Bio + Quick Stats */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Season Statistics */}
+          <div className="lg:col-span-2">
+            <Card className="border-yellow-500/30">
+              <div className="p-6 md:p-8">
+                <h2 className="text-2xl font-black text-yellow-400 mb-6 text-center">
+                  SEASON STATISTICS
+                </h2>
+                <div className="grid grid-cols-3 gap-6 text-center">
+                  <div>
+                    <div className="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Target className="text-blue-400" size={32} />
+                    </div>
+                    <div className="text-4xl font-black text-white">
+                      {player.goals}
+                    </div>
+                    <div className="text-sm text-gray-400">Goals</div>
+                  </div>
+                  <div>
+                    <div className="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Trophy className="text-green-400" size={32} />
+                    </div>
+                    <div className="text-4xl font-black text-white">
+                      {player.assists}
+                    </div>
+                    <div className="text-sm text-gray-400">Assists</div>
+                  </div>
+                  <div>
+                    <div className="w-20 h-20 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Users className="text-purple-400" size={32} />
+                    </div>
+                    <div className="text-4xl font-black text-white">
+                      {player.appearances}
+                    </div>
+                    <div className="text-sm text-gray-400">Appearances</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="space-y-6">
+            <Card className="border-blue-500/30">
+              <div className="p-6">
+                <h3 className="text-lg font-black text-white mb-4">
+                  QUICK STATS
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-4 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-sm md:text-base text-slate-600">
-                      Goals per game
-                    </span>
-                    <span className="text-sm md:text-base font-semibold text-slate-900">
-                      {(player.goals / player.appearances).toFixed(2)}
+                    <span className="text-gray-400">Goals per game</span>
+                    <span className="font-bold text-white">
+                      {(player.goals / player.appearances || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm md:text-base text-slate-600">
-                      Assists per game
-                    </span>
-                    <span className="text-sm md:text-base font-semibold text-slate-900">
-                      {(player.assists / player.appearances).toFixed(2)}
+                    <span className="text-gray-400">Assists per game</span>
+                    <span className="font-bold text-white">
+                      {(player.assists / player.appearances || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm md:text-base text-slate-600">
-                      Goal contributions
-                    </span>
-                    <span className="text-sm md:text-base font-semibold text-slate-900">
+                    <span className="text-gray-400">Goal contributions</span>
+                    <span className="font-bold text-white">
                       {player.goals + player.assists}
                     </span>
                   </div>
                 </div>
               </div>
+            </Card>
 
-              <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl shadow-lg p-4 md:p-6 text-white">
-                <h3 className="text-base md:text-lg font-bold mb-4">
-                  Jersey Number
-                </h3>
-                <div className="text-center">
-                  <div className="text-4xl md:text-6xl font-bold mb-2">
-                    #{player.jerseyNumber}
-                  </div>
-                  <div className="text-sm md:text-base text-blue-100">
-                    {player.name}
-                  </div>
+            {/* Jersey Card */}
+            <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+              <div className="p-6 text-center">
+                <h3 className="text-lg font-black mb-4">JERSEY NUMBER</h3>
+                <div className="text-6xl md:text-7xl font-black mb-2">
+                  #{player.jerseyNumber}
                 </div>
+                <div className="text-sm opacity-90">{player.name}</div>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
+
+        {/* Bio */}
+        <Card className="border-yellow-500/30">
+          <div className="p-6 md:p-8">
+            <h2 className="text-2xl font-black text-yellow-400 mb-4">
+              ABOUT {player.name.toUpperCase()}
+            </h2>
+            <p className="text-gray-300 leading-relaxed text-lg">
+              {player.bio}
+            </p>
+          </div>
+        </Card>
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 

@@ -15,7 +15,7 @@ export default function HeadToHeadTrivia() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchH2H() {
+    const fetchH2H = async () => {
       try {
         setLoading(true);
         const res = await fetch("/.netlify/functions/getHeadToHeadResults");
@@ -27,68 +27,104 @@ export default function HeadToHeadTrivia() {
         setH2hResults(data);
         setError(null);
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message || "Failed to load head to head results");
-          setH2hResults([]);
-        }
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load head to head results"
+        );
+        setH2hResults([]);
       } finally {
         setLoading(false);
       }
-    }
+    };
     fetchH2H();
   }, []);
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="text-center p-4">Loading head to head trivia...</div>
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-6 shadow-xl">
+        <div className="text-center text-yellow-400 animate-pulse font-bold">
+          LOADING TRIVIA...
+        </div>
+      </div>
     );
-  if (error)
-    return <div className="text-red-600 p-4 text-center">Error: {error}</div>;
-  if (h2hResults.length === 0)
+  }
+
+  if (error) {
     return (
-      <div className="p-4 text-center">No head to head data available.</div>
+      <div className="bg-red-900/50 backdrop-blur-sm rounded-2xl border border-red-500/50 p-6 shadow-xl">
+        <p className="text-red-400 text-center font-bold">ERROR: {error}</p>
+      </div>
     );
+  }
+
+  if (h2hResults.length === 0) {
+    return (
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-6 shadow-xl">
+        <p className="text-gray-400 text-center">
+          No head-to-head data available.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="h2h-trivia p-5 bg-white rounded-xl shadow-lg  full max-w-xs text-gray-900 font-sans">
-      <h2 className="text-2xl font-bold mb-6 border-b border-gray-300 pb-3 text-center">
-        Head to Head Trivia
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-6 w-full max-w-xs sm:w-auto">
+      <h2 className="text-xl font-black text-yellow-400 mb-5 tracking-wider text-center flex items-center justify-center gap-2">
+        HEAD-TO-HEAD TRIVIA
       </h2>
-      <ul className="space-y-5">
+
+      <div className="space-y-5">
         {h2hResults.map(
           (
             { team1, team2, total_matches, team1_wins, team2_wins, draws },
             i
           ) => (
-            <li
+            <div
               key={i}
-              className="bg-gray-50 rounded-md border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="bg-slate-700/50 rounded-lg p-4 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-200 border border-slate-600"
             >
-              <div className="text-lg font-semibold mb-2 text-center">
-                {team1} vs {team2}
+              {/* TEAMS */}
+              <div className="text-center font-bold text-sm text-yellow-300 mb-3">
+                {team1.toUpperCase()} <span className="text-gray-500">vs</span>{" "}
+                {team2.toUpperCase()}
               </div>
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-gray-700">
-                <div>
-                  Played <strong>{total_matches}</strong> match
-                  {total_matches !== 1 ? "es" : ""}
-                </div>
-                <div>
-                  <strong>{team1_wins}</strong> won by {team1}
-                </div>
-                <div>
-                  <strong>{team2_wins}</strong> won by {team2}
-                </div>
-                {draws > 0 && (
-                  <div>
-                    <strong>{draws}</strong> drawn match
-                    {draws !== 1 ? "es" : ""}
+
+              {/* STATS GRID */}
+              <div className="grid grid-cols-2 gap-3 text-xs text-gray-300">
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">
+                    {total_matches}
                   </div>
-                )}
+                  <div className="text-xs text-gray-500">MATCHES</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-green-400">
+                    {team1_wins}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {team1.split(" ")[0]} WINS
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-red-400">
+                    {team2_wins}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {team2.split(" ")[0]} WINS
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-gray-400">
+                    {draws}
+                  </div>
+                  <div className="text-xs text-gray-500">DRAWS</div>
+                </div>
               </div>
-            </li>
+            </div>
           )
         )}
-      </ul>
+      </div>
     </div>
   );
 }
