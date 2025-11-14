@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Scorecard from "../pages/Scorecard";
 import HeadToHeadTrivia from "./HeadToHeadTrivia";
 
@@ -28,159 +28,189 @@ interface Standing {
 
 export const LeagueStandings: React.FC = () => {
   const [standings, setStandings] = useState<Standing[]>([]);
+  const [topScorers, setTopScorers] = useState<Scorer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchStandings() {
+    const fetchData = async () => {
       setLoading(true);
-      setError(null);
       try {
-        const res = await fetch("/.netlify/functions/getLeagueStandings");
-        if (!res.ok)
-          throw new Error(`Error fetching standings: ${res.statusText}`);
-        const data = await res.json();
-        setStandings(data);
+        const [standingsRes, scorersRes] = await Promise.all([
+          fetch("/.netlify/functions/getLeagueStandings"),
+          fetch("/.netlify/functions/getLeagueTopScorers?limit=10"),
+        ]);
+
+        if (!standingsRes.ok || !scorersRes.ok)
+          throw new Error("Failed to load data");
+
+        setStandings(await standingsRes.json());
+        setTopScorers(await scorersRes.json());
       } catch (err) {
         setError((err as Error).message);
       } finally {
         setLoading(false);
       }
-    }
-    fetchStandings();
+    };
+    fetchData();
   }, []);
 
-  const [topScorers, setTopScorers] = useState<Scorer[]>([]);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="text-3xl font-bold text-yellow-400 animate-pulse">
+          LOADING...
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    fetch("/.netlify/functions/getLeagueTopScorers?limit=10")
-      .then((res) => res.json())
-      .then((data) => setTopScorers(data));
-  }, []);
-
-  if (loading) return <p>Loading league standings...</p>;
-  if (error) return <p className="text-red-600">Error: {error}</p>;
+  if (error) {
+    return <p className="text-center text-red-500 py-10">Error: {error}</p>;
+  }
 
   return (
-    <div className="max-w-4xl mx-auto mt-8">
-      <h2 className="text-2xl uppercase font-bold mb-4 text-center">
-        League Standings
-      </h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-[720px] bg-white border rounded shadow w-full">
-          <thead>
-            <tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
-              <th className="py-3 px-6 text-center">Pos</th>{" "}
-              {/* New position column */}
-              <th className="py-3 px-6 text-left">Team</th>
-              <th className="py-3 px-6 text-center">Pts</th>
-              <th className="py-3 px-6 text-center">P</th>
-              <th className="py-3 px-6 text-center">W</th>
-              <th className="py-3 px-6 text-center">D</th>
-              <th className="py-3 px-6 text-center">L</th>
-              <th className="py-3 px-6 text-center">GF</th>
-              <th className="py-3 px-6 text-center">GA</th>
-              <th className="py-3 px-6 text-center">GD</th>
-            </tr>
-          </thead>
-          <tbody>
-            {standings.map((team, index) => (
-              <tr
-                key={team.team_id}
-                className="text-gray-600 uppercase hover:bg-gray-50"
-              >
-                <td className="py-3 px-6 text-center font-bold">{index + 1}</td>{" "}
-                {/* Position */}
-                <td className="py-3 px-6 flex items-center space-x-3">
-                  <span
-                    className="inline-block w-4 h-4 rounded-full"
-                    style={{ backgroundColor: team.team_color || "#888" }}
-                  />
-                  <span className="whitespace-nowrap">{team.team_name}</span>
-                </td>
-                <td className="py-3 px-6 text-center font-bold">
-                  {team.points}
-                </td>
-                <td className="py-3 px-6 text-center">{team.played}</td>
-                <td className="py-3 px-6 text-center">{team.wins}</td>
-                <td className="py-3 px-6 text-center">{team.draws}</td>
-                <td className="py-3 px-6 text-center">{team.losses}</td>
-                <td className="py-3 px-6 text-center">{team.goals_for}</td>
-                <td className="py-3 px-6 text-center">{team.goals_against}</td>
-                <td className="py-3 px-6 text-center">
-                  {team.goal_difference}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-8">
-        <h3 className="text-lg font-bold mb-2">Top Scorers</h3>
-        <ul className="divide-y divide-gray-200">
-          {topScorers.map((player, idx) => (
-            <li
-              key={player.id}
-              className={`flex items-center py-2 space-x-3 rounded px-3 transition-shadow cursor-pointer overflow-hidden ${
-                idx === 0
-                  ? "bg-yellow-100 border border-yellow-400 shadow-lg font-semibold"
-                  : "bg-white hover:shadow-md"
-              }`}
-              style={{ WebkitOverflowScrolling: "touch" }}
-            >
-              {player.photo ? (
-                <img
-                  src={player.photo}
-                  alt={player.name}
-                  className="w-8 h-8 rounded-full object-cover object-top flex-shrink-0"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold flex-shrink-0">
-                  {player.name[0]}
-                </div>
-              )}
-              <span className="font-bold flex-shrink-0">{idx + 1}.</span>
-              <span className="uppercase flex-1 truncate">{player.name}</span>
-              <span className="flex items-center text-sm text-gray-500 flex-shrink-0">
-                {idx === 0 && (
-                  <span
-                    className="text-yellow-500 mr-1"
-                    role="img"
-                    aria-label="trophy"
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-black text-white py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* HEADER */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight">
+            <span className="text-yellow-400 drop-shadow-lg">LEAGUE</span>
+            <span className="text-white"> STANDINGS</span>
+          </h1>
+          <p className="text-gray-400 mt-2 text-lg">Season 2025/26</p>
+        </div>
+
+        {/* TABLE — YOUR ORIGINAL WORKING SCROLL */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl overflow-hidden mb-8">
+          <div className="bg-gradient-to-r from-yellow-600 to-amber-600 p-4">
+            <h2 className="text-xl font-bold text-slate-900">Current Table</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-[720px] w-full">
+              <thead>
+                <tr className="text-xs font-semibold text-gray-400 border-b border-slate-700">
+                  <th className="py-3 px-6 text-center">POS</th>
+                  <th className="py-3 px-6 text-left">TEAM</th>
+                  <th className="py-3 px-6 text-center">PTS</th>
+                  <th className="py-3 px-6 text-center">P</th>
+                  <th className="py-3 px-6 text-center">W</th>
+                  <th className="py-3 px-6 text-center">D</th>
+                  <th className="py-3 px-6 text-center">L</th>
+                  <th className="py-3 px-6 text-center">GF</th>
+                  <th className="py-3 px-6 text-center">GA</th>
+                  <th className="py-3 px-6 text-center">GD</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standings.map((team, index) => (
+                  <tr
+                    key={team.team_id}
+                    className="border-b border-slate-700 hover:bg-slate-700/50 transition-all"
                   >
-                    🏆
-                  </span>
+                    <td className="py-3 px-6 text-center font-bold text-lg">
+                      {index + 1}
+                    </td>
+                    <td className="py-3 px-6 flex items-center gap-3">
+                      <div
+                        className="w-5 h-5 rounded-full shadow-md"
+                        style={{ backgroundColor: team.team_color || "#666" }}
+                      />
+                      <span className="font-semibold text-sm truncate">
+                        {team.team_name.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="py-3 px-6 text-center text-2xl font-black text-yellow-400">
+                      {team.points}
+                    </td>
+                    <td className="py-3 px-6 text-center">{team.played}</td>
+                    <td className="py-3 px-6 text-center text-green-400">
+                      {team.wins}
+                    </td>
+                    <td className="py-3 px-6 text-center text-gray-400">
+                      {team.draws}
+                    </td>
+                    <td className="py-3 px-6 text-center text-red-400">
+                      {team.losses}
+                    </td>
+                    <td className="py-3 px-6 text-center">{team.goals_for}</td>
+                    <td className="py-3 px-6 text-center">
+                      {team.goals_against}
+                    </td>
+                    <td className="py-3 px-6 text-center font-medium">
+                      {team.goal_difference > 0 ? "+" : ""}
+                      {team.goal_difference}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* TOP SCORERS — VISIBLE */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-6 mb-8">
+          <h3 className="text-xl font-bold text-yellow-400 mb-4">
+            GOLDEN BOOT
+          </h3>
+          <div className="space-y-3">
+            {topScorers.map((player, idx) => (
+              <div
+                key={player.id}
+                className={`flex items-center gap-3 p-3 rounded-lg ${
+                  idx === 0
+                    ? "bg-gradient-to-r from-yellow-600 to-amber-600 text-slate-900 shadow-xl"
+                    : "bg-slate-700/50 hover:bg-slate-600/50"
+                }`}
+              >
+                {player.photo ? (
+                  <img
+                    src={player.photo}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/50"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/50">
+                    {player.name[0]}
+                  </div>
                 )}
-                {player.position}
-              </span>
-              <span className="font-semibold flex-shrink-0 whitespace-nowrap">
-                {player.goals} goals
-              </span>
-              <span className="text-xs text-gray-400 ml-2 flex-shrink-0 whitespace-nowrap">
-                ({player.appearances} apps)
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm truncate">
+                    {player.name.toUpperCase()}
+                  </p>
+                  <p className="text-xs opacity-70">{player.position}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-black">{player.goals}</p>
+                  <p className="text-xs opacity-70">
+                    {player.appearances} apps
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      <div className="text-center mt-8 flex flex-col gap-4 items-center sm:flex-row sm:gap-6 sm:justify-center sm:overflow-x-auto">
-        <aside className="w-full max-w-xs sm:min-w-[320px] sm:max-w-[340px] flex-shrink-0">
-          <Scorecard />
-        </aside>
-        <aside className="w-full max-w-xs sm:min-w-[320px] sm:max-w-[340px] flex-shrink-0 overflow-visible">
-          <HeadToHeadTrivia />
-        </aside>
-      </div>
+        {/* SIDEBAR COMPONENTS */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-4 shadow-xl">
+            <Scorecard />
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-4 shadow-xl">
+            <HeadToHeadTrivia />
+          </div>
+        </div>
 
-      {/* Back link */}
-      <div className="text-center mt-8">
-        <Link
-          to="/games"
-          className="inline-block px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition"
-        >
-          ← Back to Games
-        </Link>
+        {/* BACK BUTTON */}
+        <div className="text-center mt-12">
+          <Link
+            to="/games"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 text-slate-900 font-bold rounded-full hover:bg-yellow-400 hover:scale-105 transition-all shadow-lg"
+          >
+            ← BACK TO GAMES
+          </Link>
+        </div>
       </div>
     </div>
   );

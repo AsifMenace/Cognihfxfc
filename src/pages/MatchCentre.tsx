@@ -8,6 +8,9 @@ import MatchVideoEmbed from "../components/MatchVideoEmbed";
 import { SectionHeader } from "../components/SectionHeader";
 import { SetPlayerOfTheMatch } from "../components/SetPlayerOfTheMatch";
 import { PlayerOfTheMatch } from "./PlayerOfTheMatch";
+import ThemeProvider from "../components/ThemeProvider";
+import Card from "../components/Card";
+import Title from "../components/Title";
 
 type MatchCentreProps = {
   isAdmin: boolean;
@@ -56,9 +59,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<number | "">("");
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
-  const [loadingAdd, setLoadingAdd] = useState(false); // for submission state
+  const [loadingAdd, setLoadingAdd] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-
   const formRef = useRef<HTMLFormElement>(null);
 
   type PlayerOption = {
@@ -70,10 +72,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     MultiValue<PlayerOption>
   >([]);
 
-  const API_BASE =
-    process.env.NODE_ENV === "development"
-      ? "/.netlify/functions"
-      : "/.netlify/functions";
+  const API_BASE = "/.netlify/functions";
 
   // Fetch all players
   useEffect(() => {
@@ -98,13 +97,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           fetch(`/.netlify/functions/getMatch?id=${id}`),
           fetch(`${API_BASE}/getLineup?match_id=${id}`),
         ]);
-
         if (!matchRes.ok) throw new Error("Failed to fetch match details");
         if (!lineupRes.ok) throw new Error("Failed to fetch lineup");
-
         const matchData = await matchRes.json();
         const lineupData = await lineupRes.json();
-
         setMatch(matchData.match || null);
         setLineups(lineupData || []);
       } catch (err) {
@@ -150,20 +146,17 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       !window.confirm(
         "Are you sure you want to remove this player from the match?"
       )
-    ) {
+    )
       return;
-    }
-
     try {
       const res = await fetch("/.netlify/functions/removePlayerFromMatch", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ match_id: match?.id, player_id: playerId }),
       });
-
       if (res.ok) {
         const data = await res.json();
-        setLineups(data.lineup); // update lineup state with fresh data
+        setLineups(data.lineup);
         alert(data.message || "Player removed successfully");
       } else {
         const data = await res.json();
@@ -177,42 +170,32 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   // Handle add player form submit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Instead of formData.get(), use your selectedPlayers state
     if (!selectedPlayers || selectedPlayers.length === 0) {
       alert("Please select at least one valid player.");
       return;
     }
-
     if (selectedTeamId === "") {
       alert("Please select a team.");
       return;
     }
-
-    // Filter out players already added (assuming lineups is the current roster)
     const alreadyAdded = selectedPlayers.some((p) =>
       lineups.some((lp) => lp.id === p.value)
     );
-
     if (alreadyAdded) {
       alert("One or more selected players are already added to the match.");
       return;
     }
-
     try {
-      // Extract player IDs as array for bulk API call
       const playerIds = selectedPlayers.map((p) => p.value);
-
       const response = await fetch("/.netlify/functions/addPlayerToMatch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           match_id: match?.id,
           team_id: selectedTeamId,
-          player_ids: playerIds, // bulk insert
+          player_ids: playerIds,
         }),
       });
-
       if (response.ok) {
         const lineupRes = await fetch(
           `${API_BASE}/getLineup?match_id=${match?.id}`
@@ -222,7 +205,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           setLineups(lineupData || []);
         }
         alert("Players successfully added to the match!");
-        // Reset selection and team dropdown
         setSelectedPlayers([]);
         setSelectedTeamId("");
       } else {
@@ -234,39 +216,48 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   };
 
-  if (loading)
-    return <div className="text-center py-12">Loading match details...</div>;
-
-  if (error)
-    return <div className="text-center py-12 text-red-600">Error: {error}</div>;
-
-  if (!match)
+  if (loading) {
     return (
-      <div className="text-center py-12 text-red-600">Match not found.</div>
+      <ThemeProvider>
+        <div className="flex items-center justify-center py-32">
+          <div className="text-3xl font-bold text-yellow-400 animate-pulse">
+            LOADING MATCH...
+          </div>
+        </div>
+      </ThemeProvider>
     );
+  }
+
+  if (error) {
+    return (
+      <ThemeProvider>
+        <div className="flex items-center justify-center py-32">
+          <div className="text-red-400 text-center">ERROR: {error}</div>
+        </div>
+      </ThemeProvider>
+    );
+  }
+
+  if (!match) {
+    return (
+      <ThemeProvider>
+        <div className="flex items-center justify-center py-32">
+          <div className="text-red-400">Match not found.</div>
+        </div>
+      </ThemeProvider>
+    );
+  }
 
   const kickoffDate = parseMatchDateTime(match);
-  // const teamMap: { [id: number]: { name: string; colorClass: string } } = {
-  //   1: { name: "Red", colorClass: "text-red-600" },
-  //   2: { name: "Black", colorClass: "text-gray-700" },
-  //   3: { name: "Blue", colorClass: "text-blue-600" },
-  // };
-
-  // const playingTeamIds = [match?.home_team_id, match?.away_team_id].filter(
-  //   (id): id is number => typeof id === "number"
-  // );
-
   const playingTeamIds: number[] = [
     match?.home_team_id,
     match?.away_team_id,
   ].filter((id): id is number => typeof id === "number");
 
   const teamMap: { [id: number]: { name: string; colorClass: string } } = {};
-
   playingTeamIds.forEach((teamId: number) => {
     let teamName = "";
     let teamColor = "";
-
     if (teamId === match?.home_team_id) {
       teamName = match.home_team_name || "";
       teamColor = match.home_team_color || "";
@@ -274,27 +265,16 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       teamName = match.away_team_name || "";
       teamColor = match.away_team_color || "";
     }
-
     teamMap[teamId] = {
       name: teamName,
-      colorClass: teamColor || "black",
+      colorClass: teamColor || "white",
     };
   });
 
-  // const groupedLineups = {
-  //   Red: lineups.filter((p) => p.team_id === 1),
-  //   Black: lineups.filter((p) => p.team_id === 2),
-  //   Blue: lineups.filter((p) => p.team_id === 3),
-  // };
-
   const groupedLineups: { [teamName: string]: Player[] } = {};
-
-  // Initialize empty arrays for each team name in teamMap
   Object.values(teamMap).forEach(({ name }) => {
     groupedLineups[name] = [];
   });
-
-  // Populate groupedLineups by filtering players by team_id matching keys in teamMap
   lineups.forEach((player) => {
     const team = teamMap[player.team_id || 0];
     if (team) {
@@ -308,21 +288,17 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const awayScorers = scorers.filter(
     (s) => s.team_name === match?.away_team_name
   );
-
   const opponentScorers = scorers.filter(
     (s) => s.team_name === match?.opponent_name
   );
-
   const cogniScorers = scorers.filter((s) => s.team_name === match?.cogni_name);
 
   async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault();
     if (!match) return;
-
     setLoadingAdd(true);
     setError(null);
     setSuccess(null);
-
     try {
       const res = await fetch("/.netlify/functions/addMatchGoal", {
         method: "POST",
@@ -333,19 +309,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           team_id: Number(selectedTeamId),
         }),
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "Failed to add goal scorer");
       }
-
       setSuccess("Goal scorer added successfully!");
       await fetchScorers();
-      // Optionally reset selections
       setSelectedPlayerId("");
       setSelectedTeamId("");
-
-      // TODO: Refresh goal scorers list here (covered in step 2)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -355,622 +326,644 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
   async function handleRemoveGoal(goalId: number, playerId: number) {
     if (!window.confirm("Are you sure you want to remove this goal?")) return;
-
     try {
       const res = await fetch("/.netlify/functions/removeMatchGoal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ goal_id: goalId, player_id: playerId }),
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "Failed to remove goal");
       }
-
-      // Refresh the scorer list after removing
       await fetchScorers();
     } catch (error) {
       alert(`Error removing goal: ${(error as Error).message}`);
     }
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="container mx-auto px-4 max-w-3xl">
-        {/* Match Header */}
-        <div className="bg-white rounded-xl shadow-lg mb-8 p-6 flex flex-col items-center">
-          <div className="text-2xl md:text-3xl font-bold mb-2 text-blue-900 flex justify-center items-center space-x-4">
-            {match?.home_team_name && match?.away_team_name ? (
-              <>
-                <span style={{ color: match?.home_team_color ?? "black" }}>
-                  {match?.home_team_name}
-                </span>
-                <span className="text-slate-400">vs</span>
-                <span style={{ color: match?.away_team_color ?? "black" }}>
-                  {match?.away_team_name}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="text-blue-600 font-bold">
-                  {" "}
-                  {match?.cogni_name}
-                </span>
-                <span className="text-slate-400 mx-2">vs</span>
-                <span>{match?.opponent_name}</span>
-              </>
-            )}
-          </div>
+  const renderTeamLineup = (
+    teamId: number,
+    teamName: string,
+    colorClass: string,
+    teamPlayers: Player[]
+  ) => (
+    <div key={teamId}>
+      <h3 className="text-xl font-black mb-4" style={{ color: colorClass }}>
+        {teamName.toUpperCase()}
+      </h3>
 
-          <div className="text-xl md:text-2xl font-semibold text-green-700 mb-4">
-            {match.result ? `Result: ${match.result}` : "Result not available"}
-          </div>
-
-          <CountdownTimer kickOff={kickoffDate} />
-
-          <div className="flex flex-wrap justify-center space-x-4 text-slate-700 mb-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-              {match.competition}
-            </span>
-            <span className="flex items-center">
-              <Calendar size={16} className="mr-1 text-blue-600" />
-              {kickoffDate.toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
-            <span className="flex items-center">
-              <Clock size={16} className="mr-1 text-blue-600" />
-              {match.time}
-            </span>
-            <span className="flex items-center">
-              <MapPin size={16} className="mr-1 text-blue-600" />
-              {match.venue}
-            </span>
-            <span
-              className={`px-2 py-1 rounded text-xs font-bold ${
-                match.isHome
-                  ? "bg-green-100 text-green-800"
-                  : "bg-orange-100 text-orange-800"
-              }`}
-            >
-              {match.isHome ? "Home" : "Away"}
-            </span>
-          </div>
-          <div>
-            {isAdmin && (
+      {teamPlayers.length === 0 ? (
+        <p className="text-gray-500 text-center">No players assigned.</p>
+      ) : (
+        <div className="flex gap-4 overflow-x-auto py-2">
+          {teamPlayers.map((player) => (
+            <div key={player.id} className="relative group flex-shrink-0 w-40">
               <Link
-                to={`/match/edit/${match.id}`}
-                className="inline-block px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
+                to={`/player/${player.id}`}
+                className="block bg-slate-700/50 backdrop-blur-sm rounded-xl p-4 text-center hover:scale-105 transition-all border border-slate-600"
               >
-                Edit Match
+                <img
+                  src={player.photo}
+                  alt={player.name}
+                  className="w-16 h-16 rounded-full mx-auto object-cover object-top mb-2"
+                />
+                <div className="font-bold text-white">{player.name}</div>
+                <div className="text-xs text-gray-400">
+                  {player.position} #{player.jerseyNumber}
+                </div>
               </Link>
+              {isAdmin && (
+                <button
+                  onClick={() => handleRemovePlayer(player.id)}
+                  className="absolute top-2 right-2 text-red-400 hover:text-red-300 bg-slate-800 rounded-full w-6 h-6 flex items-center justify-center"
+                  title="Remove"
+                >
+                  X
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <ThemeProvider>
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Match Header */}
+        <Card className="border-yellow-500/30">
+          <div className="text-center p-6">
+            <div className="text-3xl md:text-4xl font-black text-white mb-4 flex justify-center items-center gap-4">
+              {match?.home_team_name && match?.away_team_name ? (
+                <>
+                  <span style={{ color: match?.home_team_color || "#e5e7eb" }}>
+                    {match?.home_team_name}
+                  </span>
+                  <span className="text-gray-400">VS</span>
+                  <span style={{ color: match?.away_team_color || "#e5e7eb" }}>
+                    {match?.away_team_name}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-yellow-400 font-black">
+                    {match?.cogni_name}
+                  </span>
+                  <span className="text-gray-400 mx-3">VS</span>
+                  <span>{match?.opponent_name}</span>
+                </>
+              )}
+            </div>
+
+            <div className="text-2xl font-bold text-green-400 mb-4">
+              {match.result ? `RESULT: ${match.result}` : "LIVE"}
+            </div>
+
+            <CountdownTimer kickOff={kickoffDate} />
+
+            <div className="flex flex-wrap justify-center gap-3 text-sm text-gray-300 mt-4">
+              <span className="px-3 py-1 bg-blue-600/20 text-blue-300 rounded-full font-bold">
+                {match.competition}
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar size={16} className="text-yellow-400" />
+                {kickoffDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock size={16} className="text-yellow-400" />
+                {match.time}
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin size={16} className="text-yellow-400" />
+                {match.venue}
+              </span>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  match.isHome
+                    ? "bg-green-600/20 text-green-400"
+                    : "bg-orange-600/20 text-orange-400"
+                }`}
+              >
+                {match.isHome ? "HOME" : "AWAY"}
+              </span>
+            </div>
+
+            {isAdmin && (
+              <div className="mt-6">
+                <Link
+                  to={`/match/edit/${match.id}`}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg"
+                >
+                  EDIT MATCH
+                </Link>
+              </div>
             )}
           </div>
-        </div>
-        <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
-          <div className="flex justify-between mb-8 px-4">
-            {/* Home/Red Team scorers */}
-            <div
-              className="w-1/3 text-left "
-              style={{ color: match?.home_team_color ?? "black" }}
-            >
-              <h3
-                className="text-xl sm:text-2xl font-extrabold mb-4 relative inline-block tracking-wide uppercase drop-shadow-sm"
-                style={{ color: match?.home_team_color ?? "red" }}
-              >
-                GOAL SCORERS
-                <span className="block sm:w-20 w-30 h-1 bg-gradient-to-r from-red-500 to-red-700 rounded mt-1"></span>
-              </h3>
-              {homeScorers.length === 0 && match.opponent_id === null ? (
-                <p className="text-gray-400">No goals yet</p>
-              ) : (
-                <ul>
-                  {homeScorers.map((scorer) => (
-                    <li
-                      key={scorer.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span
-                        role="img"
-                        aria-label="soccer ball"
-                        className="mr-2"
-                      >
-                        ⚽
-                      </span>
-                      <span className="uppercase">{scorer.player_name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleRemoveGoal(scorer.id, scorer.player_id)
-                          }
-                          aria-label={`Remove goal by ${scorer.player_name}`}
-                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                          type="button"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-gray-600 hover:text-gray-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {cogniScorers.length === 0 && match.opponent_id != null ? (
-                <p className="text-gray-400">No goals yet new hello</p>
-              ) : (
-                <ul>
-                  {cogniScorers.map((scorer) => (
-                    <li
-                      key={scorer.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span
-                        role="img"
-                        aria-label="soccer ball"
-                        className="mr-2"
-                      >
-                        ⚽
-                      </span>
-                      <span className="uppercase">{scorer.player_name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleRemoveGoal(scorer.id, scorer.player_id)
-                          }
-                          aria-label={`Remove goal by ${scorer.player_name}`}
-                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                          type="button"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+        </Card>
 
-            {/* Away/Black Team scorers */}
-            <div
-              className="w-1/3 text-right"
-              style={{ color: match?.away_team_color ?? "black" }}
-            >
-              <h3
-                className="text-xl sm:text-2xl font-extrabold mb-4 relative inline-block tracking-wide uppercase drop-shadow-sm"
-                style={{ color: match?.away_team_color ?? "red" }}
-              >
-                GOAL SCORERS
-                <span className="block sm:w-20 w-30 h-1 bg-gradient-to-r from-red-500 to-red-700 rounded mt-1"></span>
-              </h3>
+        {/* Goal Scorers */}
+        <Card className="border-yellow-500/30 overflow-hidden">
+          <div className="p-6">
+            <div className="grid grid-cols-2 gap-6 md:gap-8">
+              {/* LEFT: Team 1 (Home / Cogni) */}
+              <div className="text-left">
+                <h3
+                  className="text-xl md:text-2xl font-black mb-3 uppercase tracking-wider"
+                  style={{
+                    color:
+                      match?.home_team_color || match?.cogni_color || "#e5e7eb",
+                  }}
+                >
+                  SCORERS
+                  <div className="h-1 w-16 bg-gradient-to-r from-yellow-500 to-amber-500 rounded mt-1"></div>
+                </h3>
 
-              {awayScorers.length === 0 && match.opponent_id === null ? (
-                <p className="text-gray-400">No goals yet</p>
-              ) : (
-                <ul>
-                  {awayScorers.map((scorer) => (
-                    <li
-                      key={scorer.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span
-                        role="img"
-                        aria-label="soccer ball"
-                        className="mr-2"
-                      >
-                        ⚽
-                      </span>
-                      <span className="uppercase">{scorer.player_name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleRemoveGoal(scorer.id, scorer.player_id)
-                          }
-                          aria-label={`Remove goal by ${scorer.player_name}`}
-                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                          type="button"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                {/* INTERNAL: home_team_name */}
+                {match?.home_team_name && (
+                  <>
+                    {homeScorers.length > 0 ? (
+                      <ul className="space-y-1.5 text-sm md:text-base">
+                        {homeScorers.map((s) => (
+                          <li
+                            key={s.id}
+                            className="flex items-center justify-between text-white"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {opponentScorers.length === 0 && match.opponent_id != null ? (
-                <p className="text-gray-400">No goals yet new change</p>
-              ) : (
-                <ul>
-                  {opponentScorers.map((scorer) => (
-                    <li
-                      key={scorer.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span
-                        role="img"
-                        aria-label="soccer ball"
-                        className="mr-2"
-                      >
-                        ⚽
-                      </span>
-                      <span className="uppercase">{scorer.player_name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleRemoveGoal(scorer.id, scorer.player_id)
-                          }
-                          aria-label={`Remove goal by ${scorer.player_name}`}
-                          className="ml-4 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                          type="button"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-gray-800 hover:text-gray-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-yellow-400">⚽</span>
+                              <span className="font-bold uppercase truncate max-w-[100px] md:max-w-none">
+                                {s.player_name}
+                              </span>
+                            </span>
+                            {isAdmin && (
+                              <button
+                                onClick={() =>
+                                  handleRemoveGoal(s.id, s.player_id)
+                                }
+                                className="text-red-400 hover:text-red-300 text-xs w-5 h-5"
+                              >
+                                X
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 text-sm italic">No goals</p>
+                    )}
+                  </>
+                )}
+
+                {/* EXTERNAL: cogni_name vs opponent */}
+                {match?.cogni_name && match?.opponent_id != null && (
+                  <>
+                    {cogniScorers.length > 0 ? (
+                      <ul className="space-y-1.5 text-sm md:text-base">
+                        {cogniScorers.map((s) => (
+                          <li
+                            key={s.id}
+                            className="flex items-center justify-between text-white"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-yellow-400">⚽</span>
+                              <span className="font-bold uppercase truncate max-w-[100px] md:max-w-none">
+                                {s.player_name}
+                              </span>
+                            </span>
+                            {isAdmin && (
+                              <button
+                                onClick={() =>
+                                  handleRemoveGoal(s.id, s.player_id)
+                                }
+                                className="text-red-400 hover:text-red-300 text-xs w-5 h-5"
+                              >
+                                X
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 text-sm italic">No goals</p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* RIGHT: Team 2 (Away / Opponent) */}
+              <div className="text-right">
+                <h3
+                  className="text-xl md:text-2xl font-black mb-3 uppercase tracking-wider"
+                  style={{
+                    color:
+                      match?.away_team_color ||
+                      match?.opponent_color ||
+                      "#e5e7eb",
+                  }}
+                >
+                  SCORERS
+                  <div className="h-1 w-16 bg-gradient-to-r from-yellow-500 to-amber-500 rounded mt-1 ml-auto"></div>
+                </h3>
+
+                {/* INTERNAL: away_team_name */}
+                {match?.away_team_name && (
+                  <>
+                    {awayScorers.length > 0 ? (
+                      <ul className="space-y-1.5 text-sm md:text-base">
+                        {awayScorers.map((s) => (
+                          <li
+                            key={s.id}
+                            className="flex items-center justify-between text-white"
+                          >
+                            <span className="flex items-center gap-1.5 justify-end">
+                              <span className="font-bold uppercase truncate max-w-[100px] md:max-w-none">
+                                {s.player_name}
+                              </span>
+                              <span className="text-yellow-400">⚽</span>
+                            </span>
+                            {isAdmin && (
+                              <button
+                                onClick={() =>
+                                  handleRemoveGoal(s.id, s.player_id)
+                                }
+                                className="text-red-400 hover:text-red-300 text-xs w-5 h-5"
+                              >
+                                X
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 text-sm italic">No goals</p>
+                    )}
+                  </>
+                )}
+
+                {/* EXTERNAL: opponent_name */}
+                {match?.opponent_name && match?.opponent_id != null && (
+                  <>
+                    {opponentScorers.length > 0 ? (
+                      <ul className="space-y-1.5 text-sm md:text-base">
+                        {opponentScorers.map((s) => (
+                          <li
+                            key={s.id}
+                            className="flex items-center justify-between text-white"
+                          >
+                            <span className="flex items-center gap-1.5 justify-end">
+                              <span className="font-bold uppercase truncate max-w-[100px] md:max-w-none">
+                                {s.player_name}
+                              </span>
+                              <span className="text-yellow-400">⚽</span>
+                            </span>
+                            {isAdmin && (
+                              <button
+                                onClick={() =>
+                                  handleRemoveGoal(s.id, s.player_id)
+                                }
+                                className="text-red-400 hover:text-red-300 text-xs w-5 h-5"
+                              >
+                                X
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 text-sm italic">No goals</p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex flex-col items-center mt-10">
+        </Card>
+
+        {/* Player of the Match */}
+        <div className="flex justify-center">
           <PlayerOfTheMatch matchId={match.id} />
         </div>
-        <div className="max-w-4xl mx-auto mt-8">
-          <SectionHeader title="Match Video" />
-          <MatchVideoEmbed videoUrl={match.video_url ?? null} />
-        </div>
 
+        {/* Video */}
+        {match.video_url && (
+          <Card className="border-yellow-500/30">
+            <SectionHeader title="MATCH HIGHLIGHTS" />
+            <div className="p-4">
+              <MatchVideoEmbed videoUrl={match.video_url} />
+            </div>
+          </Card>
+        )}
+
+        {/* Admin: Add Goal */}
         {isAdmin && (
-          <section className="my-8 p-6 max-w-md mx-auto border rounded shadow-sm bg-white">
-            <h2 className="text-xl font-semibold mb-4">Add Goal Scorer</h2>
-
-            <form
-              onSubmit={handleAddGoal}
-              className="mb-6 flex flex-wrap items-center space-x-2"
-            >
-              <label htmlFor="playerId" className="block mb-2 font-semibold">
-                Select Player:
-              </label>
-
-              <select
-                id="playerId"
-                value={selectedPlayerId}
-                onChange={(e) => setSelectedPlayerId(e.target.value)}
-                className="border rounded px-3 py-1"
-                required
-              >
-                <option value="" disabled>
-                  Select a player
-                </option>
-                {allPlayers.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.name} ({player.position})
-                  </option>
-                ))}
-              </select>
-
-              <label htmlFor="teamId" className="block mb-2 font-semibold">
-                Select Team:
-              </label>
-
-              <select
-                id="teamId"
-                value={selectedTeamId}
-                onChange={(e) =>
-                  setSelectedTeamId(
-                    e.target.value === "" ? "" : Number(e.target.value)
-                  )
-                }
-                className="border rounded px-3 py-1"
-                required
-              >
-                <option value="" disabled>
-                  Select a team
-                </option>
-                {match?.home_team_id && (
-                  <option value={match.home_team_id}>
-                    {match.home_team_name}
-                  </option>
-                )}
-                {match?.away_team_id && (
-                  <option value={match.away_team_id}>
-                    {match.away_team_name}
-                  </option>
-                )}
-                {match?.cogni_id && (
-                  <option value={match.cogni_id}>{match.cogni_name}</option>
-                )}
-                {match?.opponent_id && (
-                  <option value={match.opponent_id}>
-                    {match.opponent_name}
-                  </option>
-                )}
-              </select>
-
+          <Card className="border-blue-500/30">
+            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
+              ADD GOAL SCORER
+            </h2>
+            <form onSubmit={handleAddGoal} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">
+                    PLAYER
+                  </label>
+                  <select
+                    value={selectedPlayerId}
+                    onChange={(e) => setSelectedPlayerId(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select player
+                    </option>
+                    {allPlayers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.position})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">
+                    TEAM
+                  </label>
+                  {/* In Add Goal form */}
+                  <select
+                    value={selectedTeamId}
+                    onChange={(e) =>
+                      setSelectedTeamId(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select team
+                    </option>
+                    {match?.home_team_id && (
+                      <option value={match.home_team_id}>
+                        {match.home_team_name}
+                      </option>
+                    )}
+                    {match?.away_team_id && (
+                      <option value={match.away_team_id}>
+                        {match.away_team_name}
+                      </option>
+                    )}
+                    {match?.cogni_id && (
+                      <option value={match.cogni_id}>{match.cogni_name}</option>
+                    )}
+                    {match?.opponent_id && (
+                      <option value={match.opponent_id}>
+                        {match.opponent_name}
+                      </option>
+                    )}
+                  </select>
+                </div>
+              </div>
               <button
                 type="submit"
                 disabled={loadingAdd}
-                className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-lg hover:scale-105 transition-all disabled:opacity-50"
               >
-                {loadingAdd ? "Adding..." : "Add Goal Scorer"}
+                {loadingAdd ? "ADDING..." : "ADD GOAL"}
               </button>
-              {error && (
-                <div className="mb-4 p-2 text-red-800 bg-red-100 rounded">
-                  {error}
-                </div>
-              )}
-
+              {error && <p className="text-red-400 text-center">{error}</p>}
               {success && (
-                <div className="mb-4 p-2 text-green-800 bg-green-100 rounded">
-                  {success}
-                </div>
+                <p className="text-green-400 text-center">{success}</p>
               )}
             </form>
-          </section>
+          </Card>
         )}
-        {isAdmin && (
-          <section className="my-8 p-6 max-w-md mx-auto border rounded shadow-sm bg-white">
-            <h2 className="text-xl font-semibold mb-4">Update Match Result</h2>
 
+        {/* Admin: Update Result */}
+        {isAdmin && (
+          <Card className="border-green-500/30">
+            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
+              UPDATE RESULT
+            </h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 const resultValue = formData.get("result");
-
-                if (resultValue === null || typeof resultValue !== "string") {
-                  return;
-                }
-
+                if (typeof resultValue !== "string") return;
                 const resp = await fetch(`${API_BASE}/updateMatchResult`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ id: match.id, result: resultValue }),
                 });
-
                 if (resp.ok) {
                   setMatch({ ...match, result: resultValue });
-                  setSuccessMessage("Match result updated successfully!");
+                  setSuccessMessage("Result updated!");
                   setTimeout(() => setSuccessMessage(null), 3000);
                 }
               }}
+              className="flex flex-col items-center gap-4"
             >
-              {successMessage && (
-                <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
-                  {successMessage}
-                </div>
-              )}
-
-              <label className="block mb-2 font-semibold">
-                Update Result:
-                <input
-                  name="result"
-                  defaultValue={match.result || ""}
-                  placeholder="e.g. 2-1"
-                  className="border rounded ml-2 px-3 py-1"
-                />
-              </label>
-
+              <input
+                name="result"
+                defaultValue={match.result || ""}
+                placeholder="e.g. 2-1"
+                className="w-full max-w-xs px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 text-center text-xl font-bold focus:border-green-500 focus:outline-none"
+              />
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-full hover:scale-105 transition-all"
               >
-                Save
+                SAVE RESULT
               </button>
+              {successMessage && (
+                <p className="text-green-400 font-bold animate-pulse">
+                  {successMessage}
+                </p>
+              )}
             </form>
-          </section>
+          </Card>
         )}
-        {isAdmin && (
-          <section className="mt-6">
-            <SetPlayerOfTheMatch matchId={match.id} isAdmin={isAdmin} />
-          </section>
-        )}
-        {/* Lineups Section */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4 text-center">
-            Line Ups
+
+        {/* Lineups */}
+        <Card className="border-yellow-500/30">
+          <h2 className="text-2xl font-black text-yellow-400 text-center mb-6">
+            LINEUPS
           </h2>
 
-          {playingTeamIds.map((teamId) => {
-            const { name: teamName, colorClass } = teamMap[teamId];
-            const teamPlayers = groupedLineups[teamName] || [];
-            //groupedLineups[teamName as keyof typeof groupedLineups] || [];
+          <div className="space-y-8">
+            {/* INTERNAL TEAMS: home & away */}
+            {playingTeamIds.map((teamId) => {
+              const { name: teamName, colorClass } = teamMap[teamId];
+              const teamPlayers = groupedLineups[teamName] || [];
+              return renderTeamLineup(
+                teamId,
+                teamName,
+                colorClass,
+                teamPlayers
+              );
+            })}
 
-            return (
-              <div key={teamId} className="mb-6">
-                <h3 className="font-bold mb-2" style={{ color: colorClass }}>
-                  {teamName}
-                </h3>
-                {teamPlayers.length === 0 ? (
-                  <div className="text-slate-500 text-center">
-                    No players assigned.
-                  </div>
-                ) : (
-                  <div className="flex space-x-4 overflow-x-auto py-2">
-                    {teamPlayers.map((player) => (
-                      <div
-                        key={player.id}
-                        className="relative group flex-shrink-0 w-40"
-                      >
-                        {/* Player card stays the same */}
-                        <Link
-                          to={`/player/${player.id}`}
-                          className="block bg-slate-50 rounded-xl p-4 text-center hover:shadow-lg transition"
-                        >
-                          <div className="mb-4">
-                            <img
-                              src={player.photo}
-                              alt={player.name}
-                              className="w-16 h-16 rounded-full mx-auto object-cover mb-2 object-top"
-                            />
-                            <div className="font-bold">{player.name}</div>
-                            <div className="text-xs text-slate-600 mb-1">
-                              {player.position} #{player.jerseyNumber}
-                            </div>
-                          </div>
-                        </Link>
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleRemovePlayer(player.id)}
-                            className="absolute top-2 right-2 text-red-600 hover:text-red-800"
-                            title="Remove player from match"
-                          >
-                            ✖
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+            {/* EXTERNAL TEAMS: cogni & opponent */}
+            {match?.cogni_id &&
+              match?.cogni_name &&
+              !playingTeamIds.includes(match.cogni_id) && (
+                <>
+                  {(() => {
+                    const cogniPlayers = lineups.filter(
+                      (p) => p.team_id === match.cogni_id
+                    );
+                    return renderTeamLineup(
+                      match.cogni_id!,
+                      match.cogni_name!,
+                      match.cogni_color || "#e5e7eb",
+                      cogniPlayers
+                    );
+                  })()}
+                </>
+              )}
+
+            {match?.opponent_id &&
+              match?.opponent_name &&
+              !playingTeamIds.includes(match.opponent_id) && (
+                <>
+                  {(() => {
+                    const opponentPlayers = lineups.filter(
+                      (p) => p.team_id === match.opponent_id
+                    );
+                    return renderTeamLineup(
+                      match.opponent_id!,
+                      match.opponent_name!,
+                      match.opponent_color || "#e5e7eb",
+                      opponentPlayers
+                    );
+                  })()}
+                </>
+              )}
+          </div>
+        </Card>
+
+        {/* Admin: Add Players */}
         {isAdmin && (
-          <form
-            ref={formRef}
-            onSubmit={handleSubmit}
-            className="mb-6 flex flex-wrap items-center space-x-2"
-          >
-            <label htmlFor="playerIds" className="block mb-2 font-semibold">
-              Add Players to Match {/* Updated label */}
-            </label>
-
-            {/* --- Enhanced Player Multi-Select Dropdown --- */}
-            <Select<PlayerOption, true> // <OptionType, isMulti = true>
-              options={allPlayers.map((player) => ({
-                value: player.id,
-                label: `${player.name} (${player.position})`,
-              }))}
-              isMulti
-              name="playerIds"
-              id="playerIds"
-              className="min-w-[200px] px-3 py-1"
-              value={selectedPlayers}
-              onChange={(selected) => setSelectedPlayers(selected ?? [])}
-              placeholder="Select players..."
-              required
-              menuShouldScrollIntoView={false} // Prevent scroll jumps
-              menuPlacement="auto" // Better positioning on mobile
-              closeMenuOnSelect={false} // Keep open while selecting multiple
-              backspaceRemovesValue={true}
-              hideSelectedOptions={false}
-            />
-
-            {/* --- Team Dropdown (unchanged except code cleanup) --- */}
-            <select
-              name="teamId"
-              id="teamId"
-              className="border rounded px-3 py-1"
-              required
-              value={selectedTeamId}
-              onChange={(e) =>
-                setSelectedTeamId(
-                  e.target.value === "" ? "" : Number(e.target.value)
-                )
-              }
-            >
-              <option value="" disabled>
-                Select a team
-              </option>
-              {playingTeamIds.map((teamId) => {
-                const { name } = teamMap[teamId] || {};
-                if (!name) return null;
-                return (
-                  <option key={teamId} value={teamId}>
-                    {name}
-                  </option>
-                );
-              })}
-              {/* Optionally include opponent and cogni if separate */}
-              {match?.cogni_id &&
-                match.cogni_name &&
-                !playingTeamIds.includes(match.cogni_id) && (
-                  <option value={match.cogni_id}>{match.cogni_name}</option>
-                )}
-              {match?.opponent_id &&
-                match.opponent_name &&
-                !playingTeamIds.includes(match.opponent_id) && (
-                  <option value={match.opponent_id}>
-                    {match.opponent_name}
-                  </option>
-                )}
-            </select>
-
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
-            >
-              Add Players {/* Updated Button Text */}
-            </button>
-          </form>
+          <Card className="border-purple-500/30">
+            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
+              ADD PLAYERS TO MATCH
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">
+                    PLAYERS
+                  </label>
+                  <Select<PlayerOption, true>
+                    options={allPlayers.map((p) => ({
+                      value: p.id,
+                      label: `${p.name} (${p.position})`,
+                    }))}
+                    isMulti
+                    value={selectedPlayers}
+                    onChange={(selected) => setSelectedPlayers(selected ?? [])}
+                    placeholder="Select players..."
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        backgroundColor: "#1e293b",
+                        borderColor: "#334155",
+                        color: "white",
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: "#1e293b",
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? "#334155"
+                          : state.isFocused
+                          ? "#334155"
+                          : "#1e293b",
+                        color: "white",
+                      }),
+                      multiValue: (base) => ({
+                        ...base,
+                        backgroundColor: "#334155",
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: "white",
+                      }),
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">
+                    TEAM
+                  </label>
+                  <select
+                    value={selectedTeamId}
+                    onChange={(e) =>
+                      setSelectedTeamId(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select team
+                    </option>
+                    {playingTeamIds.map((tid) => {
+                      const { name } = teamMap[tid] || {};
+                      return name ? (
+                        <option key={tid} value={tid}>
+                          {name}
+                        </option>
+                      ) : null;
+                    })}
+                    {/* Optionally include opponent and cogni if separate */}
+                    {match?.cogni_id &&
+                      match.cogni_name &&
+                      !playingTeamIds.includes(match.cogni_id) && (
+                        <option value={match.cogni_id}>
+                          {match.cogni_name}
+                        </option>
+                      )}
+                    {match?.opponent_id &&
+                      match.opponent_name &&
+                      !playingTeamIds.includes(match.opponent_id) && (
+                        <option value={match.opponent_id}>
+                          {match.opponent_name}
+                        </option>
+                      )}
+                  </select>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-lg hover:scale-105 transition-all"
+              >
+                ADD PLAYERS
+              </button>
+            </form>
+          </Card>
         )}
-        {/* Back link */}
-        <div className="text-center mt-8">
+
+        {/* Back Button */}
+        <div className="text-center">
           <Link
             to="/games"
-            className="inline-block px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg"
           >
-            ← Back to Games
+            BACK TO GAMES
           </Link>
         </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 

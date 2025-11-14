@@ -32,8 +32,11 @@ const RecentMatchVideo: React.FC<RecentMatchVideoProps> = ({ matches }) => {
 
   return (
     <section className="max-w-4xl mx-auto my-10 px-2">
-      <SectionHeader title="Latest Match Video" />
-      <div className="mb-3 text-center text-gray-600 font-semibold">
+      <h2 className="text-6xl md:text-8xl font-black text-center mb-8 tracking-tighter">
+        <span className="text-yellow-400 drop-shadow-lg">LAST MATCH</span>
+        <span className="text-white"> VIDEO</span>
+      </h2>
+      <div className="mb-3 text-center text-white-600 font-bold">
         {match.home_team_name && match.away_team_name ? (
           <>{`${match.home_team_name} vs ${match.away_team_name}`}</>
         ) : (

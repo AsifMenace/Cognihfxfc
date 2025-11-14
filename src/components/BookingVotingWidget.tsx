@@ -20,9 +20,7 @@ type BookingInfo = {
   end_time: string;
 };
 
-// Helper to build local Date object from date string and time string
 function buildDate(dateStr: string, timeStr: string): Date {
-  // Parse to local year, month, day numbers
   const [year, month, day] = dateStr.split("T")[0].split("-").map(Number);
   const date = new Date(year, month - 1, day);
   const [hour, minute, second = 0] = timeStr.split(":").map(Number);
@@ -30,7 +28,6 @@ function buildDate(dateStr: string, timeStr: string): Date {
   return date;
 }
 
-// Format time like 16:00:00 -> "4pm" or "4:30pm"
 function formatTime(timeStr: string): string {
   const [hour, minute] = timeStr.split(":").map(Number);
   const suffix = hour >= 12 ? "pm" : "am";
@@ -41,8 +38,8 @@ function formatTime(timeStr: string): string {
 }
 
 export default function BookingVotingWidget() {
-  // change this constant to update the maximum IN slots in one place
   const MAX_IN_SLOTS = 14;
+
   const [bookingInfo, setBookingInfo] = useState<BookingInfo | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | "">("");
@@ -60,17 +57,14 @@ export default function BookingVotingWidget() {
   const [loading, setLoading] = useState(false);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
 
-  // Fetch next upcoming booking on mount
   useEffect(() => {
     async function fetchNextBooking() {
       try {
         const res = await fetch("/.netlify/functions/getUpcomingBookings");
         const bookings = await res.json();
         if (bookings.length > 0) {
-          // Find the most recent future booking (including today)
           const now = new Date();
           const nowDateStr = now.toISOString().split("T")[0];
-          // Filter bookings for today or future
           interface Booking {
             id: number;
             booking_date: string;
@@ -78,12 +72,8 @@ export default function BookingVotingWidget() {
             end_time: string;
           }
           const futureBookings = (bookings as Booking[]).filter(
-            (b: Booking) => {
-              // Compare booking_date (YYYY-MM-DD) with today
-              return b.booking_date >= nowDateStr;
-            }
+            (b: Booking) => b.booking_date >= nowDateStr
           );
-          // If there are future bookings, pick the earliest one
           const booking =
             futureBookings.length > 0 ? futureBookings[0] : bookings[0];
           setBookingInfo({
@@ -103,7 +93,6 @@ export default function BookingVotingWidget() {
     fetchNextBooking();
   }, []);
 
-  // Fetch players and vote results whenever bookingInfo changes
   useEffect(() => {
     if (!bookingInfo) return;
 
@@ -142,7 +131,6 @@ export default function BookingVotingWidget() {
     setError(null);
   }, [bookingInfo]);
 
-  // derived helpers for button states
   const selectedId =
     typeof selectedPlayerId === "number" ? selectedPlayerId : null;
   const isSelectedIn =
@@ -162,15 +150,12 @@ export default function BookingVotingWidget() {
       setError("Please select your name.");
       return;
     }
-    // Prevent adding more than MAX_IN_SLOTS "IN" votes
     if (vote === "in" && voteResult.inCount >= MAX_IN_SLOTS) {
       setError("Slots are full");
       return;
     }
-
     const selectedId =
       typeof selectedPlayerId === "number" ? selectedPlayerId : null;
-    // Prevent same player from being added twice to same list
     if (
       vote === "in" &&
       selectedId !== null &&
@@ -187,6 +172,7 @@ export default function BookingVotingWidget() {
       setError("Player is already marked OUT");
       return;
     }
+
     setLoading(true);
     try {
       const res = await fetch("/.netlify/functions/pollVote", {
@@ -210,7 +196,6 @@ export default function BookingVotingWidget() {
         inCount: data.inCount || voteResult.inCount,
         outCount: data.outCount || voteResult.outCount,
       });
-      // store last vote for a transient confirmation message
       setLastVote({ playerId: Number(selectedPlayerId), vote });
     } catch (err) {
       setError("Network or server error");
@@ -220,29 +205,29 @@ export default function BookingVotingWidget() {
 
   if (bookingInfo === null) {
     return (
-      <div className="p-6 bg-white rounded shadow text-center font-semibold">
-        No upcoming booking found for voting.
+      <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl border border-slate-700 text-center">
+        <p className="text-yellow-400 font-bold text-lg">
+          No upcoming booking found for voting.
+        </p>
       </div>
     );
   }
 
-  // Build dates for display to fix timezone issues
   const startDate = buildDate(bookingInfo.booking_date, bookingInfo.start_time);
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded shadow p-6">
-      <h3 className="text-xl font-bold mb-1 text-center">
-        {`Vote Your Availability (MAX ${MAX_IN_SLOTS})`}
+    <div className="max-w-md mx-auto bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl border border-slate-700 p-6 text-white">
+      <h3 className="text-2xl font-black text-center text-yellow-400 mb-2">
+        Vote Your Availability (MAX {MAX_IN_SLOTS})
       </h3>
-      <p className="flex justify-center items-center space-x-2 text-gray-600 mb-4">
-        <span className="flex items-center space-x-1">
-          {/* Calendar icon can be inserted here */}
+
+      <div className="flex justify-center items-center gap-4 text-sm text-gray-300 mb-5">
+        <div className="flex items-center gap-1">
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 inline-block"
+            className="w-5 h-5 text-yellow-400"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
+            viewBox="0 0 24 24"
           >
             <path
               strokeLinecap="round"
@@ -258,15 +243,13 @@ export default function BookingVotingWidget() {
               day: "numeric",
             })}
           </span>
-        </span>
-        <span className="flex items-center space-x-1">
-          {/* Clock icon */}
+        </div>
+        <div className="flex items-center gap-1">
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 inline-block"
+            className="w-5 h-5 text-yellow-400"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
+            viewBox="0 0 24 24"
           >
             <path
               strokeLinecap="round"
@@ -279,22 +262,24 @@ export default function BookingVotingWidget() {
             {formatTime(bookingInfo.start_time)} to{" "}
             {formatTime(bookingInfo.end_time)}
           </span>
-        </span>
-      </p>
+        </div>
+      </div>
 
-      <label htmlFor="player-select" className="block mb-1 font-medium">
+      <label
+        htmlFor="player-select"
+        className="block mb-2 font-bold text-yellow-400"
+      >
         Select Your Name
       </label>
       <select
         id="player-select"
-        aria-label="Select Player Name"
         value={selectedPlayerId}
         onChange={(e) => {
           setSelectedPlayerId(Number(e.target.value));
           setError(null);
           setLastVote(null);
         }}
-        className="w-full mb-4 border rounded px-3 py-2"
+        className="w-full mb-4 bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-400 focus:outline-none"
       >
         <option value="">-- Select Player --</option>
         {players.map((p) => (
@@ -304,14 +289,14 @@ export default function BookingVotingWidget() {
         ))}
       </select>
 
-      <div className="flex justify-center space-x-4 mb-3">
+      <div className="flex justify-center gap-4 mb-4">
         <button
           disabled={!selectedPlayerId || isSelectedIn || loading || inSlotsFull}
           onClick={() => handleVote("in")}
-          className={`px-5 py-2 rounded font-semibold text-white ${
+          className={`px-6 py-2.5 rounded-lg font-bold transition-all ${
             isSelectedIn || inSlotsFull
-              ? "bg-green-500 opacity-50 cursor-not-allowed"
-              : "bg-green-600 hover:bg-green-700"
+              ? "bg-green-600/50 text-green-200 cursor-not-allowed"
+              : "bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white shadow-lg hover:scale-105"
           }`}
         >
           IN
@@ -319,41 +304,51 @@ export default function BookingVotingWidget() {
         <button
           disabled={!selectedPlayerId || isSelectedOut || loading}
           onClick={() => handleVote("out")}
-          className={`px-5 py-2 rounded font-semibold text-white ${
+          className={`px-6 py-2.5 rounded-lg font-bold transition-all ${
             isSelectedOut
-              ? "bg-red-500 opacity-50 cursor-not-allowed"
-              : "bg-red-600 hover:bg-red-700"
+              ? "bg-red-600/50 text-red-200 cursor-not-allowed"
+              : "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg hover:scale-105"
           }`}
         >
           OUT
         </button>
       </div>
 
-      {/* show remaining slots or full message */}
       {inSlotsFull ? (
-        <p className="text-center text-red-600 font-semibold mb-3">
+        <p className="text-center text-red-400 font-bold mb-3">
           Slots are full
         </p>
       ) : (
-        <p className="text-center text-slate-600 mb-3">{`${remainingSlots} slots left`}</p>
+        <p className="text-center text-gray-300 mb-3">
+          {remainingSlots} slots left
+        </p>
       )}
 
-      {error && <p className="text-center text-red-600 mb-3">{error}</p>}
+      {error && (
+        <p className="text-center text-red-400 font-medium mb-3">{error}</p>
+      )}
       {lastVote && !error && (
-        <p className="text-center text-green-600 font-semibold mb-3">
-          {`Recorded ${lastVote.vote.toUpperCase()} for `}
-          <span className="font-bold">
+        <p className="text-center text-green-400 font-bold mb-3">
+          Recorded {lastVote.vote.toUpperCase()} for{" "}
+          <span className="font-black">
             {players.find((p) => p.id === lastVote.playerId)?.name || "Player"}
           </span>
           .
         </p>
       )}
 
-      <hr className="my-4" />
+      <hr className="border-slate-700 my-5" />
 
       <div>
-        <h4 className="font-semibold mb-2">IN ({voteResult.inCount})</h4>
-        <div className="flex overflow-x-auto whitespace-nowrap space-x-2 mb-4">
+        <h4 className="font-black text-green-400 mb-2 flex items-center justify-between">
+          IN ({voteResult.inCount})
+          {voteResult.inCount >= MAX_IN_SLOTS && (
+            <span className="text-xs bg-green-600/20 text-green-300 px-2 py-0.5 rounded-full">
+              FULL
+            </span>
+          )}
+        </h4>
+        <div className="flex overflow-x-auto gap-3 pb-2">
           {voteResult.in.map((player) => (
             <div
               key={player.id}
@@ -361,28 +356,28 @@ export default function BookingVotingWidget() {
             >
               <button
                 type="button"
-                className="focus:outline-none"
                 onClick={() => {
                   setActivePlayerId(player.id);
-                  setTimeout(() => setActivePlayerId(null), 1800); // Hide after 1.8s
+                  setTimeout(() => setActivePlayerId(null), 1800);
                 }}
                 aria-label={`Show name for ${player.name}`}
+                className="focus:outline-none"
               >
                 {player.photo ? (
                   <img
                     src={player.photo}
                     alt={player.name}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-green-500"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-green-500 shadow-md hover:scale-110 transition-transform"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold border-2 border-green-500">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center text-white font-black text-lg border-2 border-green-500 shadow-md">
                     {player.name[0]}
                   </div>
                 )}
               </button>
               {activePlayerId === player.id && (
-                <span className="mt-1 px-2 py-1 text-xs rounded bg-gray-900 text-white z-10 shadow transition">
+                <span className="mt-1 px-3 py-1 text-xs font-bold rounded-full bg-black/80 text-green-400 shadow-lg">
                   {player.name}
                 </span>
               )}
@@ -390,8 +385,10 @@ export default function BookingVotingWidget() {
           ))}
         </div>
 
-        <h4 className="font-semibold mb-2">OUT ({voteResult.outCount})</h4>
-        <div className="flex overflow-x-auto whitespace-nowrap space-x-2 mb-4">
+        <h4 className="font-black text-red-400 mt-5 mb-2">
+          OUT ({voteResult.outCount})
+        </h4>
+        <div className="flex overflow-x-auto gap-3 pb-2">
           {voteResult.out.map((player) => (
             <div
               key={player.id}
@@ -399,28 +396,28 @@ export default function BookingVotingWidget() {
             >
               <button
                 type="button"
-                className="focus:outline-none"
                 onClick={() => {
                   setActivePlayerId(player.id);
                   setTimeout(() => setActivePlayerId(null), 1800);
                 }}
                 aria-label={`Show name for ${player.name}`}
+                className="focus:outline-none"
               >
                 {player.photo ? (
                   <img
                     src={player.photo}
                     alt={player.name}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-red-500"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow-md hover:scale-110 transition-transform"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold border-2 border-red-500">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white font-black text-lg border-2 border-red-500 shadow-md">
                     {player.name[0]}
                   </div>
                 )}
               </button>
               {activePlayerId === player.id && (
-                <span className="mt-1 px-2 py-1 text-xs rounded bg-gray-900 text-white z-10 shadow transition">
+                <span className="mt-1 px-3 py-1 text-xs font-bold rounded-full bg-black/80 text-red-400 shadow-lg">
                   {player.name}
                 </span>
               )}

@@ -52,7 +52,7 @@ export default function LatestNews() {
 
   return (
     <>
-      <section className="py-10 bg-black">
+      <section className="py-10 bg-gradient-to-br from-blue-800 via-slate-900 to-black border-slate-700">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-7xl md:text-8xl font-black text-center mb-8 tracking-tighter">
             <span className="text-yellow-400 drop-shadow-lg">LATEST</span>
@@ -70,11 +70,11 @@ export default function LatestNews() {
               >
                 <div className="relative h-[520px] sm:h-[580px] bg-gradient-to-b from-gray-900 to-black rounded-xl sm:rounded-2xl overflow-hidden border-3 sm:border-4 border-yellow-500 shadow-2xl">
                   {/* Image Section */}
-                  <div className="relative h-44 sm:h-52 overflow-hidden">
+                  <div className="relative h-44 sm:h-52 ">
                     <img
                       src={image_url}
                       alt={title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain object-center"
                     />
                   </div>
 
