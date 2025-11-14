@@ -78,7 +78,7 @@ export default function UpcomingBookings({
   }, [selectedDate]);
 
   return (
-    <div className="mt-10 max-w-2xl mx-auto rounded-xl shadow-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-black p-6 border border-slate-700">
+    <>
       <div className="space-y-4">
         <Calendar bookedDates={bookedDates} onDateSelect={onDateSelect} />
       </div>
@@ -138,7 +138,7 @@ export default function UpcomingBookings({
               </div>
 
               <div className="flex-1 text-white">
-                <div className="font-black text-lg">
+                <div className="font-bold text-lg">
                   {start.toLocaleDateString(undefined, {
                     weekday: "long",
                     month: "long",
@@ -190,6 +190,6 @@ export default function UpcomingBookings({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

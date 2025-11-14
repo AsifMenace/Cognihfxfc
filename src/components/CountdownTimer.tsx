@@ -41,25 +41,25 @@ const CountdownTimer: React.FC<{ kickOff: Date }> = ({ kickOff }) => {
         <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded">
           {timeLeft.days}
         </span>{" "}
-        <span className="text-slate-700">days</span>
+        <span className="text-white-700">days</span>
       </div>
       <div>
         <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded">
           {timeLeft.hours}
         </span>{" "}
-        <span className="text-slate-700">hrs</span>
+        <span className="text-white-700">hrs</span>
       </div>
       <div>
         <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded">
           {timeLeft.minutes}
         </span>{" "}
-        <span className="text-slate-700">min</span>
+        <span className="text-white-700">min</span>
       </div>
       <div>
         <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded">
           {timeLeft.seconds}
         </span>{" "}
-        <span className="text-slate-700">sec</span>
+        <span className="text-white-700">sec</span>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ const RecentMatchVideo: React.FC<RecentMatchVideoProps> = ({ matches }) => {
         <span className="text-yellow-400 drop-shadow-lg">LAST MATCH</span>
         <span className="text-white"> VIDEO</span>
       </h2>
-      <div className="mb-3 text-center text-gray-600 font-semibold">
+      <div className="mb-3 text-center text-white-600 font-bold">
         {match.home_team_name && match.away_team_name ? (
           <>{`${match.home_team_name} vs ${match.away_team_name}`}</>
         ) : (

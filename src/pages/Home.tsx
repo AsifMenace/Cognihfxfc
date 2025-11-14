@@ -377,22 +377,18 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
         </section>
 
         {/* LATEST NEWS — NEW SECTION */}
-        <section className="py-12 bg-gradient-to-b from-slate-900 to-black">
-          <LatestNews />
-        </section>
+        <LatestNews />
 
-        <div className="max-w-4xl mx-auto my-12">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl border border-slate-700 p-6 md:p-8">
-            <h2 className="text-6xl md:text-8xl font-black text-center mb-8 tracking-tighter">
-              <span className="text-yellow-400 drop-shadow-lg">UPCOMING</span>
-              <span className="text-white"> BOOKINGS</span>
-            </h2>
-            <UpcomingBookings
-              isAdmin={isAdmin}
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-            />
-          </div>
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl border border-slate-700 p-6 md:p-8">
+          <h2 className="text-6xl md:text-8xl font-black text-center mb-8 tracking-tighter">
+            <span className="text-yellow-400 drop-shadow-lg">UPCOMING</span>
+            <span className="text-white"> BOOKINGS</span>
+          </h2>
+          <UpcomingBookings
+            isAdmin={isAdmin}
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+          />
         </div>
 
         {/* Top Scorers */}
