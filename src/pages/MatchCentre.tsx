@@ -788,6 +788,15 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           </Card>
         )}
 
+        {isAdmin && (
+          <Card className="border-green-500/30">
+            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
+              PLAYER OF THE MATCH
+            </h2>
+            <SetPlayerOfTheMatch matchId={match.id} isAdmin={isAdmin} />
+          </Card>
+        )}
+
         {/* Lineups */}
         <Card className="border-yellow-500/30">
           <h2 className="text-2xl font-black text-yellow-400 text-center mb-6">
@@ -852,12 +861,16 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
               ADD PLAYERS TO MATCH
             </h2>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* === PLAYERS SELECT === */}
                 <div>
                   <label className="block text-sm font-bold text-gray-300 mb-1">
                     PLAYERS
                   </label>
+
+                  {/* React Select - Always Open Input */}
                   <Select<PlayerOption, true>
                     options={allPlayers.map((p) => ({
                       value: p.id,
@@ -866,19 +879,41 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     isMulti
                     value={selectedPlayers}
                     onChange={(selected) => setSelectedPlayers(selected ?? [])}
-                    placeholder="Select players..."
+                    placeholder="Type player name..."
                     className="react-select-container"
                     classNamePrefix="react-select"
+                    // Mobile UX Fixes
+                    closeMenuOnSelect={false}
+                    hideSelectedOptions={false}
+                    controlShouldRenderValue={false} // We show pills manually
+                    // Custom styles
                     styles={{
-                      control: (base) => ({
+                      // Input stays visible
+                      input: (base) => ({
+                        ...base,
+                        color: "white",
+                        minWidth: "120px",
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: "#94a3b8",
+                      }),
+                      control: (base, state) => ({
                         ...base,
                         backgroundColor: "#1e293b",
-                        borderColor: "#334155",
-                        color: "white",
+                        borderColor: state.isFocused ? "#8b5cf6" : "#1e293b",
+                        boxShadow: "none",
+                        minHeight: "52px",
+                        padding: "4px 8px",
+                        cursor: "text",
+                        borderRadius: "0.5rem",
                       }),
                       menu: (base) => ({
                         ...base,
                         backgroundColor: "#1e293b",
+                        marginTop: "4px",
+                        borderRadius: "0.5rem",
+                        overflow: "hidden",
                       }),
                       option: (base, state) => ({
                         ...base,
@@ -888,18 +923,47 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                           ? "#334155"
                           : "#1e293b",
                         color: "white",
-                      }),
-                      multiValue: (base) => ({
-                        ...base,
-                        backgroundColor: "#334155",
-                      }),
-                      singleValue: (base) => ({
-                        ...base,
-                        color: "white",
+                        padding: "10px 12px",
                       }),
                     }}
+                    // Hide default pills
+                    components={{
+                      MultiValue: () => null,
+                    }}
                   />
+
+                  {/* Custom Selected Pills (Below Input) */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {selectedPlayers.map((player) => {
+                      const playerData = allPlayers.find(
+                        (p) => p.id === player.value
+                      );
+                      return (
+                        <div
+                          key={player.value}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-600/30 text-amber-400 text-sm font-semibold border border-purple-500/50"
+                        >
+                          {player.label}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedPlayers(
+                                selectedPlayers.filter(
+                                  (p) => p.value !== player.value
+                                )
+                              )
+                            }
+                            className="ml-1 text-amber-300 hover:text-red-400 transition-colors"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* === TEAM SELECT === */}
                 <div>
                   <label className="block text-sm font-bold text-gray-300 mb-1">
                     TEAM
@@ -925,7 +989,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                         </option>
                       ) : null;
                     })}
-                    {/* Optionally include opponent and cogni if separate */}
                     {match?.cogni_id &&
                       match.cogni_name &&
                       !playingTeamIds.includes(match.cogni_id) && (
@@ -943,6 +1006,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   </select>
                 </div>
               </div>
+
+              {/* Submit Button */}
               <button
                 type="submit"
                 className="w-full py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-lg hover:scale-105 transition-all"

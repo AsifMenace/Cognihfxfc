@@ -152,7 +152,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white">
         {/* Hero Section */}
         <motion.section
-          className="relative overflow-hidden"
+          className="relative overflow-hidden -mt-[30px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7 }}
