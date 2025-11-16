@@ -25,6 +25,7 @@ import AdminNotification from "./pages/AdminNotificationPage";
 import { UpdatePrompt } from "./components/UpdatePrompt"; //
 import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
 import AddNews from "./pages/AddNews";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
@@ -42,6 +43,7 @@ function App() {
   const { updateAvailable, handleRefresh } = useServiceWorkerUpdate();
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen bg-slate-50">
         <UpdatePrompt show={updateAvailable} onRefresh={handleRefresh} />
         <Header isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
