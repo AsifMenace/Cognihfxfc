@@ -321,7 +321,7 @@ export default function Games() {
 
                 {/* Next Match */}
                 {index === 0 && !isPastMatch(game) && (
-                  <div className="text-center mt-4">
+                  <div className="flex justify-center -mt-3 mb-3 z-10">
                     <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-red-600 text-white animate-pulse">
                       Next Match
                     </span>
