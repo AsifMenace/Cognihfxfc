@@ -392,6 +392,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   return (
     <ThemeProvider>
       <div className="max-w-4xl mx-auto space-y-8">
+        <Title>MATCH CENTRE</Title>
         {/* Match Header */}
         <Card className="border-yellow-500/30">
           <div className="text-center p-6">

@@ -18,7 +18,7 @@ export default function Title({ children, className = "" }: TitleProps) {
 
   return (
     <h1
-      className={`text-5xl md:text-7xl font-black tracking-tight text-center mb-12 ${className}`}
+      className={`text-7xl md:text-8xl font-black text-center mb-8 tracking-tighter ${className}`}
     >
       <span className="text-yellow-400 drop-shadow-lg">{firstWord}</span>
       {restWords && <span className="text-white"> {restWords}</span>}
