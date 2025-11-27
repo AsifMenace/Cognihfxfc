@@ -74,7 +74,7 @@ export const LeagueStandings: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         {/* HEADER */}
         <div className="text-center mb-12">
-          <h1 className="text-7xl md:text-8xl font-black tracking-tighter">
+          <h1 className="text-6xl md:text-7xl font-black tracking-tighter">
             <span className="text-yellow-400 drop-shadow-lg">LEAGUE</span>
             <span className="text-white"> STANDINGS</span>
           </h1>
