@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { X, Filter } from "lucide-react";
+import { X, Filter, Upload, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
 type GalleryProps = {
   isAdmin: boolean;
 };
 
+type GalleryImage = {
+  id: number;
+  image_url: string;
+  caption: string | null;
+  category: "match" | "training" | "celebration" | "team";
+  created_at?: string; // optional – whatever your DB returns
+};
+
 const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
   const [filter, setFilter] = useState<string>("all");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
-  // Upload form states
+  // Upload form
   const [caption, setCaption] = useState("");
   const [category, setCategory] = useState("match");
   const [imageUrl, setImageUrl] = useState("");
@@ -22,22 +28,19 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  const categories = ["all", "match", "training", "celebration", "team"];
-
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Replace with your Cloudinary info
+  const categories = ["all", "match", "training", "celebration", "team"];
+  const navigate = useNavigate();
+
   const CLOUDINARY_URL =
     "https://api.cloudinary.com/v1_1/mycloudasif/image/upload";
   const UPLOAD_PRESET = "unsigned_preset";
-
   const API_BASE =
     process.env.NODE_ENV === "development"
       ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
       : "/.netlify/functions";
 
-  // Fetch gallery data
   useEffect(() => {
     fetch(`${API_BASE}/getGallery`)
       .then((res) => res.json())
@@ -51,25 +54,24 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
       ? galleryImages
       : galleryImages.filter((image) => image.category === filter);
 
-  const getCategoryLabel = (category: string) =>
-    category.charAt(0).toUpperCase() + category.slice(1);
+  const getCategoryLabel = (cat: string) =>
+    cat.charAt(0).toUpperCase() + cat.slice(1);
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
+  const getCategoryColor = (cat: string) => {
+    switch (cat) {
       case "match":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500/20 text-blue-300 border border-blue-500/50";
       case "training":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500/20 text-green-300 border border-green-500/50";
       case "celebration":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-500/20 text-yellow-300 border border-yellow-500/50";
       case "team":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-500/20 text-purple-300 border border-purple-500/50";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-500/20 text-gray-300 border border-gray-500/50";
     }
   };
 
-  // Handle image upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -88,250 +90,245 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
       setImageUrl(data.secure_url);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
-      } else setError("An unexpected error occurred.");
+        setError(err.message || "Upload failed");
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
       setUploading(false);
     }
   };
 
-  // Handle Delete
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this photo?")) return;
-
+    if (!confirm("Delete this photo permanently?")) return;
     try {
       const res = await fetch(`${API_BASE}/deleteGalleryPhoto`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to delete photo");
-      }
-
-      // Update local state
+      if (!res.ok) throw new Error("Delete failed");
       setGalleryImages((prev) => prev.filter((img) => img.id !== id));
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
-        alert(`Error deleting photo: ${err.message}`);
-      } else setError("An unexpected error occurred.");
+        setError(err.message || "Upload failed");
+      } else {
+        setError("An unexpected error occurred");
+      }
     }
   };
 
-  // Handle save to DB
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageUrl) return;
     setSaving(true);
-    setError(null);
-    setMessage(null);
     try {
       const res = await fetch(`${API_BASE}/addGalleryPhoto`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image_url: imageUrl, caption, category }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to save photo");
-      }
+      if (!res.ok) throw new Error("Save failed");
       setMessage("Photo added!");
       setCaption("");
       setCategory("match");
       setImageUrl("");
-      // Refresh gallery from DB
-      const updated = await fetch("/.netlify/functions/getGallery").then((r) =>
+      const updated = await fetch(`${API_BASE}/getGallery`).then((r) =>
         r.json()
       );
       setGalleryImages(updated);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
-      } else setError("An unexpected error occurred.");
+        setError(err.message || "Upload failed");
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="container mx-auto px-4">
-        {/* PAGE HEADER */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
-            Photo Gallery
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-black text-white py-12">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-amber-600">
+            GALLERY
           </h1>
-          <p className="text-lg text-slate-600">
-            Capturing our amazing moments on and off the pitch
-          </p>
+          <p className="text-xl text-gray-400">Moments frozen in time</p>
         </div>
 
-        {/* UPLOAD FORM */}
-        <button
-          className="mb-4 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors"
-          onClick={() => {
-            if (!isAdmin) {
-              navigate("/admin-login"); // client-side navigation—no reload!
-            } else {
-              setShowAddForm((prev) => !prev);
+        {/* Add Photo Button */}
+        <div className="flex justify-center mb-8">
+          <button
+            onClick={() =>
+              isAdmin ? setShowAddForm(!showAddForm) : navigate("/admin-login")
             }
-          }}
-        >
-          + Add Photo
-        </button>
-        {isAdmin && showAddForm && (
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white p-4 rounded shadow mb-8"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full font-bold hover:scale-105 transition-all shadow-xl"
           >
-            <h2 className="text-lg font-bold mb-3">Add to Gallery</h2>
-            {error && <p className="text-red-600">{error}</p>}
-            {message && <p className="text-green-600">{message}</p>}
+            <Upload size={20} />
+            Add Photo
+          </button>
+        </div>
 
-            {/* File upload (styled label triggers hidden input) */}
-            <div className="flex items-center">
-              <label
-                htmlFor="gallery-file"
-                className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-700"
-              >
-                Choose File
-              </label>
+        {/* Upload Form */}
+        {isAdmin && showAddForm && (
+          <div className="max-w-2xl mx-auto mb-12 bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-8 shadow-2xl">
+            <h2 className="text-2xl font-bold mb-6 text-yellow-400">
+              Upload New Photo
+            </h2>
+            {error && <p className="text-red-400 mb-4">{error}</p>}
+            {message && <p className="text-green-400 mb-4">{message}</p>}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-gray-300 mb-2">
+                  Image
+                </label>
+                <label className="flex items-center gap-4 cursor-pointer">
+                  <span className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg font-medium hover:from-blue-500 hover:to-purple-500 transition">
+                    Choose File
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    required
+                  />
+                  <span className="text-gray-400">
+                    {imageUrl ? "Ready to upload" : "No file selected"}
+                  </span>
+                </label>
+                {uploading && (
+                  <p className="text-cyan-400 mt-2">
+                    Uploading to Cloudinary...
+                  </p>
+                )}
+                {imageUrl && (
+                  <img
+                    src={imageUrl}
+                    alt="Preview"
+                    className="mt-4 w-48 rounded-lg shadow-lg"
+                  />
+                )}
+              </div>
+
               <input
-                id="gallery-file"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-                required
+                type="text"
+                placeholder="Caption (optional)"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg focus:border-yellow-500 focus:outline-none transition"
               />
-              <span className="ml-3 text-gray-600">
-                {/* This shows status next to button */}
-                {imageUrl ? "File selected" : "No file chosen"}
-              </span>
-            </div>
 
-            {uploading && <p className="text-blue-500 mt-1">Uploading...</p>}
-            {imageUrl && (
-              <img src={imageUrl} alt="Preview" className="mt-2 w-32 rounded" />
-            )}
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg focus:border-yellow-500 focus:outline-none"
+              >
+                <option value="match">Match</option>
+                <option value="training">Training</option>
+                <option value="celebration">Celebration</option>
+                <option value="team">Team</option>
+              </select>
 
-            <input
-              type="text"
-              placeholder="Caption"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              className="block w-full border p-2 rounded mt-3"
-            />
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="block w-full border p-2 rounded mt-3"
-            >
-              <option value="match">Match</option>
-              <option value="training">Training</option>
-              <option value="celebration">Celebration</option>
-              <option value="team">Team</option>
-            </select>
-            <button
-              type="submit"
-              disabled={saving || uploading || !imageUrl}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-            >
-              {saving ? "Saving..." : "Add Photo"}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={saving || uploading || !imageUrl}
+                className="w-full py-4 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold rounded-lg hover:from-yellow-400 hover:to-amber-500 disabled:opacity-50 transition-all"
+              >
+                {saving ? "Saving..." : "Add to Gallery"}
+              </button>
+            </form>
+          </div>
         )}
 
-        {/* FILTER BUTTONS */}
-        <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 mb-6">
-          <Filter className="text-slate-600 mr-1" size={18} />
+        {/* Filters */}
+        <div className="flex flex-wrap justify-center gap-3 mb-10">
+          <Filter size={20} className="text-gray-400" />
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setFilter(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+              className={`px-5 py-2 rounded-full font-bold text-sm transition-all ${
                 filter === cat
-                  ? "bg-blue-600 text-white shadow-lg scale-105"
-                  : "bg-white text-slate-600 hover:bg-slate-100 shadow-sm"
+                  ? "bg-gradient-to-r from-yellow-500 to-amber-600 text-black shadow-xl scale-105"
+                  : "bg-slate-800/50 text-gray-300 hover:bg-slate-700/70 border border-slate-700"
               }`}
             >
               {getCategoryLabel(cat)}
               {cat !== "all" && (
-                <span className="ml-1 text-xs opacity-75">
-                  ({galleryImages.filter((img) => img.category === cat).length})
+                <span className="ml-2 opacity-75">
+                  ({galleryImages.filter((i) => i.category === cat).length})
                 </span>
               )}
             </button>
           ))}
         </div>
 
-        {/* IMAGE GRID */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
+        {/* Image Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {filteredImages.map((image, index) => (
-            <div key={image.id} className="group relative">
-              {/* Delete button */}
+            <div
+              key={image.id}
+              className="group relative overflow-hidden rounded-2xl cursor-zoom-in transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
+              onClick={() => setSelectedImage(index)}
+            >
               {isAdmin && (
                 <button
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent the lightbox from opening
+                    e.stopPropagation();
                     handleDelete(image.id);
                   }}
-                  title="Delete photo"
-                  className="absolute top-2 right-2 z-10 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                  className="absolute top-3 right-3 z-10 p-2 bg-red-600/80 hover:bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-all"
                 >
-                  ✕
+                  <Trash2 size={16} />
                 </button>
               )}
 
-              {/* Image Card */}
-              <div
-                className="relative cursor-pointer overflow-hidden rounded-xl bg-white shadow hover:shadow-xl transition-all duration-300 group-hover:scale-105"
-                onClick={() => setSelectedImage(index)}
-              >
-                <img
-                  src={image.image_url}
-                  alt={image.caption}
-                  className="w-full h-32 sm:h-48 md:h-64 object-cover"
-                />
+              <img
+                src={image.image_url}
+                alt={image.caption ?? `Gallery image ${image.id}`}
+                className="w-full h-64 object-cover transition-all duration-700 group-hover:scale-110"
+                loading="lazy"
+              />
 
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-end">
-                  <div className="p-2 text-white transform translate-y-full group-hover:translate-y-0 transition-transform">
-                    <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium mb-2 ${getCategoryColor(
-                        image.category
-                      )}`}
-                    >
-                      {getCategoryLabel(image.category)}
-                    </span>
-                    <p className="text-xs">{image.caption}</p>
-                  </div>
-                </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-4">
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-2 w-fit ${getCategoryColor(
+                    image.category
+                  )}`}
+                >
+                  {getCategoryLabel(image.category)}
+                </span>
+                {image.caption && (
+                  <p className="text-sm font-medium">{image.caption}</p>
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        {/* LIGHTBOX */}
+        {/* Lightbox */}
         {selectedImage !== null && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-            <div className="relative max-w-4xl max-h-full">
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute -top-10 right-0 text-white hover:text-gray-300"
-              >
-                <X size={28} />
-              </button>
-              <img
-                src={filteredImages[selectedImage].image_url}
-                alt={filteredImages[selectedImage].caption}
-                className="max-w-full max-h-[80vh] object-contain rounded-lg"
-              />
-            </div>
+          <div
+            className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            onClick={() => setSelectedImage(null)}
+          >
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition"
+            >
+              <X size={32} />
+            </button>
+            <img
+              src={filteredImages[selectedImage].image_url}
+              alt={filteredImages[selectedImage].caption || "Gallery"}
+              className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         )}
       </div>
