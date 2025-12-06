@@ -6,11 +6,11 @@ export const handler = async () => {
   try {
     const now = new Date();
     const bookings = await sql`
-  SELECT id, booking_date, start_time, end_time, session, field_number
-  FROM field_bookings
-
-  ORDER BY booking_date ASC, start_time ASC
-  LIMIT 25
+SELECT id, booking_date, start_time, end_time, session, field_number
+FROM field_bookings
+WHERE booking_date >= DATE_TRUNC('month', CURRENT_DATE)
+ORDER BY booking_date ASC, start_time ASC
+LIMIT 25
 `;
 
     return {
