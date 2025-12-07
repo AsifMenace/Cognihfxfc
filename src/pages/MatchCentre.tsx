@@ -396,7 +396,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         {/* Match Header */}
         <Card className="border-yellow-500/30">
           <div className="text-center p-6">
-            <div className="text-3xl md:text-4xl font-black text-white mb-4 flex justify-center items-center gap-4">
+            <div className="text-3xl md:text-4xl flex-wrap font-black text-white mb-4 flex justify-center items-center gap-4">
               {match?.home_team_name && match?.away_team_name ? (
                 <>
                   <span style={{ color: match?.home_team_color || "#e5e7eb" }}>
