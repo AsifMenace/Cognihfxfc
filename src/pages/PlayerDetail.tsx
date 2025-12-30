@@ -27,6 +27,7 @@ interface Player {
   weight: string;
   goals: number;
   assists: number;
+  saves: number;
   appearances: number;
   photo: string;
   bio: string;
@@ -253,9 +254,13 @@ const PlayerDetail: React.FC = () => {
                       <Target className="text-blue-400" size={32} />
                     </div>
                     <div className="text-4xl font-black text-white">
-                      {player.goals}
+                      {player.position === "Goalkeeper"
+                        ? player.saves
+                        : player.goals}
                     </div>
-                    <div className="text-sm text-gray-400">Goals</div>
+                    <div className="text-sm text-gray-400">
+                      {player.position === "Goalkeeper" ? "Saves" : "Goals"}
+                    </div>
                   </div>
                   <div>
                     <div className="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-3">

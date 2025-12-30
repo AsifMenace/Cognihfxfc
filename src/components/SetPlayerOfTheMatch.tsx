@@ -6,7 +6,9 @@ type Props = {
 };
 
 export const SetPlayerOfTheMatch: React.FC<Props> = ({ matchId, isAdmin }) => {
-  const [players, setPlayers] = useState<{ id: number; name: string }[]>([]);
+  const [players, setPlayers] = useState<
+    { id: number; name: string; position: string }[]
+  >([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export const SetPlayerOfTheMatch: React.FC<Props> = ({ matchId, isAdmin }) => {
                 value={player.id}
                 className="bg-slate-700 text-white"
               >
-                {player.name}
+                {player.name} ({player.position})
               </option>
             ))}
           </select>

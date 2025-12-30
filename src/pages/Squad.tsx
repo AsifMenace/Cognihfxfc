@@ -16,6 +16,7 @@ interface Player {
   weight: string;
   goals: number;
   assists: number;
+  saves: number;
   appearances: number;
   photo: string;
   bio: string;
@@ -249,10 +250,14 @@ const Squad: React.FC<SquadProps> = ({ isAdmin }) => {
                             <div className="grid grid-cols-3 gap-4 text-center">
                               <div>
                                 <div className="text-2xl font-black text-white">
-                                  {player.goals}
+                                  {player.position === "Goalkeeper"
+                                    ? player.saves
+                                    : player.goals}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  Goals
+                                  {player.position === "Goalkeeper"
+                                    ? "Saves"
+                                    : "Goals"}
                                 </div>
                               </div>
                               <div>

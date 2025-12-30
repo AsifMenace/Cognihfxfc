@@ -218,7 +218,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                   <Link
                     key={index}
                     to={btn.to}
-                    className="group relative flex-1 flex items-center justify-center gap-3 px-6 py-4 overflow-hidden rounded-xl bg-slate-900 border border-slate-700/50 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(234,179,8,0.15)] hover:border-yellow-500/30 active:scale-95"
+                    className="group relative flex-1 flex items-center justify-center gap-3 px-6 py-4 overflow-hidden rounded-xl bg-blue-700 border border-slate-700/50 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(234,179,8,0.15)] hover:border-yellow-500/30 active:scale-95"
                   >
                     {/* 1. Subtle Background Gradient on Hover */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out" />
@@ -228,10 +228,10 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
 
                     {/* Content */}
                     <btn.icon
-                      className="relative z-10 w-5 h-5 text-slate-400 group-hover:text-yellow-400 transition-colors duration-300"
+                      className="relative z-10 w-5 h-5 text-slate-800 group-hover:text-yellow-400 transition-colors duration-300"
                       strokeWidth={2.5}
                     />
-                    <span className="relative z-10 font-bold text-slate-300 tracking-wide group-hover:text-white transition-colors duration-300">
+                    <span className="relative z-10 font-bold text-slate-100 tracking-wide group-hover:text-white transition-colors duration-300">
                       {btn.label}
                     </span>
                   </Link>
@@ -345,53 +345,64 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                         to: "/games",
                         label: "View All Fixtures",
                         icon: Calendar,
-                        accent: "group-hover:text-blue-400",
+                        accentColor: "blue", // subtle variation
                       },
                       {
                         to: `/match/${nextGame?.id}`,
                         label: "Match Centre",
                         icon: Trophy,
-                        accent: "group-hover:text-yellow-400",
+                        accentColor: "yellow",
                         isPrimary: true,
                       },
                     ].map((btn, index) => (
                       <Link
                         key={index}
                         to={btn.to}
-                        className="group relative flex-1 flex items-center justify-center gap-3 px-6 py-4 overflow-hidden rounded-xl bg-slate-900 border border-slate-700/50 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(234,179,8,0.15)] hover:border-yellow-500/30 active:scale-95"
+                        className={`group relative flex-1 flex items-center justify-center gap-3 px-6 py-4 overflow-hidden rounded-xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95
+        /* Increased visibility: lighter slate and stronger border */
+        bg-blue-800/80 backdrop-blur-md border border-slate-600/50
+        hover:border-yellow-500/50 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]`}
                       >
-                        {/* 1. Spotlight Background Gradient */}
+                        {/* 1. Static Gradient Glow (Always slightly visible to prevent mixing) */}
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br ${
+                            btn.isPrimary
+                              ? "from-yellow-500/5"
+                              : "from-blue-500/5"
+                          } to-transparent`}
+                        />
+
+                        {/* 2. Hover Spotlight - More intense to make it pop */}
                         <div
                           className={`absolute inset-0 bg-gradient-to-tr ${
                             btn.isPrimary
-                              ? "from-yellow-500/10"
-                              : "from-blue-500/10"
-                          } to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out`}
+                              ? "from-yellow-500/20"
+                              : "from-blue-500/20"
+                          } to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                         />
 
-                        {/* 2. Animated Bottom Highlight Line */}
+                        {/* 3. The Animated Bottom Line */}
                         <div
-                          className={`absolute bottom-0 left-0 h-[2px] w-0 bg-gradient-to-r ${
-                            btn.isPrimary
-                              ? "from-yellow-400 to-yellow-600"
-                              : "from-blue-400 to-blue-600"
-                          } transition-all duration-300 group-hover:w-full`}
+                          className={`absolute bottom-0 left-0 h-[3px] w-0 bg-yellow-400 transition-all duration-300 group-hover:w-full`}
                         />
 
                         {/* Content */}
                         <btn.icon
-                          className={`relative z-10 w-5 h-5 text-slate-400 transition-colors duration-300 ${btn.accent}`}
+                          className={`relative z-10 w-5 h-5 transition-colors duration-300 ${
+                            btn.isPrimary
+                              ? "text-yellow-500"
+                              : "text-slate-400 group-hover:text-blue-400"
+                          }`}
                           strokeWidth={2.5}
                         />
 
-                        <span className="relative z-10 font-bold text-slate-300 tracking-wide group-hover:text-white transition-colors duration-300">
+                        <span className="relative z-10 font-bold text-white tracking-wide transition-colors duration-300">
                           {btn.label}
                         </span>
 
-                        {/* Optional: Chevron for Match Centre to show it's a deep link */}
                         {btn.isPrimary && (
                           <ChevronRight
-                            className="relative z-10 w-4 h-4 text-slate-500 group-hover:text-yellow-400 group-hover:translate-x-1 transition-all"
+                            className="relative z-10 w-4 h-4 text-yellow-500 group-hover:translate-x-1 transition-transform"
                             strokeWidth={3}
                           />
                         )}

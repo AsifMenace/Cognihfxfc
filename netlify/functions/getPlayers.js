@@ -54,6 +54,7 @@ export const handler = async (event) => {
         weight,
         goals,
         assists,
+        saves,
         appearances,
         photo,
         bio
