@@ -19,9 +19,14 @@ type MatchCentreProps = {
 interface Player {
   id: number;
   name: string;
-  photo: string;
   position: string;
   jerseyNumber: number;
+  goals: number;
+  assists: number;
+  saves: number;
+  appearances: number;
+  photo?: string;
+  bio?: string;
   team_id?: number | null;
 }
 
@@ -139,6 +144,71 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   useEffect(() => {
     fetchScorers();
   }, [match]);
+
+  // ✅ All state
+  const [selectedStatsPlayerId, setSelectedStatsPlayerId] =
+    useState<string>("");
+  const [assistsCount, setAssistsCount] = useState<string>("");
+  const [savesCount, setSavesCount] = useState<string>("");
+  const [loadingStats, setLoadingStats] = useState<boolean>(false);
+  const [statsError, setStatsError] = useState<string>("");
+  const [statsSuccess, setStatsSuccess] = useState<string>("");
+
+  // ✅ Goalkeeper check
+  const isGoalkeeper = (playerId: string): boolean => {
+    const player = allPlayers.find((p: Player) => p.id === parseInt(playerId));
+    return (
+      !!player &&
+      (player.position === "Goalkeeper" ||
+        player.position.toLowerCase().includes("keeper") ||
+        player.position.toLowerCase().includes("goal"))
+    );
+  };
+
+  // ✅ Fixed handler
+  const handleAddMatchStats = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedStatsPlayerId || !match?.id) {
+      setStatsError("Please select a player");
+      return;
+    }
+
+    setLoadingStats(true);
+    setStatsError("");
+    setStatsSuccess("");
+
+    try {
+      const response = await fetch("/.netlify/functions/addPlayerMatchStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerId: parseInt(selectedStatsPlayerId),
+          matchId: match.id,
+          saves: parseInt(savesCount || "0"),
+          assists: parseInt(assistsCount || "0"),
+        }),
+      });
+
+      if (response.ok) {
+        setStatsSuccess("✅ Match stats added successfully!");
+        setSelectedPlayerId("");
+        setAssistsCount("");
+        setSavesCount("");
+
+        // Refresh players
+        const playerRes = await fetch("/.netlify/functions/getplayers");
+        const updatedPlayers: Player[] = await playerRes.json();
+        setAllPlayers(updatedPlayers);
+      } else {
+        const errorData = await response.json();
+        setStatsError(errorData.error || "Failed to add stats");
+      }
+    } catch (error) {
+      setStatsError("Network error. Please try again.");
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   // Remove player handler
   async function handleRemovePlayer(playerId: number) {
@@ -738,6 +808,103 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               {error && <p className="text-red-400 text-center">{error}</p>}
               {success && (
                 <p className="text-green-400 text-center">{success}</p>
+              )}
+            </form>
+          </Card>
+        )}
+
+        {isAdmin && match && allPlayers.length > 0 && (
+          <Card className="border-green-500/30">
+            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
+              ADD MATCH STATS
+            </h2>
+            <form onSubmit={handleAddMatchStats} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Player - DIFFERENT STATE */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">
+                    PLAYER
+                  </label>
+                  <select
+                    value={selectedStatsPlayerId} // ✅ Different state
+                    onChange={(e) => {
+                      setSelectedStatsPlayerId(e.target.value); // ✅ Different setter
+                      setAssistsCount("");
+                      setSavesCount("");
+                    }}
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select player
+                    </option>
+                    {allPlayers.map((p: Player) => (
+                      <option key={p.id} value={p.id.toString()}>
+                        {p.name} ({p.position})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Assists */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">
+                    ASSISTS
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={assistsCount}
+                    onChange={(e) => setAssistsCount(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Saves */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">
+                    SAVES
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={savesCount}
+                    onChange={(e) => setSavesCount(e.target.value)}
+                    placeholder="0"
+                    disabled={
+                      !selectedStatsPlayerId ||
+                      !isGoalkeeper(selectedStatsPlayerId)
+                    }
+                    className={`w-full px-4 py-2 rounded-lg border focus:border-yellow-500 focus:outline-none transition-all ${
+                      selectedStatsPlayerId &&
+                      !isGoalkeeper(selectedStatsPlayerId)
+                        ? "bg-slate-800 text-gray-500 border-slate-600 cursor-not-allowed"
+                        : "bg-slate-700 text-white border-slate-600"
+                    }`}
+                  />
+                  {selectedStatsPlayerId &&
+                    !isGoalkeeper(selectedStatsPlayerId) && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Saves only for goalkeepers
+                      </p>
+                    )}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loadingStats}
+                className="w-full py-3 bg-gradient-to-r from-green-500 to-green-400 text-black font-bold rounded-lg hover:scale-105 transition-all disabled:opacity-50 shadow-lg"
+              >
+                {loadingStats ? "ADDING STATS..." : "ADD MATCH STATS"}
+              </button>
+
+              {statsError && (
+                <p className="text-red-400 text-center">{statsError}</p>
+              )}
+              {statsSuccess && (
+                <p className="text-green-400 text-center">{statsSuccess}</p>
               )}
             </form>
           </Card>

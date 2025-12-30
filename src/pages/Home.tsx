@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Users, Trophy, Target } from "lucide-react";
+import { Calendar, Users, Trophy, Target, ChevronRight } from "lucide-react";
 import { parseMatchDateTime } from "../components/dateUtils";
 import CountdownTimer from "../components/CountdownTimer";
 import { motion } from "framer-motion";
@@ -205,29 +205,37 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                 Built on Belief. Driven by Passion.
               </motion.p>
               <motion.div
-                className="flex flex-col sm:flex-row gap-4 justify-center"
+                className="flex flex-col sm:flex-row gap-5 justify-center mt-8 w-full max-w-4xl mx-auto px-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.9, duration: 0.5 }}
               >
-                <Link
-                  to="/games"
-                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 px-8 py-3 rounded-lg font-bold transition-all duration-300 shadow-lg transform hover:scale-105 text-white"
-                >
-                  View Fixtures
-                </Link>
-                <Link
-                  to="/squad"
-                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 px-8 py-3 rounded-lg font-bold transition-all duration-300 shadow-lg transform hover:scale-105 text-white"
-                >
-                  Meet the Squad
-                </Link>
-                <Link
-                  to="/standings"
-                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 px-8 py-3 rounded-lg font-bold transition-all duration-300 shadow-lg transform hover:scale-105 text-white"
-                >
-                  View League Standings
-                </Link>
+                {[
+                  { to: "/games", label: "View Fixtures", icon: Calendar },
+                  { to: "/squad", label: "Meet the Squad", icon: Users },
+                  { to: "/standings", label: "League Standings", icon: Trophy },
+                ].map((btn, index) => (
+                  <Link
+                    key={index}
+                    to={btn.to}
+                    className="group relative flex-1 flex items-center justify-center gap-3 px-6 py-4 overflow-hidden rounded-xl bg-blue-700 border border-slate-700/50 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(234,179,8,0.15)] hover:border-yellow-500/30 active:scale-95"
+                  >
+                    {/* 1. Subtle Background Gradient on Hover */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out" />
+
+                    {/* 2. Animated Bottom Highlight Line */}
+                    <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all duration-300 group-hover:w-full" />
+
+                    {/* Content */}
+                    <btn.icon
+                      className="relative z-10 w-5 h-5 text-slate-800 group-hover:text-yellow-400 transition-colors duration-300"
+                      strokeWidth={2.5}
+                    />
+                    <span className="relative z-10 font-bold text-slate-100 tracking-wide group-hover:text-white transition-colors duration-300">
+                      {btn.label}
+                    </span>
+                  </Link>
+                ))}
               </motion.div>
             </div>
           </div>
@@ -331,21 +339,75 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                       </>
                     )}
                   </div>
-                  <div className="text-center flex justify-center space-x-4">
-                    <Link
-                      to="/games"
-                      className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-6 py-3 rounded-lg font-bold transition-all"
-                    >
-                      <Calendar size={20} />
-                      <span>View All Fixtures</span>
-                    </Link>
-                    <Link
-                      to={`/match/${nextGame?.id}`}
-                      className="inline-flex items-center space-x-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white px-6 py-3 rounded-lg font-bold transition-all"
-                    >
-                      <Trophy size={20} />
-                      <span>Match Centre</span>
-                    </Link>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8 w-full max-w-2xl mx-auto px-4">
+                    {[
+                      {
+                        to: "/games",
+                        label: "View All Fixtures",
+                        icon: Calendar,
+                        accentColor: "blue", // subtle variation
+                      },
+                      {
+                        to: `/match/${nextGame?.id}`,
+                        label: "Match Centre",
+                        icon: Trophy,
+                        accentColor: "yellow",
+                        isPrimary: true,
+                      },
+                    ].map((btn, index) => (
+                      <Link
+                        key={index}
+                        to={btn.to}
+                        className={`group relative flex-1 flex items-center justify-center gap-3 px-6 py-4 overflow-hidden rounded-xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95
+        /* Increased visibility: lighter slate and stronger border */
+        bg-blue-800/80 backdrop-blur-md border border-slate-600/50
+        hover:border-yellow-500/50 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]`}
+                      >
+                        {/* 1. Static Gradient Glow (Always slightly visible to prevent mixing) */}
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br ${
+                            btn.isPrimary
+                              ? "from-yellow-500/5"
+                              : "from-blue-500/5"
+                          } to-transparent`}
+                        />
+
+                        {/* 2. Hover Spotlight - More intense to make it pop */}
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-tr ${
+                            btn.isPrimary
+                              ? "from-yellow-500/20"
+                              : "from-blue-500/20"
+                          } to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                        />
+
+                        {/* 3. The Animated Bottom Line */}
+                        <div
+                          className={`absolute bottom-0 left-0 h-[3px] w-0 bg-yellow-400 transition-all duration-300 group-hover:w-full`}
+                        />
+
+                        {/* Content */}
+                        <btn.icon
+                          className={`relative z-10 w-5 h-5 transition-colors duration-300 ${
+                            btn.isPrimary
+                              ? "text-yellow-500"
+                              : "text-slate-400 group-hover:text-blue-400"
+                          }`}
+                          strokeWidth={2.5}
+                        />
+
+                        <span className="relative z-10 font-bold text-white tracking-wide transition-colors duration-300">
+                          {btn.label}
+                        </span>
+
+                        {btn.isPrimary && (
+                          <ChevronRight
+                            className="relative z-10 w-4 h-4 text-yellow-500 group-hover:translate-x-1 transition-transform"
+                            strokeWidth={3}
+                          />
+                        )}
+                      </Link>
+                    ))}
                   </div>
                 </Card>
               ) : (
