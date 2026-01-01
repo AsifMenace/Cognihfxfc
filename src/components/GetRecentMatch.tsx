@@ -112,20 +112,18 @@ export const GetRecentMatch: React.FC = () => {
       {/* Score */}
       <div className="flex items-center justify-between mb-8 px-4">
         {/* Home Team */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0 font-bold text-lg"
-            style={{
-              backgroundColor: match.home_team_color || "#3b82f6",
-              boxShadow: `0 0 20px ${match.home_team_color || "#3b82f6"}30`,
-            }}
-          >
-            {match.home_team_name?.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1 text-left">
-            <p className="text-sm font-bold text-gray-300 truncate">
+        <div className="min-w-0 flex-1 text-left">
+          <div className="relative group">
+            <p className="text-sm font-bold text-gray-300 truncate leading-tight">
               {match.home_team_name}
             </p>
+            <div
+              className="pointer-events-none absolute left-0 top-full mt-1 max-w-xs
+                    px-2 py-1 rounded bg-black/80 text-xs text-white opacity-0
+                    group-hover:opacity-100 transition-opacity z-20"
+            >
+              {match.home_team_name}
+            </div>
           </div>
         </div>
 
@@ -141,20 +139,18 @@ export const GetRecentMatch: React.FC = () => {
         </div>
 
         {/* Away Team */}
-        <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
-          <div className="min-w-0 flex-1 text-right">
-            <p className="text-sm font-bold text-gray-300 truncate">
+        <div className="min-w-0 flex-1 text-left">
+          <div className="relative group">
+            <p className="text-sm font-bold text-gray-300 truncate leading-tight">
               {match.away_team_name}
             </p>
-          </div>
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0 font-bold text-lg"
-            style={{
-              backgroundColor: match.away_team_color || "#8b5cf6",
-              boxShadow: `0 0 20px ${match.away_team_color || "#8b5cf6"}30`,
-            }}
-          >
-            {match.away_team_name?.charAt(0).toUpperCase()}
+            <div
+              className="pointer-events-none absolute left-0 top-full mt-1 max-w-xs
+                    px-2 py-1 rounded bg-black/80 text-xs text-white opacity-0
+                    group-hover:opacity-100 transition-opacity z-20"
+            >
+              {match.away_team_name}
+            </div>
           </div>
         </div>
       </div>
