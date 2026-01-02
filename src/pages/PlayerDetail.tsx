@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Target,
   Trophy,
+  ShieldCheck,
   Users,
   Calendar,
   MapPin,
@@ -42,7 +43,7 @@ const PlayerDetail: React.FC = () => {
   useEffect(() => {
     const API_URL =
       process.env.NODE_ENV === "development"
-        ? `https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions/getPlayerById?id=${id}`
+        ? `/.netlify/functions/getPlayerById?id=${id}`
         : `/.netlify/functions/getPlayerById?id=${id}`;
 
     const fetchPlayer = async () => {
@@ -251,7 +252,11 @@ const PlayerDetail: React.FC = () => {
                 <div className="grid grid-cols-3 gap-6 text-center">
                   <div>
                     <div className="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Target className="text-blue-400" size={32} />
+                      {player.position === "Goalkeeper" ? (
+                        <ShieldCheck className="text-blue-400" size={32} />
+                      ) : (
+                        <Target className="text-blue-400" size={32} />
+                      )}
                     </div>
                     <div className="text-4xl font-black text-white">
                       {player.position === "Goalkeeper"
@@ -262,6 +267,7 @@ const PlayerDetail: React.FC = () => {
                       {player.position === "Goalkeeper" ? "Saves" : "Goals"}
                     </div>
                   </div>
+
                   <div>
                     <div className="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Trophy className="text-green-400" size={32} />
