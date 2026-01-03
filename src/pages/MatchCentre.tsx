@@ -607,7 +607,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-black text-white truncate text-sm sm:text-lg lg:text-xl group-hover/scorer:text-blue-300 leading-tight">
+                          <p className="font-black text-white text-sm sm:text-lg lg:text-xl group-hover/scorer:text-blue-300 leading-tight">
                             {s.player_name}
                           </p>
                         </div>
@@ -662,7 +662,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                         className="group/scorer flex items-center gap-3 p-3 sm:p-4 bg-gray-800/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-purple-600/10 rounded-xl border border-gray-700/50 hover:border-purple-400/50 transition-all duration-300 hover:translate-x-1 justify-end"
                       >
                         <div className="flex-1 min-w-0 text-right">
-                          <p className="font-black text-white truncate text-sm sm:text-lg lg:text-xl group-hover/scorer:text-purple-300 leading-tight">
+                          <p className="font-black text-white text-sm sm:text-lg lg:text-xl group-hover/scorer:text-purple-300 leading-tight">
                             {s.player_name}
                           </p>
                         </div>
