@@ -542,7 +542,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
         {/* Goal Scorers */}
         <Card className="border-yellow-500/30 overflow-hidden shadow-2xl hover:shadow-yellow-500/25 transition-all duration-500">
-          <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-b from-gray-900/50 to-black/50 backdrop-blur-sm">
             {/* Header */}
             <div className="text-center mb-8 pb-6 border-b border-yellow-500/20">
               <div className="flex items-center justify-center gap-3 mb-4">
@@ -683,7 +682,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 )}
               </div>
             </div>
-          </div>
+        
         </Card>
 
         <MatchStats matchId={match.id} />
