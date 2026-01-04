@@ -542,147 +542,144 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
         {/* Goal Scorers */}
         <Card className="border-yellow-500/30 overflow-hidden shadow-2xl hover:shadow-yellow-500/25 transition-all duration-500">
-            {/* Header */}
-            <div className="text-center mb-8 pb-6 border-b border-yellow-500/20">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <span className="text-5xl sm:text-6xl lg:text-7xl drop-shadow-2xl">
-                  ⚽
-                </span>
-                <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500 bg-clip-text text-transparent tracking-tight">
-                  GOAL SCORERS
-                </h3>
-              </div>
-
-              <div className="flex justify-center gap-4">
-                <div className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-300 font-bold text-sm sm:text-base">
-                  {homeScorers.length} Goal{homeScorers.length !== 1 ? "s" : ""}
-                </div>
-                <div className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 font-bold text-sm sm:text-base">
-                  {awayScorers.length + opponentScorers.length} Goal
-                  {awayScorers.length + opponentScorers.length !== 1 ? "s" : ""}
-                </div>
-              </div>
+          {/* Header */}
+          <div className="text-center mb-8 pb-6 border-b border-yellow-500/20">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <span className="text-5xl sm:text-6xl lg:text-7xl drop-shadow-2xl">
+                ⚽
+              </span>
+              <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500 bg-clip-text text-transparent tracking-tight">
+                GOAL SCORERS
+              </h3>
             </div>
 
-            {/* ✅ TRUE SIDE-BY-SIDE GRID - Works on ALL screens */}
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:gap-12 h-fit">
-              {/* LEFT: HOME/COGNI TEAM */}
-              <div className="group">
-                <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-700/50 group-hover:border-blue-500/50 transition-all duration-300">
-                  <div
-                    className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl lg:text-2xl shadow-lg flex-shrink-0"
-                    style={{
-                      backgroundColor:
-                        match?.home_team_color ||
-                        match?.cogni_color ||
-                        "#3b82f6",
-                      color: "white",
-                      boxShadow: "0 0 20px rgba(59, 130, 246, 0.3)",
-                    }}
-                  >
-                    {match?.home_team_name?.charAt(0).toUpperCase() || "C"}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
-                      {match?.home_team_name || match?.cogni_name}
-                    </h4>
-                    <p className="text-blue-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
-                      {homeScorers.length} Goal
-                      {homeScorers.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                </div>
-
-                {homeScorers.length > 0 ? (
-                  <div className="space-y-2 sm:space-y-3 pr-2">
-                    {homeScorers.map((s) => (
-                      <div
-                        key={s.id}
-                        className="group/scorer flex items-center gap-3 p-3 sm:p-4 bg-gray-800/50 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-blue-600/10 rounded-xl border border-gray-700/50 hover:border-blue-400/50 transition-all duration-300 hover:-translate-x-1"
-                      >
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
-                          <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
-                            ⚽
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black text-white text-sm sm:text-lg lg:text-xl group-hover/scorer:text-blue-300 leading-tight">
-                            {s.player_name}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="h-24 sm:h-32 flex items-center justify-center p-4">
-                    <p className="text-gray-500 text-sm sm:text-lg font-medium italic text-center">
-                      No goals
-                    </p>
-                  </div>
-                )}
+            <div className="flex justify-center gap-4">
+              <div className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-300 font-bold text-sm sm:text-base">
+                {homeScorers.length} Goal{homeScorers.length !== 1 ? "s" : ""}
               </div>
-
-              {/* RIGHT: AWAY/OPPONENT TEAM */}
-              <div className="group">
-                <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-700/50 group-hover:border-purple-500/50 transition-all duration-300 justify-end">
-                  <div className="min-w-0 flex-1 text-right">
-                    <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
-                      {match?.away_team_name || match?.opponent_name}
-                    </h4>
-                    <p className="text-purple-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
-                      {awayScorers.length + opponentScorers.length} Goal
-                      {awayScorers.length + opponentScorers.length !== 1
-                        ? "s"
-                        : ""}
-                    </p>
-                  </div>
-                  <div
-                    className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl lg:text-2xl shadow-lg flex-shrink-0"
-                    style={{
-                      backgroundColor:
-                        match?.away_team_color ||
-                        match?.opponent_color ||
-                        "#8b5cf6",
-                      color: "white",
-                      boxShadow: "0 0 20px rgba(139, 92, 246, 0.3)",
-                    }}
-                  >
-                    {(match?.away_team_name || match?.opponent_name)
-                      ?.charAt(0)
-                      .toUpperCase()}
-                  </div>
-                </div>
-
-                {awayScorers.length + opponentScorers.length > 0 ? (
-                  <div className="space-y-2 sm:space-y-3 pl-2">
-                    {[...awayScorers, ...opponentScorers].map((s) => (
-                      <div
-                        key={s.id}
-                        className="group/scorer flex items-center gap-3 p-3 sm:p-4 bg-gray-800/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-purple-600/10 rounded-xl border border-gray-700/50 hover:border-purple-400/50 transition-all duration-300 hover:translate-x-1 justify-end"
-                      >
-                        <div className="flex-1 min-w-0 text-right">
-                          <p className="font-black text-white text-sm sm:text-lg lg:text-xl group-hover/scorer:text-purple-300 leading-tight">
-                            {s.player_name}
-                          </p>
-                        </div>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
-                          <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
-                            ⚽
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="h-24 sm:h-32 flex items-center justify-center p-4">
-                    <p className="text-gray-500 text-sm sm:text-lg font-medium italic text-center">
-                      No goals
-                    </p>
-                  </div>
-                )}
+              <div className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 font-bold text-sm sm:text-base">
+                {awayScorers.length + opponentScorers.length} Goal
+                {awayScorers.length + opponentScorers.length !== 1 ? "s" : ""}
               </div>
             </div>
-        
+          </div>
+
+          {/* ✅ TRUE SIDE-BY-SIDE GRID - Works on ALL screens */}
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:gap-12 h-fit">
+            {/* LEFT: HOME/COGNI TEAM */}
+            <div className="group">
+              <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-700/50 group-hover:border-blue-500/50 transition-all duration-300">
+                <div
+                  className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl lg:text-2xl shadow-lg flex-shrink-0"
+                  style={{
+                    backgroundColor:
+                      match?.home_team_color || match?.cogni_color || "#3b82f6",
+                    color: "white",
+                    boxShadow: "0 0 20px rgba(59, 130, 246, 0.3)",
+                  }}
+                >
+                  {match?.home_team_name?.charAt(0).toUpperCase() || "C"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+                    {match?.home_team_name || match?.cogni_name}
+                  </h4>
+                  <p className="text-blue-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
+                    {homeScorers.length} Goal
+                    {homeScorers.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+
+              {homeScorers.length > 0 ? (
+                <div className="space-y-2 sm:space-y-3 pr-2">
+                  {homeScorers.map((s) => (
+                    <div
+                      key={s.id}
+                      className="group/scorer flex items-center gap-3 p-3 sm:p-4 bg-gray-800/50 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-blue-600/10 rounded-xl border border-gray-700/50 hover:border-blue-400/50 transition-all duration-300 hover:-translate-x-1"
+                    >
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
+                          ⚽
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-white text-sm sm:text-lg lg:text-xl group-hover/scorer:text-blue-300 leading-tight">
+                          {s.player_name}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-24 sm:h-32 flex items-center justify-center p-4">
+                  <p className="text-gray-500 text-sm sm:text-lg font-medium italic text-center">
+                    No goals
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT: AWAY/OPPONENT TEAM */}
+            <div className="group">
+              <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-700/50 group-hover:border-purple-500/50 transition-all duration-300 justify-end">
+                <div className="min-w-0 flex-1 text-right">
+                  <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+                    {match?.away_team_name || match?.opponent_name}
+                  </h4>
+                  <p className="text-purple-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
+                    {awayScorers.length + opponentScorers.length} Goal
+                    {awayScorers.length + opponentScorers.length !== 1
+                      ? "s"
+                      : ""}
+                  </p>
+                </div>
+                <div
+                  className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl lg:text-2xl shadow-lg flex-shrink-0"
+                  style={{
+                    backgroundColor:
+                      match?.away_team_color ||
+                      match?.opponent_color ||
+                      "#8b5cf6",
+                    color: "white",
+                    boxShadow: "0 0 20px rgba(139, 92, 246, 0.3)",
+                  }}
+                >
+                  {(match?.away_team_name || match?.opponent_name)
+                    ?.charAt(0)
+                    .toUpperCase()}
+                </div>
+              </div>
+
+              {awayScorers.length + opponentScorers.length > 0 ? (
+                <div className="space-y-2 sm:space-y-3 pl-2">
+                  {[...awayScorers, ...opponentScorers].map((s) => (
+                    <div
+                      key={s.id}
+                      className="group/scorer flex items-center gap-3 p-3 sm:p-4 bg-gray-800/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-purple-600/10 rounded-xl border border-gray-700/50 hover:border-purple-400/50 transition-all duration-300 hover:translate-x-1 justify-end"
+                    >
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="font-black text-white text-sm sm:text-lg lg:text-xl group-hover/scorer:text-purple-300 leading-tight">
+                          {s.player_name}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
+                          ⚽
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-24 sm:h-32 flex items-center justify-center p-4">
+                  <p className="text-gray-500 text-sm sm:text-lg font-medium italic text-center">
+                    No goals
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </Card>
 
         <MatchStats matchId={match.id} />
