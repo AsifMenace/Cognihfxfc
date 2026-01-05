@@ -55,6 +55,15 @@ interface Match {
   video_url?: string | null;
 }
 
+interface MatchStat {
+  id: number;
+  name: string;
+  jerseyNumber: number;
+  position: string;
+  assists: number;
+  saves: number;
+}
+
 const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
@@ -68,6 +77,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [statsKey, setStatsKey] = useState(0); // Add this line with your other useState
+  const [matchStats, setMatchStats] = useState<MatchStat[]>([]);
 
   type PlayerOption = {
     value: number;
@@ -142,6 +153,26 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   }
 
+  async function fetchMatchStats() {
+    if (!match?.id) return;
+    try {
+      const res = await fetch(
+        `/.netlify/functions/getMatchStats?matchId=${match.id}`
+      );
+      if (!res.ok) throw new Error("Failed to fetch match stats");
+      const data = await res.json();
+      setMatchStats(data);
+    } catch (e) {
+      console.error("Match stats error:", e);
+    }
+  }
+
+  useEffect(() => {
+    if (match?.id) {
+      fetchMatchStats(); // Load stats on mount
+    }
+  }, [match?.id]);
+
   useEffect(() => {
     fetchScorers();
   }, [match]);
@@ -196,8 +227,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         setAssistsCount("");
         setSavesCount("");
 
+        await fetchMatchStats();
+
         // Refresh players
-        const playerRes = await fetch("/.netlify/functions/getplayers");
+        const playerRes = await fetch("/.netlify/functions/getPlayers");
         const updatedPlayers: Player[] = await playerRes.json();
         setAllPlayers(updatedPlayers);
       } else {
@@ -682,7 +715,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           </div>
         </Card>
 
-        <MatchStats matchId={match.id} />
+        <MatchStats stats={matchStats} matchId={match.id} />
 
         {/* Player of the Match */}
         <div className="flex justify-center">
@@ -796,9 +829,25 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <select
                     value={selectedStatsPlayerId} // ✅ Different state
                     onChange={(e) => {
-                      setSelectedStatsPlayerId(e.target.value); // ✅ Different setter
-                      setAssistsCount("");
-                      setSavesCount("");
+                      const playerId = e.target.value;
+                      setSelectedStatsPlayerId(playerId);
+
+                      // 🆕 AUTO-FILL using YOUR data structure
+                      if (playerId && matchStats.length > 0) {
+                        const existingStat = matchStats.find(
+                          (stat) => stat.id === parseInt(playerId)
+                        );
+                        if (existingStat) {
+                          setAssistsCount(existingStat.assists.toString());
+                          setSavesCount(existingStat.saves.toString());
+                        } else {
+                          setAssistsCount("0");
+                          setSavesCount("0");
+                        }
+                      } else {
+                        setAssistsCount("0");
+                        setSavesCount("0");
+                      }
                     }}
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
                     required
