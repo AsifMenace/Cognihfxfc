@@ -11,39 +11,20 @@ interface MatchStat {
 
 interface MatchStatsProps {
   matchId: number;
+  stats: MatchStat[];
 }
 
-export const MatchStats: React.FC<MatchStatsProps> = ({ matchId }) => {
-  const [stats, setStats] = useState<MatchStat[]>([]);
-  const [loading, setLoading] = useState(true);
+export const MatchStats: React.FC<MatchStatsProps> = ({ matchId, stats }) => {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetchMatchStats();
-  }, [matchId]);
-
-  const fetchMatchStats = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await fetch(
-        `/.netlify/functions/getMatchStats?matchId=${matchId}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch match stats");
-      }
-
-      const data = await response.json();
-      setStats(data || []);
-    } catch (err) {
-      setError("No stats available for this match");
-      console.error("Match stats error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!stats || stats.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-400 font-medium text-lg italic">
+        No match statistics available
+      </div>
+    );
+  }
 
   if (loading) {
     return (
