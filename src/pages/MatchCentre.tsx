@@ -611,7 +611,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     boxShadow: "0 0 20px rgba(59, 130, 246, 0.3)",
                   }}
                 >
-                  {match?.home_team_name?.charAt(0).toUpperCase() || "C"}
+                  {match?.home_team_name?.substring(0, 3).toUpperCase() ||
+                    "COGNI"}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
@@ -631,11 +632,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       key={s.id}
                       className="group/scorer flex items-center gap-3 p-3 sm:p-4 bg-gray-800/50 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-blue-600/10 rounded-xl border border-gray-700/50 hover:border-blue-400/50 transition-all duration-300 hover:-translate-x-1"
                     >
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
-                          ⚽
-                        </span>
-                      </div>
+                      <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
+                        ⚽
+                      </span>
+
                       <div className="flex-1 min-w-0">
                         <p className="font-black text-white text-sm sm:text-lg lg:text-xl group-hover/scorer:text-blue-300 leading-tight">
                           {s.player_name}
@@ -679,7 +679,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   }}
                 >
                   {(match?.away_team_name || match?.opponent_name)
-                    ?.charAt(0)
+                    ?.substring(0, 3)
                     .toUpperCase()}
                 </div>
               </div>
@@ -696,11 +696,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                           {s.player_name}
                         </p>
                       </div>
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
-                          ⚽
-                        </span>
-                      </div>
+                      <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
+                        ⚽
+                      </span>
                     </div>
                   ))}
                 </div>
