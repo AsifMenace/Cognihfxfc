@@ -12,6 +12,7 @@ interface Player {
   weight: string;
   goals: number;
   assists: number;
+  saves: number;
   appearances: number;
   photo: string;
   bio: string;
@@ -35,7 +36,7 @@ const EditPlayer: React.FC = () => {
 
   const BASE_URL =
     process.env.NODE_ENV === "development"
-      ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
+      ? "/.netlify/functions"
       : "/.netlify/functions";
 
   // Fetch existing player by ID
@@ -146,10 +147,8 @@ const EditPlayer: React.FC = () => {
           className="max-w-3xl mx-auto bg-white shadow rounded p-4 space-y-4"
         >
           <h2 className="text-2xl font-bold">Edit Player</h2>
-
           {success && <p className="text-green-600">{success}</p>}
           {error && <p className="text-red-600">{error}</p>}
-
           <input
             name="name"
             value={form.name}
@@ -222,6 +221,17 @@ const EditPlayer: React.FC = () => {
             placeholder="Assists"
             className="w-full border p-2 rounded"
           />
+
+          {form.position === "Goalkeeper" && (
+            <input
+              type="number"
+              name="saves"
+              value={form.saves}
+              onChange={handleChange}
+              placeholder="Saves"
+              className="w-full border p-2 rounded"
+            />
+          )}
           <input
             type="number"
             name="appearances"
@@ -230,7 +240,6 @@ const EditPlayer: React.FC = () => {
             placeholder="Appearances"
             className="w-full border p-2 rounded"
           />
-
           {/* Image */}
           <div>
             <label className="block mb-1 font-medium">Player Photo</label>
@@ -246,7 +255,6 @@ const EditPlayer: React.FC = () => {
               />
             )}
           </div>
-
           <textarea
             name="bio"
             value={form.bio}
@@ -255,7 +263,6 @@ const EditPlayer: React.FC = () => {
             rows={4}
             className="w-full border p-2 rounded"
           />
-
           <button
             type="submit"
             disabled={saving || uploadingImage}

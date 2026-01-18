@@ -74,7 +74,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
 
   const BASE_URL =
     process.env.NODE_ENV === "development"
-      ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
+      ? "/.netlify/functions"
       : "/.netlify/functions";
 
   useEffect(() => {

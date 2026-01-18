@@ -38,7 +38,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
   const UPLOAD_PRESET = "unsigned_preset";
   const API_BASE =
     process.env.NODE_ENV === "development"
-      ? "https://feature-vs-new--cognihfxfc.netlify.app/.netlify/functions"
+      ? "/.netlify/functions"
       : "/.netlify/functions";
 
   useEffect(() => {
