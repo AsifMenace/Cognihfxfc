@@ -1,4 +1,3 @@
-// netlify/functions/getBalances.mjs __
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 
@@ -16,20 +15,31 @@ export async function handler(event) {
     );
 
     await doc.loadInfo();
-    const sheet = doc.sheetsByIndex[0]; // or by title if you prefer
-    const rows = await sheet.getRows();
+    const sheet = doc.sheetsByTitle["SummaryForApp"];
+    const rows = await sheet.getRows({ offset: 1 }); // Skip header row
+
+    console.log("Found rows:", rows.length); // Debug
 
     const players = rows
-      .map((row) => ({
-        player: row.Player || "",
-        coreStatus: row["Core/non Core"] || "",
-        startingBalance: parseFloat(row["Starting Balance"] || 0),
-        deposit2: parseFloat(row["Deposit #2(For dec/jan)"] || 0),
-        gamesAttended: parseInt(row["Games Attended"] || 0),
-        totalUsedFromSumUsed: parseFloat(row["Total used from Sum Used"] || 0),
-        runningBalance: parseFloat(row["Running Balance"] || 0),
-      }))
-      .filter((p) => p.player);
+      .map((row) => {
+        const playerData = {
+          player: row.Player || row.get("Player") || "",
+          coreStatus: row.Core_NonCore || row.get("Core_NonCore") || "",
+          startingBalance: parseFloat(row.Starting_Balance || 0),
+          deposit2: parseFloat(row.Deposit_2 || 0),
+          gamesAttended: parseInt(row.Games_Attended || 0),
+          totalAmountConsumed: parseFloat(row.Total_Amount_Consumed || 0),
+          runningBalance: parseFloat(row.Running_Balance || 0),
+        };
+        console.log(
+          "Player:",
+          playerData.player,
+          "Balance:",
+          playerData.runningBalance
+        ); // Debug
+        return playerData;
+      })
+      .filter((p) => p.player && p.player.trim());
 
     const totals = {
       totalRunningBalance: players.reduce(
