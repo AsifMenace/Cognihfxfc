@@ -1,26 +1,26 @@
-import { neon } from '@netlify/neon';
+import { neon } from "@netlify/neon";
 
 const sql = neon();
 
 export const handler = async (event) => {
   // Handle CORS preflight for dev environments
-  if (event.httpMethod === 'OPTIONS') {
+  if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
       },
-      body: '',
+      body: "",
     };
   }
 
-  if (event.httpMethod !== 'POST' && event.httpMethod !== 'PUT') {
+  if (event.httpMethod !== "POST" && event.httpMethod !== "PUT") {
     return {
       statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ error: "Method Not Allowed" }),
     };
   }
 
@@ -38,6 +38,7 @@ export const handler = async (event) => {
       weight,
       goals,
       assists,
+      saves,
       appearances,
       photo,
       bio,
@@ -46,15 +47,15 @@ export const handler = async (event) => {
     if (!id) {
       return {
         statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Missing player ID for update' }),
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "Missing player ID for update" }),
       };
     }
 
     // Update statement with only provided fields, or you can update all fields
     await sql`
       UPDATE players
-      SET 
+      SET
         name = ${name},
         position = ${position},
         age = ${age},
@@ -64,6 +65,7 @@ export const handler = async (event) => {
         weight = ${weight},
         goals = ${goals},
         assists = ${assists},
+        saves = ${saves},
         appearances = ${appearances},
         photo = ${photo},
         bio = ${bio}
@@ -72,13 +74,13 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ message: 'Player updated successfully' }),
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ message: "Player updated successfully" }),
     };
   } catch (error) {
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
+      headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ error: error.message }),
     };
   }
