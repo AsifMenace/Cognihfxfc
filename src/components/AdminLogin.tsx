@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // 👈 Added useLocation
 import { ADMIN_PASSWORD } from "../Config";
 
 type AdminLoginProps = {
@@ -10,18 +10,23 @@ export function AdminLogin({ setIsAdmin }: AdminLoginProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation(); // 👈 Reads intended path
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       setError(null);
-      setIsAdmin(true); // Notify parent about successful login
-      navigate("/"); // or redirect to intended admin page
+      setIsAdmin(true);
+
+      // 👈 Smart redirect!
+      const intendedPath = location.state?.intended || "/";
+      navigate(intendedPath, { replace: true });
     } else {
       setError("Incorrect password");
     }
   };
 
+  // Rest of component EXACTLY same...
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <form

@@ -26,6 +26,7 @@ import { UpdatePrompt } from "./components/UpdatePrompt"; //
 import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
 import AddNews from "./pages/AddNews";
 import ScrollToTop from "./components/ScrollToTop";
+import Balances from "./pages/Balances";
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
@@ -54,7 +55,7 @@ function App() {
           <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
-          <Route path="/contact" element={<Contact />} />
+
           <Route
             path="/match/:id"
             element={<MatchCentre isAdmin={isAdmin} />}
@@ -63,6 +64,21 @@ function App() {
           <Route
             path="/admin-login"
             element={<AdminLogin setIsAdmin={setIsAdmin} />}
+          />
+
+          <Route
+            path="/balances"
+            element={
+              isAdmin ? (
+                <Balances />
+              ) : (
+                <Navigate
+                  to="/admin-login"
+                  replace
+                  state={{ intended: "/balances" }} // 👈 ADD THIS LINE
+                />
+              )
+            }
           />
 
           {/* Protected admin routes */}

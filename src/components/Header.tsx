@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AddDropdown from "./AddDropDown";
 import {
   Home,
@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Search,
+  DollarSign,
 } from "lucide-react";
 
 // Define Player type
@@ -48,6 +49,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Player[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const navigate = useNavigate();
 
   // Handle scroll for sticky header effect
   useEffect(() => {
@@ -98,7 +100,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
     { to: "/squad", label: "Squad", icon: Users },
     { to: "/standings", label: "Standings", icon: Trophy },
     { to: "/gallery", label: "Gallery", icon: Camera },
-    { to: "/contact", label: "Contact", icon: Mail },
+    { to: "/balances", label: "Balances", icon: DollarSign },
   ];
 
   const adminLinks = [
@@ -161,7 +163,10 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               {/* Admin/Logout Button */}
               {isAdmin ? (
                 <button
-                  onClick={() => setIsAdmin(false)}
+                  onClick={() => {
+                    navigate("/");
+                    setIsAdmin(false);
+                  }}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                 >
                   Logout
@@ -376,6 +381,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
             {isAdmin ? (
               <button
                 onClick={() => {
+                  navigate("/");
                   setIsAdmin(false);
                   setIsMobileMenuOpen(false);
                 }}
