@@ -55,7 +55,7 @@ function App() {
           <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
-          <Route path="/balances" element={<Balances />} />
+
           <Route
             path="/match/:id"
             element={<MatchCentre isAdmin={isAdmin} />}
@@ -64,6 +64,21 @@ function App() {
           <Route
             path="/admin-login"
             element={<AdminLogin setIsAdmin={setIsAdmin} />}
+          />
+
+          <Route
+            path="/balances"
+            element={
+              isAdmin ? (
+                <Balances />
+              ) : (
+                <Navigate
+                  to="/admin-login"
+                  replace
+                  state={{ intended: "/balances" }} // 👈 ADD THIS LINE
+                />
+              )
+            }
           />
 
           {/* Protected admin routes */}
