@@ -46,13 +46,46 @@ export async function handler(event) {
       ).length,
     };
 
+    const summarySheet = doc.sheetsByTitle["Summary"];
+    const summaryRows = await summarySheet.getRows();
+
+    const summary = {};
+    const dataRows = summaryRows.filter((row) => row._rawData?.[1]?.trim());
+    console.log("Data rows found:", dataRows.length);
+
+    if (dataRows.length >= 5) {
+      // Row 0: Total funds collected
+      summary.coreFundsCollected =
+        parseFloat((dataRows[0]._rawData[1] || "0").replace(/[$,]/g, "")) || 0;
+
+      // Row 0: Total Booking Costs Covered → 5540.94
+      summary.totalBookingCosts =
+        parseFloat((dataRows[1]._rawData[1] || "0").replace(/[$,]/g, "")) || 0;
+
+      // Row 1: Total Funds Remaining → -$1029.28
+      summary.totalFundsRemaining =
+        parseFloat((dataRows[2]._rawData[1] || "0").replace(/[$,]/g, "")) || 0;
+
+      // Row 2: Total Non-Core Cash → $1339.96
+      summary.nonCoreCashReceived =
+        parseFloat((dataRows[3]._rawData[1] || "0").replace(/[$,]/g, "")) || 0;
+
+      // Row 3: Actual Funds remaining → $310.68
+      summary.actualFundsRemaining =
+        parseFloat((dataRows[4]._rawData[1] || "0").replace(/[$,]/g, "")) || 0;
+
+      // Row 4: Core Funds To Be Exhausted → -$660.84
+      summary.coreFundsToExhaust =
+        parseFloat((dataRows[5]._rawData[1] || "0").replace(/[$,]/g, "")) || 0;
+    }
+
     return {
       statusCode: 200,
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ players, totals }, null, 2),
+      body: JSON.stringify({ players, summary, totals }, null, 2),
     };
   } catch (error) {
     console.error("Error:", error);

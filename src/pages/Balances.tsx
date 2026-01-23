@@ -20,19 +20,38 @@ interface Totals {
 interface BalancesData {
   players: Player[];
   totals: Totals;
+  summary: Summary;
+}
+
+interface Summary {
+  coreFundsCollected?: number;
+  totalBookingCosts?: number;
+  totalFundsRemaining?: number;
+  nonCoreCashReceived?: number;
+  actualFundsRemaining?: number;
+  coreFundsToExhaust?: number;
 }
 
 export default function Balances() {
   const [data, setData] = useState<BalancesData>({
     players: [],
     totals: { playerCount: 0, corePlayers: 0, totalRunningBalance: "0" },
+    summary: {
+      coreFundsCollected: 0,
+      totalBookingCosts: 0,
+      totalFundsRemaining: 0,
+      nonCoreCashReceived: 0,
+      actualFundsRemaining: 0,
+      coreFundsToExhaust: 0,
+    },
   });
   const [loading, setLoading] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     fetch("/.netlify/functions/getBalances")
       .then((res) => res.json())
-      .then((result: BalancesData) => setData(result))
+      .then((result: BalancesData & { summary: Summary }) => setData(result))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -158,6 +177,72 @@ export default function Balances() {
         </div>
       </div>
 
+      {/* Summary Section - Bottom of Table */}
+      <div className="mt-8">
+        <div className="flex justify-center mb-6">
+          <button
+            onClick={() => setShowSummary(!showSummary)}
+            className="px-8 py-3 bg-gradient-to-r from-yellow-500/90 to-amber-500/90 text-black font-black text-lg rounded-xl shadow-xl hover:shadow-yellow-500/25 hover:scale-105 transition-all border border-yellow-400/50"
+          >
+            {showSummary ? "↑ Hide Summary" : "↓ Show Summary Details"}
+          </button>
+        </div>
+
+        {showSummary && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 shadow-2xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {[
+                {
+                  label: "Core Funds Collected",
+                  value: data.summary.coreFundsCollected,
+                },
+                {
+                  label: "Total Booking Costs",
+                  value: data.summary.totalBookingCosts,
+                  color: "blue-400",
+                },
+                {
+                  label: "Funds Remaining",
+                  value: data.summary.totalFundsRemaining,
+                },
+                {
+                  label: "Non-Core Cash Received",
+                  value: data.summary.nonCoreCashReceived,
+                  color: "lime-400",
+                },
+                {
+                  label: "Actual Funds Remaining",
+                  value: data.summary.actualFundsRemaining,
+                },
+              ].map(({ label, value, color = "emerald-400" }) => {
+                const isPositive = (value ?? 0) >= 0;
+                const textColor =
+                  color === "blue-400"
+                    ? "text-blue-400"
+                    : color === "lime-400"
+                    ? "text-lime-400"
+                    : isPositive
+                    ? "text-emerald-400"
+                    : "text-red-400";
+
+                return (
+                  <div
+                    key={label}
+                    className="rounded-2xl border border-gray-700 bg-gray-900/70 p-4 shadow-md"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      {label}
+                    </p>
+                    <p className={`mt-2 text-2xl font-black ${textColor}`}>
+                      ${Math.abs(value ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
       {/* Dark Empty State */}
       {displayPlayers.length === 0 && (
         <div className="text-center py-20">
