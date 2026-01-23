@@ -1,3 +1,4 @@
+// netlify/functions/getBalances.mjs - FINAL PRODUCTION VERSION
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 
@@ -16,37 +17,33 @@ export async function handler(event) {
 
     await doc.loadInfo();
     const sheet = doc.sheetsByTitle["SummaryForApp"];
-    const rows = await sheet.getRows({ offset: 1 }); // Skip header row
-
-    console.log("Found rows:", rows.length); // Debug
+    const rows = await sheet.getRows();
 
     const players = rows
       .map((row) => {
-        const playerData = {
-          player: row.Player || row.get("Player") || "",
-          coreStatus: row.Core_NonCore || row.get("Core_NonCore") || "",
-          startingBalance: parseFloat(row.Starting_Balance || 0),
-          deposit2: parseFloat(row.Deposit_2 || 0),
-          gamesAttended: parseInt(row.Games_Attended || 0),
-          totalAmountConsumed: parseFloat(row.Total_Amount_Consumed || 0),
-          runningBalance: parseFloat(row.Running_Balance || 0),
+        const raw = row._rawData || [];
+        return {
+          player: (raw[0] || "").trim(),
+          coreStatus: (raw[1] || "").trim(),
+          startingBalance:
+            parseFloat((raw[2] || "0").replace(/[$,]/g, "")) || 0,
+          deposit2: parseFloat((raw[3] || "0").replace(/[$,]/g, "")) || 0,
+          gamesAttended: parseInt(raw[4] || "0") || 0,
+          totalAmountConsumed:
+            parseFloat((raw[5] || "0").replace(/[$,]/g, "")) || 0,
+          runningBalance: parseFloat((raw[6] || "0").replace(/[$,]/g, "")) || 0,
         };
-        console.log(
-          "Player:",
-          playerData.player,
-          "Balance:",
-          playerData.runningBalance
-        ); // Debug
-        return playerData;
       })
-      .filter((p) => p.player && p.player.trim());
+      .filter((p) => p.player);
 
     const totals = {
-      totalRunningBalance: players.reduce(
-        (sum, p) => sum + (isNaN(p.runningBalance) ? 0 : p.runningBalance),
-        0
-      ),
+      totalRunningBalance: players
+        .reduce((sum, p) => sum + p.runningBalance, 0)
+        .toFixed(2),
       playerCount: players.length,
+      corePlayers: players.filter((p) =>
+        p.coreStatus.toLowerCase().includes("core")
+      ).length,
     };
 
     return {
@@ -55,7 +52,7 @@ export async function handler(event) {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ players, totals }),
+      body: JSON.stringify({ players, totals }, null, 2),
     };
   } catch (error) {
     console.error("Error:", error);

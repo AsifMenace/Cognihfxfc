@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Search,
+  DollarSign,
 } from "lucide-react";
 
 // Define Player type
@@ -98,10 +99,10 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
     { to: "/squad", label: "Squad", icon: Users },
     { to: "/standings", label: "Standings", icon: Trophy },
     { to: "/gallery", label: "Gallery", icon: Camera },
-    { to: "/contact", label: "Contact", icon: Mail },
   ];
 
   const adminLinks = [
+    { to: "/balances", label: "Balances", icon: DollarSign },
     { to: "/add-player", label: "Add Player", icon: UserPlus },
     { to: "/add-match", label: "Add Match", icon: CalendarPlus },
     { to: "/add-team", label: "Add Team", icon: ShieldPlus },
