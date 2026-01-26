@@ -1,5 +1,4 @@
 import { neon } from "@netlify/neon";
-import fetch from "node-fetch";
 
 const sql = neon();
 
