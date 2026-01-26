@@ -72,7 +72,7 @@ export default function Balances() {
     deposit2: Math.abs(player.deposit2),
     totalAmountConsumed: Math.abs(player.totalAmountConsumed),
     runningBalance: Math.abs(player.runningBalance) * -1, // Flip for balance logic
-    isBalancePositive: player.runningBalance >= 0,
+    isBalancePositive: player.runningBalance > 0,
   }));
 
   return (
@@ -168,7 +168,8 @@ export default function Balances() {
                         : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/50"
                     }`}
                   >
-                    ${Math.abs(player.runningBalance).toFixed(2)}
+                    {player.isBalancePositive ? "-" : ""}$
+                    {Math.abs(player.runningBalance).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -234,7 +235,12 @@ export default function Balances() {
                       {label}
                     </p>
                     <p className={`mt-2 text-2xl font-black ${textColor}`}>
-                      ${Math.abs(value ?? 0).toLocaleString()}
+                      {(() => {
+                        const num = value ?? 0;
+                        const sign = num < 0 ? "-" : "";
+                        const absValue = Math.abs(num).toFixed(2);
+                        return `${sign}$${absValue}`;
+                      })()}
                     </p>
                   </div>
                 );
