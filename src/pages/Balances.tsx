@@ -194,25 +194,25 @@ export default function Balances() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {[
                 {
-                  label: "Core Funds Collected",
+                  label: "Core Funds Collected (A)",
                   value: data.summary.coreFundsCollected,
                 },
                 {
-                  label: "Total Booking Costs",
+                  label: "Total Booking Costs (B)",
                   value: data.summary.totalBookingCosts,
                   color: "blue-400",
                 },
                 {
-                  label: "Funds Remaining",
+                  label: "Funds After Booking (C) (A - B)",
                   value: data.summary.totalFundsRemaining,
                 },
                 {
-                  label: "Non-Core Cash Received",
+                  label: "Non-Core Cash Received (D)",
                   value: data.summary.nonCoreCashReceived,
                   color: "lime-400",
                 },
                 {
-                  label: "Actual Funds Remaining",
+                  label: "Actual Funds Remaining (C + D)",
                   value: data.summary.actualFundsRemaining,
                 },
               ].map(({ label, value, color = "emerald-400" }) => {
