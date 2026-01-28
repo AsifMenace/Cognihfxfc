@@ -191,61 +191,59 @@ export default function Balances() {
 
         {showSummary && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 shadow-2xl">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {[
-                {
-                  label: "Core Funds Collected",
-                  value: data.summary.coreFundsCollected,
-                },
-                {
-                  label: "Total Booking Costs",
-                  value: data.summary.totalBookingCosts,
-                  color: "blue-400",
-                },
-                {
-                  label: "Funds Remaining",
-                  value: data.summary.totalFundsRemaining,
-                },
-                {
-                  label: "Non-Core Cash Received",
-                  value: data.summary.nonCoreCashReceived,
-                  color: "lime-400",
-                },
-                {
-                  label: "Actual Funds Remaining",
-                  value: data.summary.actualFundsRemaining,
-                },
-              ].map(({ label, value, color = "emerald-400" }) => {
-                const isPositive = (value ?? 0) >= 0;
-                const textColor =
-                  color === "blue-400"
-                    ? "text-blue-400"
-                    : color === "lime-400"
-                    ? "text-lime-400"
-                    : isPositive
-                    ? "text-emerald-400"
-                    : "text-red-400";
+            {[
+              {
+                label: "Core Funds Collected (A)",
+                value: data.summary.coreFundsCollected,
+              },
+              {
+                label: "Total Booking Costs (B)",
+                value: data.summary.totalBookingCosts,
+                color: "blue-400",
+              },
+              {
+                label: "Funds After Booking (C) (A - B)",
+                value: data.summary.totalFundsRemaining,
+              },
+              {
+                label: "Non-Core Cash Received (D)",
+                value: data.summary.nonCoreCashReceived,
+                color: "lime-400",
+              },
+              {
+                label: "Actual Funds Remaining (C + D)",
+                value: data.summary.actualFundsRemaining,
+              },
+            ].map(({ label, value, color = "emerald-400" }) => {
+              const isPositive = (value ?? 0) >= 0;
+              const textColor =
+                color === "blue-400"
+                  ? "text-blue-400"
+                  : color === "lime-400"
+                  ? "text-lime-400"
+                  : isPositive
+                  ? "text-emerald-400"
+                  : "text-red-400";
 
-                return (
-                  <div
-                    key={label}
-                    className="rounded-2xl border border-gray-700 bg-gray-900/70 p-4 shadow-md"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                      {label}
-                    </p>
-                    <p className={`mt-2 text-2xl font-black ${textColor}`}>
-                      {(() => {
-                        const num = value ?? 0;
-                        const sign = num < 0 ? "-" : "";
-                        const absValue = Math.abs(num).toFixed(2);
-                        return `${sign}$${absValue}`;
-                      })()}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+              return (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-gray-700 bg-gray-900/70 p-4 shadow-md"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    {label}
+                  </p>
+                  <p className={`mt-2 text-2xl font-black ${textColor}`}>
+                    {(() => {
+                      const num = value ?? 0;
+                      const sign = num < 0 ? "-" : "";
+                      const absValue = Math.abs(num).toFixed(2);
+                      return `${sign}$${absValue}`;
+                    })()}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
