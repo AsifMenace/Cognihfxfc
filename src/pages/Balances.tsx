@@ -100,7 +100,7 @@ export default function Balances() {
           <table className="w-full min-w-[650px] table-auto">
             <thead className="bg-gradient-to-r from-gray-700/50 to-gray-800/70 sticky top-0 backdrop-blur-md border-b border-gray-600">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-black text-gray-200 uppercase tracking-wider min-w-[120px]">
+                <th className="sticky left-0 z-10 px-6 py-4 text-left text-xs font-black text-gray-200 uppercase tracking-wider min-w-[120px] bg-gradient-to-r from-gray-700/50 to-gray-800/70">
                   Player
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-black text-gray-200 uppercase tracking-wider min-w-[90px]">
@@ -132,7 +132,7 @@ export default function Balances() {
                   key={i}
                   className="hover:bg-gray-700/50 transition-all duration-200"
                 >
-                  <td className="px-6 py-5 font-black text-lg text-white min-w-[120px]">
+                  <td className="sticky left-0 z-10 px-6 py-5 font-black text-lg text-white min-w-[120px] bg-gray-800/90">
                     {player.player}
                   </td>
                   <td className="px-6 py-5 min-w-[90px]">
@@ -214,6 +214,10 @@ export default function Balances() {
                 label: "Actual Funds Remaining (C + D)",
                 value: data.summary.actualFundsRemaining,
               },
+              // {
+              //   label: "Deposits To Exhaust / Refund (E)",
+              //   value: data.summary.coreFundsToExhaust,
+              // },
             ].map(({ label, value, color = "emerald-400" }) => {
               const isPositive = (value ?? 0) >= 0;
               const textColor =
