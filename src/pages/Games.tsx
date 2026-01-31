@@ -234,7 +234,7 @@ export default function Games() {
                       key={game.id}
                       className="block group"
                     >
-                      <Card className="hover:shadow-2xl transition-shadow duration-300">
+                      <Card className="hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 border-transparent group-hover:border-yellow-400">
                         <div className="p-4 md:p-6 lg:p-8">
                           {/* Competition Badge */}
                           <div className="flex items-center justify-between mb-6">
@@ -378,6 +378,28 @@ export default function Games() {
                               </a>
                             </div>
                           )}
+                          {/* View Details Button */}
+                          <div className="text-center mt-8 pt-6 border-t border-gray-700">
+                            <button className="relative inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-yellow-500/50 overflow-hidden group-hover:animate-bounce">
+                              <span className="absolute inset-0 bg-white/20 animate-pulse"></span>
+                              <span className="relative">
+                                Dive Into Match Details
+                              </span>
+                              <svg
+                                className="w-5 h-5 relative group-hover:translate-x-2 transition-transform"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                                />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
 
                         {/* Next Match */}
