@@ -12,6 +12,22 @@ type Scorer = {
   photo?: string;
 };
 
+type Assister = {
+  id: number;
+  name: string;
+  assists: number;
+  position: string;
+  photo?: string;
+};
+
+type Saver = {
+  id: number;
+  name: string;
+  saves: number;
+  position: string;
+  photo?: string;
+};
+
 interface Standing {
   team_id: number;
   team_name: string;
@@ -29,6 +45,8 @@ interface Standing {
 export const LeagueStandings: React.FC = () => {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [topScorers, setTopScorers] = useState<Scorer[]>([]);
+  const [topAssisters, setTopAssisters] = useState<Assister[]>([]);
+  const [topSavers, setTopSavers] = useState<Saver[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,16 +54,26 @@ export const LeagueStandings: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [standingsRes, scorersRes] = await Promise.all([
-          fetch("/.netlify/functions/getLeagueStandings"),
-          fetch("/.netlify/functions/getLeagueTopScorers?limit=10"),
-        ]);
+        const [standingsRes, scorersRes, assistersRes, saversRes] =
+          await Promise.all([
+            fetch("/.netlify/functions/getLeagueStandings"),
+            fetch("/.netlify/functions/getLeagueTopScorers?limit=10"),
+            fetch("/.netlify/functions/getLeagueTopAssists?limit=10"),
+            fetch("/.netlify/functions/getLeagueTopSaves?limit=10"),
+          ]);
 
-        if (!standingsRes.ok || !scorersRes.ok)
+        if (
+          !standingsRes.ok ||
+          !scorersRes.ok ||
+          !assistersRes.ok ||
+          !saversRes.ok
+        )
           throw new Error("Failed to load data");
 
         setStandings(await standingsRes.json());
         setTopScorers(await scorersRes.json());
+        setTopAssisters(await assistersRes.json());
+        setTopSavers(await saversRes.json());
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -152,7 +180,7 @@ export const LeagueStandings: React.FC = () => {
         {/* TOP SCORERS — VISIBLE */}
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-6 mb-8">
           <h3 className="text-xl font-bold text-yellow-400 mb-4">
-            GOLDEN BOOT
+            GOLDEN BOOT ⚽
           </h3>
           <div className="space-y-3">
             {topScorers.map((player, idx) => (
@@ -186,6 +214,88 @@ export const LeagueStandings: React.FC = () => {
                   <p className="text-xs opacity-70">
                     {player.appearances} apps
                   </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* GOLDEN PLAYMAKER — MOST ASSISTS */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-6 mb-8">
+          <h3 className="text-xl font-bold text-yellow-400 mb-4">
+            GOLDEN PLAYMAKER 🅰️
+          </h3>
+          <div className="space-y-3">
+            {topAssisters.map((player, idx) => (
+              <div
+                key={player.id}
+                className={`flex items-center gap-3 p-3 rounded-lg ${
+                  idx === 0
+                    ? "bg-gradient-to-r from-yellow-600 to-amber-600 text-slate-900 shadow-xl"
+                    : "bg-slate-700/50 hover:bg-slate-600/50"
+                }`}
+              >
+                {player.photo ? (
+                  <img
+                    src={player.photo}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/50"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/50">
+                    {player.name[0]}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm truncate">
+                    {player.name.toUpperCase()}
+                  </p>
+                  <p className="text-xs opacity-70">{player.position}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-black">{player.assists}</p>
+                  <p className="text-xs opacity-70">assists</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* GOLDEN GLOVE — MOST SAVES */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-6 mb-8">
+          <h3 className="text-xl font-bold text-yellow-400 mb-4">
+            GOLDEN GLOVE 🧤
+          </h3>
+          <div className="space-y-3">
+            {topSavers.map((player, idx) => (
+              <div
+                key={player.id}
+                className={`flex items-center gap-3 p-3 rounded-lg ${
+                  idx === 0
+                    ? "bg-gradient-to-r from-yellow-600 to-amber-600 text-slate-900 shadow-xl"
+                    : "bg-slate-700/50 hover:bg-slate-600/50"
+                }`}
+              >
+                {player.photo ? (
+                  <img
+                    src={player.photo}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/50"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/50">
+                    {player.name[0]}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm truncate">
+                    {player.name.toUpperCase()}
+                  </p>
+                  <p className="text-xs opacity-70">{player.position}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-black">{player.saves}</p>
+                  <p className="text-xs opacity-70">saves</p>
                 </div>
               </div>
             ))}
