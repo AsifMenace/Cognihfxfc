@@ -18,28 +18,28 @@ export const handler = async (event) => {
 
   const limit = event.queryStringParameters?.limit
     ? Number(event.queryStringParameters.limit)
-    : 5; // Default to 5
+    : 10; // Default to 10
   try {
-    const topScorers = await sql`
+    const topSavers = await sql`
       SELECT
         players.id,
         players.name,
         players.position,
-        COUNT(match_goals.id) AS goals,
-        count(distinct match_goals.match_id) as appearances,
+        COALESCE(SUM(player_match_stats.saves), 0) AS saves,
         players.photo
-      FROM match_goals
-      JOIN players ON match_goals.player_id = players.id
-      JOIN matches ON match_goals.match_id = matches.id
+      FROM player_match_stats
+      JOIN players ON player_match_stats.player_id = players.id
+      JOIN matches ON player_match_stats.match_id = matches.id
       WHERE matches.competition ILIKE 'League%'
       GROUP BY players.id, players.name, players.position, players.photo
-      ORDER BY goals DESC
+      HAVING COALESCE(SUM(player_match_stats.saves), 0) > 0
+      ORDER BY saves DESC
       LIMIT ${limit};
     `;
 
     return {
       statusCode: 200,
-      body: JSON.stringify(topScorers),
+      body: JSON.stringify(topSavers),
     };
   } catch (error) {
     return {
