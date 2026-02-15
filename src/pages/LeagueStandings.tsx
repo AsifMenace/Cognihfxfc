@@ -304,12 +304,9 @@ export const LeagueStandings: React.FC = () => {
 
         {/* SIDEBAR COMPONENTS */}
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-4 shadow-xl">
-            <Scorecard />
-          </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-4 shadow-xl">
-            <HeadToHeadTrivia />
-          </div>
+          <Scorecard />
+
+          <HeadToHeadTrivia />
         </div>
 
         {/* BACK BUTTON */}
