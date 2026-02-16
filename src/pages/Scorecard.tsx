@@ -37,7 +37,7 @@ export default function Scorecard() {
         setResults(data);
 
         const uniqueDates = Array.from(
-          new Set(data.map((m) => m.date.split("T")[0]))
+          new Set(data.map((m) => m.date.split("T")[0])),
         ).sort();
         const dateToDayNumber: Record<string, number> = {};
         uniqueDates.forEach((date, i) => {
@@ -56,7 +56,7 @@ export default function Scorecard() {
         setError(null);
       } catch (err: unknown) {
         setError(
-          err instanceof Error ? err.message : "An unexpected error occurred."
+          err instanceof Error ? err.message : "An unexpected error occurred.",
         );
       } finally {
         setLoading(false);
@@ -92,8 +92,8 @@ export default function Scorecard() {
   }
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-6 w-full max-w-xs sm:w-auto">
-      <h3 className="text-xl font-black text-yellow-400 mb-5 tracking-wider flex items-center gap-2">
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-4 sm:p-6 w-full sm:w-auto max-w-full sm:max-w-xs overflow-x-auto">
+      <h3 className="text-xl font-black text-yellow-400 mb-5 justify-center tracking-wider flex items-center gap-2">
         <FaTrophy className="text-yellow-500" />
         MATCH RESULTS
       </h3>
@@ -129,7 +129,7 @@ export default function Scorecard() {
                       home_team_color,
                       away_team_color,
                     }: MatchResult,
-                    i
+                    i,
                   ) => {
                     const [homeScoreStr, awayScoreStr] = result.split("-");
                     const homeScore = parseInt(homeScoreStr, 10);
@@ -185,7 +185,7 @@ export default function Scorecard() {
                         </div>
                       </div>
                     );
-                  }
+                  },
                 )}
               </div>
             </div>

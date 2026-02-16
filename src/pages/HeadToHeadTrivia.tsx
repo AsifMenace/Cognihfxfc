@@ -30,7 +30,7 @@ export default function HeadToHeadTrivia() {
         setError(
           err instanceof Error
             ? err.message
-            : "Failed to load head to head results"
+            : "Failed to load head to head results",
         );
         setH2hResults([]);
       } finally {
@@ -69,7 +69,7 @@ export default function HeadToHeadTrivia() {
   }
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-6 w-full max-w-xs sm:w-auto">
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-yellow-500/20 shadow-2xl p-4 sm:p-6 w-full sm:w-auto max-w-full sm:max-w-xs overflow-x-auto">
       <h2 className="text-xl font-black text-yellow-400 mb-5 tracking-wider text-center flex items-center justify-center gap-2">
         HEAD-TO-HEAD TRIVIA
       </h2>
@@ -78,7 +78,7 @@ export default function HeadToHeadTrivia() {
         {h2hResults.map(
           (
             { team1, team2, total_matches, team1_wins, team2_wins, draws },
-            i
+            i,
           ) => (
             <div
               key={i}
@@ -122,7 +122,7 @@ export default function HeadToHeadTrivia() {
                 </div>
               </div>
             </div>
-          )
+          ),
         )}
       </div>
     </div>
