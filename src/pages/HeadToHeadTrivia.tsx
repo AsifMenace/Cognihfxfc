@@ -102,17 +102,13 @@ export default function HeadToHeadTrivia() {
                   <div className="text-2xl font-black text-green-400">
                     {team1_wins}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {team1.split(" ")[0]} WINS
-                  </div>
+                  <div className="text-xs text-gray-500">{team1} WINS</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-black text-red-400">
                     {team2_wins}
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {team2.split(" ")[0]} WINS
-                  </div>
+                  <div className="text-xs text-gray-500">{team2} WINS</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-black text-gray-400">
