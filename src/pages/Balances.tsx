@@ -66,14 +66,30 @@ export default function Balances() {
   }
 
   // Flip signs for display (negative → positive)
-  const displayPlayers = data.players.map((player) => ({
-    ...player,
-    startingBalance: Math.abs(player.startingBalance),
-    deposit2: Math.abs(player.deposit2),
-    totalAmountConsumed: Math.abs(player.totalAmountConsumed),
-    runningBalance: Math.abs(player.runningBalance) * -1, // Flip for balance logic
-    isBalancePositive: player.runningBalance > 0,
-  }));
+  const displayPlayers = data.players.map((player) => {
+    // Determine balance status and color based on raw runningBalance
+    let balanceStatus: "owed" | "low" | "almost-finished" | "deposited";
+
+    if (player.runningBalance > 0) {
+      balanceStatus = "owed"; // RED
+    } else if (player.runningBalance >= -20 && player.runningBalance <= 0) {
+      balanceStatus = "almost-finished"; // ORANGE
+    } else if (player.runningBalance >= -30 && player.runningBalance < -20) {
+      balanceStatus = "low"; // YELLOW
+    } else {
+      balanceStatus = "deposited"; // GREEN
+    }
+
+    return {
+      ...player,
+      startingBalance: Math.abs(player.startingBalance),
+      deposit2: Math.abs(player.deposit2),
+      totalAmountConsumed: Math.abs(player.totalAmountConsumed),
+      runningBalance: Math.abs(player.runningBalance) * -1, // Flip for balance logic
+      isBalancePositive: player.runningBalance > 0,
+      balanceStatus,
+    };
+  });
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-black min-h-screen">
@@ -163,12 +179,16 @@ export default function Balances() {
                   </td>
                   <td
                     className={`px-6 py-5 text-right text-xl font-black min-w-[100px] shadow-lg px-4 py-2 rounded-xl mx-2 inline-block ${
-                      player.isBalancePositive
+                      player.balanceStatus === "owed"
                         ? "bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-red-500/50"
-                        : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/50"
+                        : player.balanceStatus === "low"
+                          ? "bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-yellow-500/50"
+                          : player.balanceStatus === "almost-finished"
+                            ? "bg-gradient-to-r from-orange-500 to-yellow-600 text-white shadow-orange-500/50"
+                            : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/50"
                     }`}
                   >
-                    {player.isBalancePositive ? "-" : ""}$
+                    {player.balanceStatus === "owed" ? "-" : ""}$
                     {Math.abs(player.runningBalance).toFixed(2)}
                   </td>
                 </tr>
@@ -224,10 +244,10 @@ export default function Balances() {
                 color === "blue-400"
                   ? "text-blue-400"
                   : color === "lime-400"
-                  ? "text-lime-400"
-                  : isPositive
-                  ? "text-emerald-400"
-                  : "text-red-400";
+                    ? "text-lime-400"
+                    : isPositive
+                      ? "text-emerald-400"
+                      : "text-red-400";
 
               return (
                 <div
