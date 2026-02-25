@@ -184,7 +184,7 @@ export default function Balances() {
                         : player.balanceStatus === "low"
                           ? "bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-yellow-500/50"
                           : player.balanceStatus === "almost-finished"
-                            ? "bg-gradient-to-r from-orange-500 to-yellow-600 text-white shadow-orange-500/50"
+                            ? "bg-gradient-to-r from-orange-300 to-yellow-600 text-white shadow-orange-500/50"
                             : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/50"
                     }`}
                   >
