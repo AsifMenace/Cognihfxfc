@@ -74,7 +74,7 @@ export default function Balances() {
       balanceStatus = "owed"; // RED
     } else if (player.runningBalance >= -20 && player.runningBalance <= 0) {
       balanceStatus = "almost-finished"; // ORANGE
-    } else if (player.runningBalance >= -30 && player.runningBalance < -20) {
+    } else if (player.runningBalance >= -40 && player.runningBalance < -20) {
       balanceStatus = "low"; // YELLOW
     } else {
       balanceStatus = "deposited"; // GREEN
