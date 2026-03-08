@@ -37,6 +37,16 @@ export function EditTeamsModal({
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
     null,
   );
+  const dragRef = useRef<HTMLDivElement>(null);
+
+  // Detect if this is a real touch device
+  const isTouchDevice = useRef(
+    typeof window !== "undefined" &&
+      ("ontouchstart" in window ||
+        navigator.maxTouchPoints > 0 ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (navigator as any).msMaxTouchPoints > 0),
+  ).current;
 
   // Calculate total skills
   const skillA = teamA.reduce((sum, p) => sum + (p.skill || 0), 0);
@@ -49,6 +59,7 @@ export function EditTeamsModal({
     player: Player,
     fromTeam: 0 | 1,
   ) => {
+    if (!isTouchDevice) return;
     e.preventDefault();
     setTouchStart({
       x: e.touches[0].clientX,
@@ -64,31 +75,93 @@ export function EditTeamsModal({
     }, 500); // 500ms long press
   };
 
-  // Handle touch move
+  // Handle touch move - detect drop zone
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isTouchDevice) return;
+    if (!draggedPlayer || !touchStart || !longPressTimer.current) return;
+
     e.preventDefault();
-    if (!touchStart || !longPressTimer.current) return;
 
     const moveX = Math.abs(e.touches[0].clientX - touchStart.x);
     const moveY = Math.abs(e.touches[0].clientY - touchStart.y);
 
-    // If moved too much, cancel long press
-    if (moveX > 10 || moveY > 10) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
+    // If moved too little, still waiting for long press
+    if (moveX < 5 && moveY < 5) {
+      return;
+    }
+
+    // Long press timer already fired, we're dragging now
+    const currentY = e.touches[0].clientY;
+    const touchElement = document.elementFromPoint(
+      e.touches[0].clientX,
+      currentY,
+    );
+
+    // Check if over Team A drop zone
+    const teamADropZone = document.getElementById("team-a-drop-zone");
+    const teamBDropZone = document.getElementById("team-b-drop-zone");
+
+    if (teamADropZone && touchElement) {
+      if (teamADropZone.contains(touchElement)) {
+        if (draggedPlayer.fromTeam !== 0) {
+          // Highlight Team A
+        }
+      }
+    }
+
+    if (teamBDropZone && touchElement) {
+      if (teamBDropZone.contains(touchElement)) {
+        if (draggedPlayer.fromTeam !== 1) {
+          // Highlight Team B
+        }
+      }
     }
   };
 
-  // Handle touch end
+  // Handle touch end - drop player
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isTouchDevice) return;
+    if (!draggedPlayer) {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
+      setTouchStart(null);
+      return;
+    }
+
     e.preventDefault();
+
+    const lastTouch = e.changedTouches[0];
+    const touchElement = document.elementFromPoint(
+      lastTouch.clientX,
+      lastTouch.clientY,
+    );
+
+    // Check which team zone the player was dropped on
+    const teamADropZone = document.getElementById("team-a-drop-zone");
+    const teamBDropZone = document.getElementById("team-b-drop-zone");
+
+    if (teamADropZone?.contains(touchElement) && draggedPlayer.fromTeam !== 0) {
+      handleDropOnTeam(0);
+    } else if (
+      teamBDropZone?.contains(touchElement) &&
+      draggedPlayer.fromTeam !== 1
+    ) {
+      handleDropOnTeam(1);
+    }
+
+    // Cleanup
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
     }
+    setDraggedPlayer(null);
     setTouchStart(null);
   };
 
-  // Handle drop on a team
+  // Handle drag start (for desktop/laptop)
+  const handleDragStart = (player: Player, fromTeam: 0 | 1) => {
+    setDraggedPlayer({ player, fromTeam });
+  };
   const handleDropOnTeam = (targetTeam: 0 | 1) => {
     if (!draggedPlayer) return;
 
@@ -230,6 +303,7 @@ export function EditTeamsModal({
 
           {/* Drop Zone Indicator */}
           <div
+            id="team-a-drop-zone"
             className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 select-none ${
               draggedPlayer?.fromTeam === 1
                 ? "border-blue-400 bg-blue-500/10"
@@ -252,9 +326,7 @@ export function EditTeamsModal({
                     onTouchStart={(e) => handleTouchStart(e, player, 0)}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    onDragStart={() =>
-                      setDraggedPlayer({ player, fromTeam: 0 })
-                    }
+                    onDragStart={() => handleDragStart(player, 0)}
                     draggable
                     className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all select-none ${
                       draggedPlayer?.player.id === player.id
@@ -312,6 +384,7 @@ export function EditTeamsModal({
 
           {/* Drop Zone Indicator */}
           <div
+            id="team-b-drop-zone"
             className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 select-none ${
               draggedPlayer?.fromTeam === 0
                 ? "border-red-400 bg-red-500/10"
@@ -334,9 +407,7 @@ export function EditTeamsModal({
                     onTouchStart={(e) => handleTouchStart(e, player, 1)}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    onDragStart={() =>
-                      setDraggedPlayer({ player, fromTeam: 1 })
-                    }
+                    onDragStart={() => handleDragStart(player, 1)}
                     draggable
                     className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all select-none ${
                       draggedPlayer?.player.id === player.id
