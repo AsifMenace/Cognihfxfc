@@ -60,7 +60,7 @@ function calculateScore(teamA, teamB) {
     positionBalance += diff;
   });
 
-  const score = skillDiff * 10 + fwSkillDiff * 5 + positionBalance * 2;
+  const score = skillDiff * 5 + fwSkillDiff * 3 + positionBalance * 2;
   return score;
 }
 
@@ -118,30 +118,21 @@ function generateRandomCombination(players, teamSize) {
     }
   }
 
-  // Shuffle remaining positions and distribute evenly
-  const defShuffled = shuffleArray(positions.DEF);
-  const midShuffled = shuffleArray(positions.MID);
-  const fwShuffled = shuffleArray(positions.FW);
+  // Combine all remaining players (DEF, MID, FW)
+  const remaining = [...positions.DEF, ...positions.MID, ...positions.FW];
 
-  // Distribute DEF
-  for (let i = 0; i < defShuffled.length; i++) {
-    if (i % 2 === 0) teamA.push(defShuffled[i]);
-    else teamB.push(defShuffled[i]);
+  // Shuffle them
+  const shuffled = shuffleArray(remaining);
+
+  // Distribute evenly to reach teamSize
+  for (let i = 0; i < shuffled.length; i++) {
+    if (teamA.length < teamSize) {
+      teamA.push(shuffled[i]);
+    } else if (teamB.length < teamSize) {
+      teamB.push(shuffled[i]);
+    }
   }
 
-  // Distribute MID
-  for (let i = 0; i < midShuffled.length; i++) {
-    if (i % 2 === 0) teamA.push(midShuffled[i]);
-    else teamB.push(midShuffled[i]);
-  }
-
-  // Distribute FW
-  for (let i = 0; i < fwShuffled.length; i++) {
-    if (i % 2 === 0) teamA.push(fwShuffled[i]);
-    else teamB.push(fwShuffled[i]);
-  }
-
-  // Trim to team size
   return {
     teamA: teamA.slice(0, teamSize),
     teamB: teamB.slice(0, teamSize),

@@ -1,7 +1,7 @@
 // src/components/squad-creator/EditTeamsModal.tsx
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaCheck } from 'react-icons/fa';
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaTimes, FaCheck } from "react-icons/fa";
 
 interface Player {
   id: number;
@@ -16,6 +16,7 @@ interface EditTeamsModalProps {
   editingTeamIndex: number;
   onClose: () => void;
   onSave: (newTeamA: Player[], newTeamB: Player[]) => void;
+  isAdmin: boolean;
 }
 
 export function EditTeamsModal({
@@ -24,6 +25,7 @@ export function EditTeamsModal({
   editingTeamIndex,
   onClose,
   onSave,
+  isAdmin,
 }: EditTeamsModalProps) {
   const [teamA, setTeamA] = useState<Player[]>(initialTeamA);
   const [teamB, setTeamB] = useState<Player[]>(initialTeamB);
@@ -32,7 +34,9 @@ export function EditTeamsModal({
     fromTeam: 0 | 1;
   } | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   // Calculate total skills
   const skillA = teamA.reduce((sum, p) => sum + (p.skill || 0), 0);
@@ -43,7 +47,7 @@ export function EditTeamsModal({
   const handleTouchStart = (
     e: React.TouchEvent<HTMLDivElement>,
     player: Player,
-    fromTeam: 0 | 1
+    fromTeam: 0 | 1,
   ) => {
     setTouchStart({
       x: e.touches[0].clientX,
@@ -53,7 +57,7 @@ export function EditTeamsModal({
     longPressTimer.current = setTimeout(() => {
       setDraggedPlayer({ player, fromTeam });
       // Haptic feedback if available
-      if ('vibrate' in navigator) {
+      if ("vibrate" in navigator) {
         navigator.vibrate(50);
       }
     }, 500); // 500ms long press
@@ -88,40 +92,40 @@ export function EditTeamsModal({
     const { player, fromTeam } = draggedPlayer;
 
     if (fromTeam === targetTeam) {
-      // Same team, no action
       setDraggedPlayer(null);
       return;
     }
 
-    // Find the player in source team
-    let sourceTeam = fromTeam === 0 ? [...teamA] : [...teamB];
-    let targetTeamArray = targetTeam === 0 ? [...teamA] : [...teamB];
+    // Create new arrays
+    const newTeamA = [...teamA];
+    const newTeamB = [...teamB];
 
-    const playerIndex = sourceTeam.findIndex(p => p.id === player.id);
+    // Find and remove player from source
+    const sourceArray = fromTeam === 0 ? newTeamA : newTeamB;
+    const playerIndex = sourceArray.findIndex((p) => p.id === player.id);
+
     if (playerIndex === -1) {
       setDraggedPlayer(null);
       return;
     }
 
     // Remove from source
-    sourceTeam.splice(playerIndex, 1);
+    sourceArray.splice(playerIndex, 1);
 
     // Add to target
-    targetTeamArray.push(player);
-
-    // Update state
-    if (fromTeam === 0) {
-      setTeamA(sourceTeam);
-      setTeamB(targetTeamArray);
+    if (targetTeam === 0) {
+      newTeamA.push(player);
     } else {
-      setTeamA(targetTeamArray);
-      setTeamB(sourceTeam);
+      newTeamB.push(player);
     }
 
+    // Update state
+    setTeamA(newTeamA);
+    setTeamB(newTeamB);
     setDraggedPlayer(null);
 
     // Haptic feedback
-    if ('vibrate' in navigator) {
+    if ("vibrate" in navigator) {
       navigator.vibrate(30);
     }
   };
@@ -141,20 +145,24 @@ export function EditTeamsModal({
   // Position color
   const getPositionColor = (position: string) => {
     const pos = position.toUpperCase();
-    if (pos === 'GOALKEEPER' || pos === 'GK') return 'bg-yellow-500/10 border-yellow-500/30';
-    if (pos === 'DEFENDER' || pos === 'DEF') return 'bg-blue-500/10 border-blue-500/30';
-    if (pos === 'MIDFIELDER' || pos === 'MID') return 'bg-green-500/10 border-green-500/30';
-    if (pos === 'FORWARD' || pos === 'FW') return 'bg-red-500/10 border-red-500/30';
-    return 'bg-slate-700/30';
+    if (pos === "GOALKEEPER" || pos === "GK")
+      return "bg-yellow-500/10 border-yellow-500/30";
+    if (pos === "DEFENDER" || pos === "DEF")
+      return "bg-blue-500/10 border-blue-500/30";
+    if (pos === "MIDFIELDER" || pos === "MID")
+      return "bg-green-500/10 border-green-500/30";
+    if (pos === "FORWARD" || pos === "FW")
+      return "bg-red-500/10 border-red-500/30";
+    return "bg-slate-700/30";
   };
 
   const getPositionEmoji = (position: string) => {
     const pos = position.toUpperCase();
-    if (pos === 'GOALKEEPER' || pos === 'GK') return '⚽';
-    if (pos === 'DEFENDER' || pos === 'DEF') return '🛡️';
-    if (pos === 'MIDFIELDER' || pos === 'MID') return '🔄';
-    if (pos === 'FORWARD' || pos === 'FW') return '⚡';
-    return '👤';
+    if (pos === "GOALKEEPER" || pos === "GK") return "⚽";
+    if (pos === "DEFENDER" || pos === "DEF") return "🛡️";
+    if (pos === "MIDFIELDER" || pos === "MID") return "🔄";
+    if (pos === "FORWARD" || pos === "FW") return "⚡";
+    return "👤";
   };
 
   return (
@@ -221,8 +229,8 @@ export function EditTeamsModal({
           <div
             className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 ${
               draggedPlayer?.fromTeam === 1
-                ? 'border-blue-400 bg-blue-500/10'
-                : 'border-slate-600 bg-slate-700/20'
+                ? "border-blue-400 bg-blue-500/10"
+                : "border-slate-600 bg-slate-700/20"
             }`}
           >
             <AnimatePresence>
@@ -241,21 +249,35 @@ export function EditTeamsModal({
                     onTouchStart={(e) => handleTouchStart(e, player, 0)}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    onDragStart={() => setDraggedPlayer({ player, fromTeam: 0 })}
+                    onDragStart={() =>
+                      setDraggedPlayer({ player, fromTeam: 0 })
+                    }
                     draggable
                     className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${
                       draggedPlayer?.player.id === player.id
-                        ? 'opacity-50 scale-95 bg-gray-700/50'
+                        ? "opacity-50 scale-95 bg-gray-700/50"
                         : getPositionColor(player.position)
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span>{getPositionEmoji(player.position)}</span>
-                        <span className="font-semibold text-white">{player.name}</span>
+                        <span className="font-semibold text-white">
+                          {player.name}
+                        </span>
                       </div>
-                      {player.skill && (
-                        <span className="text-yellow-400 font-bold">S:{player.skill}</span>
+                      {isAdmin && player.skill && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-14 h-2 bg-slate-600 rounded overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded"
+                              style={{ width: `${(player.skill / 10) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-yellow-400 font-bold text-xs">
+                            {player.skill}/10
+                          </span>
+                        </div>
                       )}
                     </div>
                   </motion.div>
@@ -288,8 +310,8 @@ export function EditTeamsModal({
           <div
             className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 ${
               draggedPlayer?.fromTeam === 0
-                ? 'border-red-400 bg-red-500/10'
-                : 'border-slate-600 bg-slate-700/20'
+                ? "border-red-400 bg-red-500/10"
+                : "border-slate-600 bg-slate-700/20"
             }`}
           >
             <AnimatePresence>
@@ -308,21 +330,35 @@ export function EditTeamsModal({
                     onTouchStart={(e) => handleTouchStart(e, player, 1)}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    onDragStart={() => setDraggedPlayer({ player, fromTeam: 1 })}
+                    onDragStart={() =>
+                      setDraggedPlayer({ player, fromTeam: 1 })
+                    }
                     draggable
                     className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${
                       draggedPlayer?.player.id === player.id
-                        ? 'opacity-50 scale-95 bg-gray-700/50'
+                        ? "opacity-50 scale-95 bg-gray-700/50"
                         : getPositionColor(player.position)
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span>{getPositionEmoji(player.position)}</span>
-                        <span className="font-semibold text-white">{player.name}</span>
+                        <span className="font-semibold text-white">
+                          {player.name}
+                        </span>
                       </div>
-                      {player.skill && (
-                        <span className="text-yellow-400 font-bold">S:{player.skill}</span>
+                      {isAdmin && player.skill && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-14 h-2 bg-slate-600 rounded overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded"
+                              style={{ width: `${(player.skill / 10) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-yellow-400 font-bold text-xs">
+                            {player.skill}/10
+                          </span>
+                        </div>
                       )}
                     </div>
                   </motion.div>
@@ -339,8 +375,8 @@ export function EditTeamsModal({
           transition={{ delay: 0.4 }}
           className={`p-4 rounded-lg border ${
             skillDiff <= 2
-              ? 'bg-green-500/10 border-green-500/30'
-              : 'bg-yellow-500/10 border-yellow-500/30'
+              ? "bg-green-500/10 border-green-500/30"
+              : "bg-yellow-500/10 border-yellow-500/30"
           }`}
         >
           <div className="text-center">
@@ -348,10 +384,13 @@ export function EditTeamsModal({
             <div className="text-2xl font-black mb-2">
               {skillA} vs {skillB}
             </div>
-            <div className={`text-sm font-bold ${
-              skillDiff <= 2 ? 'text-green-400' : 'text-yellow-400'
-            }`}>
-              Difference: {skillDiff} {skillDiff <= 2 ? '✓ Balanced' : '⚠️ Unbalanced'}
+            <div
+              className={`text-sm font-bold ${
+                skillDiff <= 2 ? "text-green-400" : "text-yellow-400"
+              }`}
+            >
+              Difference: {skillDiff}{" "}
+              {skillDiff <= 2 ? "✓ Balanced" : "⚠️ Unbalanced"}
             </div>
           </div>
         </motion.div>

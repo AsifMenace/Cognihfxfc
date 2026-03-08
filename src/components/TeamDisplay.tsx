@@ -1,6 +1,6 @@
 // src/components/squad-creator/TeamDisplay.tsx
-import { motion } from 'framer-motion';
-import { FaEdit, FaSave, FaLink } from 'react-icons/fa';
+import { motion } from "framer-motion";
+import { FaEdit, FaSave, FaLink } from "react-icons/fa";
 
 interface Player {
   id: number;
@@ -20,6 +20,7 @@ interface TeamDisplayProps {
   isSaving: boolean;
   isSaved: boolean;
   hideAction?: boolean;
+  isAdmin: boolean;
 }
 
 export function TeamDisplay({
@@ -33,51 +34,72 @@ export function TeamDisplay({
   isSaving,
   isSaved,
   hideAction = false,
+  isAdmin,
 }: TeamDisplayProps) {
   // Calculate total skill
   const totalSkill = team.reduce((sum, p) => sum + (p.skill || 0), 0);
 
   // Group players by position
   const playersByPosition = {
-    GK: team.filter(p => p.position?.toUpperCase() === 'GOALKEEPER' || p.position?.toUpperCase() === 'GK'),
-    DEF: team.filter(p => p.position?.toUpperCase() === 'DEFENDER' || p.position?.toUpperCase() === 'DEF'),
-    MID: team.filter(p => p.position?.toUpperCase() === 'MIDFIELDER' || p.position?.toUpperCase() === 'MID'),
-    FW: team.filter(p => p.position?.toUpperCase() === 'FORWARD' || p.position?.toUpperCase() === 'FW'),
+    GK: team.filter(
+      (p) =>
+        p.position?.toUpperCase() === "GOALKEEPER" ||
+        p.position?.toUpperCase() === "GK",
+    ),
+    DEF: team.filter(
+      (p) =>
+        p.position?.toUpperCase() === "DEFENDER" ||
+        p.position?.toUpperCase() === "DEF",
+    ),
+    MID: team.filter(
+      (p) =>
+        p.position?.toUpperCase() === "MIDFIELDER" ||
+        p.position?.toUpperCase() === "MID",
+    ),
+    FW: team.filter(
+      (p) =>
+        p.position?.toUpperCase() === "FORWARD" ||
+        p.position?.toUpperCase() === "FW",
+    ),
   };
 
   // Get position color
   const getPositionBgColor = (position: string) => {
     const pos = position.toUpperCase();
-    if (pos === 'GOALKEEPER' || pos === 'GK') return 'bg-yellow-500/10 border-yellow-500/30';
-    if (pos === 'DEFENDER' || pos === 'DEF') return 'bg-blue-500/10 border-blue-500/30';
-    if (pos === 'MIDFIELDER' || pos === 'MID') return 'bg-green-500/10 border-green-500/30';
-    if (pos === 'FORWARD' || pos === 'FW') return 'bg-red-500/10 border-red-500/30';
-    return 'bg-slate-700/30';
+    if (pos === "GOALKEEPER" || pos === "GK")
+      return "bg-yellow-500/10 border-yellow-500/30";
+    if (pos === "DEFENDER" || pos === "DEF")
+      return "bg-blue-500/10 border-blue-500/30";
+    if (pos === "MIDFIELDER" || pos === "MID")
+      return "bg-green-500/10 border-green-500/30";
+    if (pos === "FORWARD" || pos === "FW")
+      return "bg-red-500/10 border-red-500/30";
+    return "bg-slate-700/30";
   };
 
   const getPositionTextColor = (position: string) => {
     const pos = position.toUpperCase();
-    if (pos === 'GOALKEEPER' || pos === 'GK') return 'text-yellow-400';
-    if (pos === 'DEFENDER' || pos === 'DEF') return 'text-blue-400';
-    if (pos === 'MIDFIELDER' || pos === 'MID') return 'text-green-400';
-    if (pos === 'FORWARD' || pos === 'FW') return 'text-red-400';
-    return 'text-gray-400';
+    if (pos === "GOALKEEPER" || pos === "GK") return "text-yellow-400";
+    if (pos === "DEFENDER" || pos === "DEF") return "text-blue-400";
+    if (pos === "MIDFIELDER" || pos === "MID") return "text-green-400";
+    if (pos === "FORWARD" || pos === "FW") return "text-red-400";
+    return "text-gray-400";
   };
 
   const getPositionEmoji = (position: string) => {
     const pos = position.toUpperCase();
-    if (pos === 'GOALKEEPER' || pos === 'GK') return '⚽';
-    if (pos === 'DEFENDER' || pos === 'DEF') return '🛡️';
-    if (pos === 'MIDFIELDER' || pos === 'MID') return '🔄';
-    if (pos === 'FORWARD' || pos === 'FW') return '⚡';
-    return '👤';
+    if (pos === "GOALKEEPER" || pos === "GK") return "⚽";
+    if (pos === "DEFENDER" || pos === "DEF") return "🛡️";
+    if (pos === "MIDFIELDER" || pos === "MID") return "🔄";
+    if (pos === "FORWARD" || pos === "FW") return "⚡";
+    return "👤";
   };
 
   const positionLabels = {
-    GK: 'Goalkeeper',
-    DEF: 'Defenders',
-    MID: 'Midfielders',
-    FW: 'Forwards',
+    GK: "Goalkeeper",
+    DEF: "Defenders",
+    MID: "Midfielders",
+    FW: "Forwards",
   };
 
   return (
@@ -96,26 +118,36 @@ export function TeamDisplay({
           </h2>
           <div className="text-right">
             <div className="text-sm text-gray-400">Total Skill</div>
-            <div className="text-2xl sm:text-3xl font-black text-yellow-400">{totalSkill}</div>
+            <div className="text-2xl sm:text-3xl font-black text-yellow-400">
+              {totalSkill}
+            </div>
           </div>
         </div>
 
         {/* Position Breakdown */}
         <div className="grid grid-cols-4 gap-2 text-center text-xs sm:text-sm">
           <div className="bg-yellow-500/10 rounded-lg p-2">
-            <div className="text-yellow-400 font-bold">{playersByPosition.GK.length}</div>
+            <div className="text-yellow-400 font-bold">
+              {playersByPosition.GK.length}
+            </div>
             <div className="text-gray-400 text-xs">GK</div>
           </div>
           <div className="bg-blue-500/10 rounded-lg p-2">
-            <div className="text-blue-400 font-bold">{playersByPosition.DEF.length}</div>
+            <div className="text-blue-400 font-bold">
+              {playersByPosition.DEF.length}
+            </div>
             <div className="text-gray-400 text-xs">DEF</div>
           </div>
           <div className="bg-green-500/10 rounded-lg p-2">
-            <div className="text-green-400 font-bold">{playersByPosition.MID.length}</div>
+            <div className="text-green-400 font-bold">
+              {playersByPosition.MID.length}
+            </div>
             <div className="text-gray-400 text-xs">MID</div>
           </div>
           <div className="bg-red-500/10 rounded-lg p-2">
-            <div className="text-red-400 font-bold">{playersByPosition.FW.length}</div>
+            <div className="text-red-400 font-bold">
+              {playersByPosition.FW.length}
+            </div>
             <div className="text-gray-400 text-xs">FW</div>
           </div>
         </div>
@@ -123,7 +155,7 @@ export function TeamDisplay({
 
       {/* Players by Position */}
       <div className="space-y-4 mb-6">
-        {(['GK', 'DEF', 'MID', 'FW'] as const).map(pos => {
+        {(["GK", "DEF", "MID", "FW"] as const).map((pos) => {
           if (playersByPosition[pos].length === 0) return null;
 
           return (
@@ -136,7 +168,9 @@ export function TeamDisplay({
               {/* Position Header */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xl">{getPositionEmoji(pos)}</span>
-                <h3 className={`font-bold text-sm sm:text-base ${getPositionTextColor(pos)}`}>
+                <h3
+                  className={`font-bold text-sm sm:text-base ${getPositionTextColor(pos)}`}
+                >
                   {positionLabels[pos]} ({playersByPosition[pos].length})
                 </h3>
               </div>
@@ -152,11 +186,21 @@ export function TeamDisplay({
                     className={`p-3 rounded-lg border ${getPositionBgColor(pos)} flex items-center justify-between`}
                   >
                     <div className="flex-1">
-                      <p className="font-semibold text-white text-sm sm:text-base">{player.name}</p>
+                      <p className="font-semibold text-white text-sm sm:text-base">
+                        {player.name}
+                      </p>
                     </div>
-                    {player.skill && (
-                      <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                        <span className="text-yellow-400 font-bold text-sm">S:{player.skill}</span>
+                    {isAdmin && player.skill && (
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <div className="w-16 h-2 bg-slate-600 rounded overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded"
+                            style={{ width: `${(player.skill / 10) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-yellow-400 font-bold text-xs">
+                          {player.skill}/10
+                        </span>
                       </div>
                     )}
                   </motion.div>
@@ -194,8 +238,8 @@ export function TeamDisplay({
             disabled={isSaving}
             className={`w-full py-3 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${
               isSaved
-                ? 'bg-green-600/50 text-green-300 hover:bg-green-600/60'
-                : 'bg-green-600 hover:bg-green-700 text-white'
+                ? "bg-green-600/50 text-green-300 hover:bg-green-600/60"
+                : "bg-green-600 hover:bg-green-700 text-white"
             }`}
           >
             {isSaving ? (

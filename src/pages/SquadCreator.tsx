@@ -7,6 +7,10 @@ import { EditTeamsModal } from "../components/EditTeamsModal";
 import { MatchLinkingModal } from "../components/MatchLinkingModal";
 import { FaStar, FaFire, FaCheck } from "react-icons/fa";
 
+interface SquadCreatorProps {
+  isAdmin: boolean;
+}
+
 interface Player {
   id: number;
   name: string;
@@ -34,7 +38,7 @@ interface GenerationState {
   success: boolean;
 }
 
-export function SquadCreator() {
+export function SquadCreator({ isAdmin }: SquadCreatorProps) {
   // State Management
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<number[]>([]);
@@ -262,6 +266,7 @@ export function SquadCreator() {
               onPlayerToggle={handlePlayerToggle}
               isLoading={generation.loading}
               onGenerate={handleGenerateSquads}
+              isAdmin={isAdmin}
             />
           </motion.div>
         )}
@@ -288,6 +293,7 @@ export function SquadCreator() {
               onLink={() => setShowMatchModal(true)}
               isSaving={generation.loading}
               isSaved={!!savedSquadId}
+              isAdmin={isAdmin}
             />
 
             {/* Team B */}
@@ -305,6 +311,7 @@ export function SquadCreator() {
               isSaving={generation.loading}
               isSaved={!!savedSquadId}
               hideAction
+              isAdmin={isAdmin}
             />
 
             {/* Back to selector button */}
@@ -337,6 +344,7 @@ export function SquadCreator() {
               setTeamB(newTeamB);
               setShowEditModal(false);
             }}
+            isAdmin={isAdmin}
           />
         )}
       </AnimatePresence>

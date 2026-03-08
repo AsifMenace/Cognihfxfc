@@ -53,7 +53,10 @@ function App() {
           <Route path="/games" element={<Games />} />
           <Route path="/standings" element={<LeagueStandings />} />
           <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
-          <Route path="/squad-creator" element={<SquadCreator />} />
+          <Route
+            path="/squad-creator"
+            element={<SquadCreator isAdmin={isAdmin} />}
+          />
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
 
