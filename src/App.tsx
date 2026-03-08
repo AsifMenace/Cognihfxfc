@@ -11,7 +11,6 @@ import Games from "./pages/Games";
 import Squad from "./pages/Squad";
 import PlayerDetail from "./pages/PlayerDetail";
 import Gallery from "./pages/Gallery";
-import Contact from "./pages/Contact";
 import AddPlayer from "./pages/AddPlayer";
 import EditPlayer from "./pages/EditPlayer";
 import { useState } from "react";
@@ -27,10 +26,11 @@ import { useServiceWorkerUpdate } from "./hooks/useServiceWorkerUpdate";
 import AddNews from "./pages/AddNews";
 import ScrollToTop from "./components/ScrollToTop";
 import Balances from "./pages/Balances";
+import { SquadCreator } from "./pages/SquadCreator"; // ← ADD THIS
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(
-    () => localStorage.getItem("isAdmin") === "true"
+    () => localStorage.getItem("isAdmin") === "true",
   );
 
   const handleSetIsAdmin = (value: boolean) => {
@@ -53,6 +53,10 @@ function App() {
           <Route path="/games" element={<Games />} />
           <Route path="/standings" element={<LeagueStandings />} />
           <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
+          <Route
+            path="/squad-creator"
+            element={<SquadCreator isAdmin={isAdmin} />}
+          />
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
 
