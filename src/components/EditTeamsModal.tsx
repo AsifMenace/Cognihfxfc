@@ -198,7 +198,7 @@ export function EditTeamsModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-300"
+          className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-300 select-none"
         >
           <p className="font-semibold mb-1">How to swap players:</p>
           <p>1. Long-press (hold) a player's card</p>
@@ -227,7 +227,7 @@ export function EditTeamsModal({
 
           {/* Drop Zone Indicator */}
           <div
-            className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 ${
+            className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 select-none ${
               draggedPlayer?.fromTeam === 1
                 ? "border-blue-400 bg-blue-500/10"
                 : "border-slate-600 bg-slate-700/20"
@@ -253,11 +253,12 @@ export function EditTeamsModal({
                       setDraggedPlayer({ player, fromTeam: 0 })
                     }
                     draggable
-                    className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${
+                    className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all select-none ${
                       draggedPlayer?.player.id === player.id
                         ? "opacity-50 scale-95 bg-gray-700/50"
                         : getPositionColor(player.position)
                     }`}
+                    style={{ touchAction: "none" }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -308,7 +309,7 @@ export function EditTeamsModal({
 
           {/* Drop Zone Indicator */}
           <div
-            className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 ${
+            className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 select-none ${
               draggedPlayer?.fromTeam === 0
                 ? "border-red-400 bg-red-500/10"
                 : "border-slate-600 bg-slate-700/20"
@@ -334,11 +335,12 @@ export function EditTeamsModal({
                       setDraggedPlayer({ player, fromTeam: 1 })
                     }
                     draggable
-                    className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all ${
+                    className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all select-none ${
                       draggedPlayer?.player.id === player.id
                         ? "opacity-50 scale-95 bg-gray-700/50"
                         : getPositionColor(player.position)
                     }`}
+                    style={{ touchAction: "none" }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
