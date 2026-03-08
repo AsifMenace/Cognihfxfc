@@ -49,6 +49,7 @@ export function EditTeamsModal({
     player: Player,
     fromTeam: 0 | 1,
   ) => {
+    e.preventDefault();
     setTouchStart({
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
@@ -65,6 +66,7 @@ export function EditTeamsModal({
 
   // Handle touch move
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
     if (!touchStart || !longPressTimer.current) return;
 
     const moveX = Math.abs(e.touches[0].clientX - touchStart.x);
@@ -78,7 +80,8 @@ export function EditTeamsModal({
   };
 
   // Handle touch end
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
     }
@@ -258,7 +261,7 @@ export function EditTeamsModal({
                         ? "opacity-50 scale-95 bg-gray-700/50"
                         : getPositionColor(player.position)
                     }`}
-                    style={{ touchAction: "none" }}
+                    style={{ touchAction: "none", WebkitUserSelect: "none" }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -340,7 +343,7 @@ export function EditTeamsModal({
                         ? "opacity-50 scale-95 bg-gray-700/50"
                         : getPositionColor(player.position)
                     }`}
-                    style={{ touchAction: "none" }}
+                    style={{ touchAction: "none", WebkitUserSelect: "none" }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
