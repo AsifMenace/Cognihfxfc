@@ -1,5 +1,5 @@
 // src/components/squad-creator/EditTeamsModal.tsx
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCheck } from "react-icons/fa";
 
@@ -29,192 +29,72 @@ export function EditTeamsModal({
 }: EditTeamsModalProps) {
   const [teamA, setTeamA] = useState<Player[]>(initialTeamA);
   const [teamB, setTeamB] = useState<Player[]>(initialTeamB);
-  const [draggedPlayer, setDraggedPlayer] = useState<{
+  const [selectedPlayer, setSelectedPlayer] = useState<{
     player: Player;
     fromTeam: 0 | 1;
   } | null>(null);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
-    null,
-  );
-  const dragRef = useRef<HTMLDivElement>(null);
-
-  // Detect if this is a real touch device
-  const isTouchDevice = useRef(
-    typeof window !== "undefined" &&
-      ("ontouchstart" in window ||
-        navigator.maxTouchPoints > 0 ||
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (navigator as any).msMaxTouchPoints > 0),
-  ).current;
 
   // Calculate total skills
   const skillA = teamA.reduce((sum, p) => sum + (p.skill || 0), 0);
   const skillB = teamB.reduce((sum, p) => sum + (p.skill || 0), 0);
   const skillDiff = Math.abs(skillA - skillB);
 
-  // Handle long press start (for iOS touch)
-  const handleTouchStart = (
-    e: React.TouchEvent<HTMLDivElement>,
-    player: Player,
-    fromTeam: 0 | 1,
-  ) => {
-    if (!isTouchDevice) return;
-    e.preventDefault();
-    setTouchStart({
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-    });
-
-    longPressTimer.current = setTimeout(() => {
-      setDraggedPlayer({ player, fromTeam });
-      // Haptic feedback if available
-      if ("vibrate" in navigator) {
-        navigator.vibrate(50);
+  // Handle player click - select or swap
+  const handlePlayerClick = (player: Player, fromTeam: 0 | 1) => {
+    if (!selectedPlayer) {
+      // First selection
+      setSelectedPlayer({ player, fromTeam });
+    } else if (selectedPlayer.fromTeam === fromTeam) {
+      // Clicking same team - deselect
+      if (selectedPlayer.player.id === player.id) {
+        setSelectedPlayer(null);
+      } else {
+        // Select different player in same team
+        setSelectedPlayer({ player, fromTeam });
       }
-    }, 500); // 500ms long press
-  };
-
-  // Handle touch move - detect drop zone
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isTouchDevice) return;
-    if (!draggedPlayer || !touchStart || !longPressTimer.current) return;
-
-    e.preventDefault();
-
-    const moveX = Math.abs(e.touches[0].clientX - touchStart.x);
-    const moveY = Math.abs(e.touches[0].clientY - touchStart.y);
-
-    // If moved too little, still waiting for long press
-    if (moveX < 5 && moveY < 5) {
-      return;
-    }
-
-    // Long press timer already fired, we're dragging now
-    const currentY = e.touches[0].clientY;
-    const touchElement = document.elementFromPoint(
-      e.touches[0].clientX,
-      currentY,
-    );
-
-    // Check if over Team A drop zone
-    const teamADropZone = document.getElementById("team-a-drop-zone");
-    const teamBDropZone = document.getElementById("team-b-drop-zone");
-
-    if (teamADropZone && touchElement) {
-      if (teamADropZone.contains(touchElement)) {
-        if (draggedPlayer.fromTeam !== 0) {
-          // Highlight Team A
-        }
-      }
-    }
-
-    if (teamBDropZone && touchElement) {
-      if (teamBDropZone.contains(touchElement)) {
-        if (draggedPlayer.fromTeam !== 1) {
-          // Highlight Team B
-        }
-      }
-    }
-  };
-
-  // Handle touch end - drop player
-  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isTouchDevice) return;
-    if (!draggedPlayer) {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-      }
-      setTouchStart(null);
-      return;
-    }
-
-    e.preventDefault();
-
-    const lastTouch = e.changedTouches[0];
-    const touchElement = document.elementFromPoint(
-      lastTouch.clientX,
-      lastTouch.clientY,
-    );
-
-    // Check which team zone the player was dropped on
-    const teamADropZone = document.getElementById("team-a-drop-zone");
-    const teamBDropZone = document.getElementById("team-b-drop-zone");
-
-    if (teamADropZone?.contains(touchElement) && draggedPlayer.fromTeam !== 0) {
-      handleDropOnTeam(0);
-    } else if (
-      teamBDropZone?.contains(touchElement) &&
-      draggedPlayer.fromTeam !== 1
-    ) {
-      handleDropOnTeam(1);
-    }
-
-    // Cleanup
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
-    setDraggedPlayer(null);
-    setTouchStart(null);
-  };
-
-  // Handle drag start (for desktop/laptop)
-  const handleDragStart = (player: Player, fromTeam: 0 | 1) => {
-    setDraggedPlayer({ player, fromTeam });
-  };
-  const handleDropOnTeam = (targetTeam: 0 | 1) => {
-    if (!draggedPlayer) return;
-
-    const { player, fromTeam } = draggedPlayer;
-
-    if (fromTeam === targetTeam) {
-      setDraggedPlayer(null);
-      return;
-    }
-
-    // Create new arrays
-    const newTeamA = [...teamA];
-    const newTeamB = [...teamB];
-
-    // Find and remove player from source
-    const sourceArray = fromTeam === 0 ? newTeamA : newTeamB;
-    const playerIndex = sourceArray.findIndex((p) => p.id === player.id);
-
-    if (playerIndex === -1) {
-      setDraggedPlayer(null);
-      return;
-    }
-
-    // Remove from source
-    sourceArray.splice(playerIndex, 1);
-
-    // Add to target
-    if (targetTeam === 0) {
-      newTeamA.push(player);
     } else {
-      newTeamB.push(player);
-    }
+      // Different team - perform swap
+      const newTeamA = [...teamA];
+      const newTeamB = [...teamB];
 
-    // Update state
-    setTeamA(newTeamA);
-    setTeamB(newTeamB);
-    setDraggedPlayer(null);
+      const sourceArray = selectedPlayer.fromTeam === 0 ? newTeamA : newTeamB;
+      const targetArray = fromTeam === 0 ? newTeamA : newTeamB;
 
-    // Haptic feedback
-    if ("vibrate" in navigator) {
-      navigator.vibrate(30);
+      const sourceIndex = sourceArray.findIndex(
+        (p) => p.id === selectedPlayer.player.id,
+      );
+      const targetIndex = targetArray.findIndex((p) => p.id === player.id);
+
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+        // Swap players
+        [sourceArray[sourceIndex], targetArray[targetIndex]] = [
+          targetArray[targetIndex],
+          sourceArray[sourceIndex],
+        ];
+
+        setTeamA(newTeamA);
+        setTeamB(newTeamB);
+      }
+
+      // Clear selection
+      setSelectedPlayer(null);
+
+      // Haptic feedback
+      if ("vibrate" in navigator) {
+        navigator.vibrate(30);
+      }
     }
   };
 
   // Handle cancel
   const handleCancel = () => {
-    setDraggedPlayer(null);
+    setSelectedPlayer(null);
     onClose();
   };
 
   // Handle save
   const handleSave = () => {
-    setDraggedPlayer(null);
+    setSelectedPlayer(null);
     onSave(teamA, teamB);
   };
 
@@ -274,12 +154,12 @@ export function EditTeamsModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-300 select-none"
+          className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-300"
         >
           <p className="font-semibold mb-1">How to swap players:</p>
-          <p>1. Long-press (hold) a player's card</p>
-          <p>2. Drag to the other team</p>
-          <p>3. Release to drop</p>
+          <p>1. Click a player from Team A</p>
+          <p>2. Click a player from Team B to swap</p>
+          <p>3. Click the same player again to deselect</p>
         </motion.div>
 
         {/* Team A */}
@@ -288,8 +168,6 @@ export function EditTeamsModal({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="bg-blue-600/10 border border-blue-500/30 rounded-xl p-4"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={() => handleDropOnTeam(0)}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -304,8 +182,8 @@ export function EditTeamsModal({
           {/* Drop Zone Indicator */}
           <div
             id="team-a-drop-zone"
-            className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 select-none ${
-              draggedPlayer?.fromTeam === 1
+            className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 ${
+              selectedPlayer?.fromTeam === 1
                 ? "border-blue-400 bg-blue-500/10"
                 : "border-slate-600 bg-slate-700/20"
             }`}
@@ -313,7 +191,7 @@ export function EditTeamsModal({
             <AnimatePresence>
               {teamA.length === 0 ? (
                 <div className="flex items-center justify-center h-[200px] text-gray-400">
-                  Drop players here
+                  No players in Team A
                 </div>
               ) : (
                 teamA.map((player, index) => (
@@ -323,17 +201,13 @@ export function EditTeamsModal({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ delay: index * 0.05 }}
-                    onTouchStart={(e) => handleTouchStart(e, player, 0)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    onDragStart={() => handleDragStart(player, 0)}
-                    draggable
-                    className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all select-none ${
-                      draggedPlayer?.player.id === player.id
-                        ? "opacity-50 scale-95 bg-gray-700/50"
+                    onClick={() => handlePlayerClick(player, 0)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all select-none ${
+                      selectedPlayer?.player.id === player.id &&
+                      selectedPlayer?.fromTeam === 0
+                        ? "bg-blue-500/30 border-blue-400 ring-2 ring-blue-400 scale-105"
                         : getPositionColor(player.position)
                     }`}
-                    style={{ touchAction: "none", WebkitUserSelect: "none" }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -369,8 +243,6 @@ export function EditTeamsModal({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="bg-red-600/10 border border-red-500/30 rounded-xl p-4"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={() => handleDropOnTeam(1)}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -385,8 +257,8 @@ export function EditTeamsModal({
           {/* Drop Zone Indicator */}
           <div
             id="team-b-drop-zone"
-            className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 select-none ${
-              draggedPlayer?.fromTeam === 0
+            className={`min-h-[200px] rounded-lg border-2 border-dashed transition-all p-3 space-y-2 ${
+              selectedPlayer?.fromTeam === 0
                 ? "border-red-400 bg-red-500/10"
                 : "border-slate-600 bg-slate-700/20"
             }`}
@@ -394,7 +266,7 @@ export function EditTeamsModal({
             <AnimatePresence>
               {teamB.length === 0 ? (
                 <div className="flex items-center justify-center h-[200px] text-gray-400">
-                  Drop players here
+                  No players in Team B
                 </div>
               ) : (
                 teamB.map((player, index) => (
@@ -404,17 +276,13 @@ export function EditTeamsModal({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ delay: index * 0.05 }}
-                    onTouchStart={(e) => handleTouchStart(e, player, 1)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    onDragStart={() => handleDragStart(player, 1)}
-                    draggable
-                    className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-all select-none ${
-                      draggedPlayer?.player.id === player.id
-                        ? "opacity-50 scale-95 bg-gray-700/50"
+                    onClick={() => handlePlayerClick(player, 1)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all select-none ${
+                      selectedPlayer?.player.id === player.id &&
+                      selectedPlayer?.fromTeam === 1
+                        ? "bg-red-500/30 border-red-400 ring-2 ring-red-400 scale-105"
                         : getPositionColor(player.position)
                     }`}
-                    style={{ touchAction: "none", WebkitUserSelect: "none" }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
