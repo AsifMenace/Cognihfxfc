@@ -97,10 +97,6 @@ function groupByPosition(players) {
 function generateRandomCombination(players, teamSize) {
   const positions = groupByPosition(players);
 
-  console.log(
-    `  Positions: GK=${positions.GK.length}, DEF=${positions.DEF.length}, MID=${positions.MID.length}, FW=${positions.FW.length}`,
-  );
-
   let teamA = [];
   let teamB = [];
 
@@ -140,11 +136,6 @@ function generateRandomCombination(players, teamSize) {
 }
 
 function generateOptimalSquads(players, teamSize, iterations = 1000) {
-  console.log("=== generateOptimalSquads START ===");
-  console.log("Players count:", players.length);
-  console.log("Team size:", teamSize);
-  console.log("Iterations:", iterations);
-
   let bestScore = Infinity;
   let bestCombination = null;
   let successCount = 0;
@@ -153,8 +144,6 @@ function generateOptimalSquads(players, teamSize, iterations = 1000) {
   for (let i = 0; i < iterations; i++) {
     const { teamA, teamB } = generateRandomCombination(players, teamSize);
 
-    console.log(`Iteration ${i}: teamA=${teamA.length}, teamB=${teamB.length}`);
-
     if (teamA.length !== teamSize || teamB.length !== teamSize) {
       failCount++;
       continue;
@@ -162,24 +151,16 @@ function generateOptimalSquads(players, teamSize, iterations = 1000) {
 
     successCount++;
     const score = calculateScore(teamA, teamB);
-    console.log(`  Score: ${score}`);
 
     if (score < bestScore) {
       bestScore = score;
       bestCombination = { teamA, teamB, score };
-      console.log(`  ✓ NEW BEST: ${score}`);
 
       if (bestScore === 0) {
-        console.log("  Perfect score found! Breaking early.");
         break;
       }
     }
   }
-
-  console.log("=== generateOptimalSquads END ===");
-  console.log(`Success: ${successCount}, Fail: ${failCount}`);
-  console.log("Best combination:", bestCombination ? "FOUND" : "NOT FOUND");
-  console.log("Best score:", bestScore);
 
   return bestCombination;
 }
@@ -262,26 +243,11 @@ export default async (req, context) => {
     // Generate optimal squads
     // Generate optimal squads
     const startTime = Date.now();
-    console.log("Starting squad generation...");
-    console.log("Total players:", players.length);
-    console.log("Team size:", teamSize);
-    console.log(
-      "Players:",
-      players.map((p) => ({
-        id: p.id,
-        name: p.name,
-        pos: p.position,
-        skill: p.skill,
-      })),
-    );
 
     const result = generateOptimalSquads(players, teamSize, 1000);
     const generationTime = Date.now() - startTime;
 
-    console.log("Generation result:", result);
-
     if (!result) {
-      console.log("NO RESULT - Algorithm failed");
       return new Response(
         JSON.stringify({
           error: "Could not generate balanced squads. Try different players.",

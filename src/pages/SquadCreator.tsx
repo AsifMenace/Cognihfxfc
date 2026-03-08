@@ -58,9 +58,6 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        console.log(
-          "Fetching from: /.netlify/functions/getPlayersForSquadCreator",
-        );
         const response = await fetch(
           "/.netlify/functions/getPlayersForSquadCreator",
         );
@@ -73,7 +70,6 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
         }
 
         const data = await response.json();
-        console.log("Players loaded:", data);
         setAllPlayers(data.players);
       } catch (error) {
         console.error("Error fetching players:", error);
