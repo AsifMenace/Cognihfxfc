@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Zap } from "lucide-react"; // ← ADD THIS (for fire icon)
 import AddDropdown from "./AddDropDown";
 import {
   Home,
@@ -80,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
       const response = await fetch("/.netlify/functions/getPlayers");
       const players: Player[] = await response.json();
       const filtered = players.filter((player: Player) =>
-        player.name.toLowerCase().includes(query.toLowerCase())
+        player.name.toLowerCase().includes(query.toLowerCase()),
       );
       setSearchResults(filtered.slice(0, 5));
     } catch (error) {
@@ -98,6 +99,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
     { to: "/", label: "Home", icon: Home },
     { to: "/games", label: "Fixtures", icon: Calendar },
     { to: "/squad", label: "Squad", icon: Users },
+    { to: "/squad-creator", label: "Squad Creator", icon: Zap },
     { to: "/standings", label: "Standings", icon: Trophy },
     { to: "/gallery", label: "Gallery", icon: Camera },
     { to: "/balances", label: "Balances", icon: DollarSign },
