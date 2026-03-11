@@ -6,6 +6,7 @@ import { TeamDisplay } from "../components/TeamDisplay";
 import { EditTeamsModal } from "../components/EditTeamsModal";
 import { MatchLinkingModal } from "../components/MatchLinkingModal";
 import { FaStar, FaFire, FaCheck } from "react-icons/fa";
+import { SquadHistory } from "../components/SquadHistory";
 
 interface SquadCreatorProps {
   isAdmin: boolean;
@@ -53,6 +54,17 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [editingTeamIndex, setEditingTeamIndex] = useState(0);
+  const [showSquadHistory, setShowSquadHistory] = useState(false);
+
+  // Load squad from history
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleLoadSquad = (loadedSquad: any) => {
+    setTeamA(loadedSquad.teamA);
+    setTeamB(loadedSquad.teamB);
+    setSavedSquadId(loadedSquad.id);
+    setShowSquadHistory(false);
+    setGeneration({ loading: false, error: null, success: false });
+  };
 
   // Fetch all players on mount
   useEffect(() => {
@@ -183,6 +195,23 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
       }
 
       setSavedSquadId(data.squad.id);
+      // Also save to localStorage for history
+      const squadForHistory = {
+        id: data.squad.id,
+        generationDate: new Date().toISOString().split("T")[0],
+        teamA,
+        teamB,
+        teamATotalSkill: teamASkill,
+        teamBTotalSkill: teamBSkill,
+        teamAFWSkill: teamAFW,
+        teamBFWSkill: teamBFW,
+        status: "created",
+      };
+
+      const storedSquads = localStorage.getItem("squadHistory");
+      const squads = storedSquads ? JSON.parse(storedSquads) : [];
+      squads.push(squadForHistory);
+      localStorage.setItem("squadHistory", JSON.stringify(squads));
       setGeneration({ loading: false, error: null, success: true });
     } catch (error) {
       setGeneration({
@@ -249,6 +278,30 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
 
       {/* Main Content */}
       <div className="max-w-2xl mx-auto">
+        {!squadsGenerated && (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowSquadHistory(!showSquadHistory)}
+            className="w-full py-3 bg-slate-700/50 hover:bg-slate-700 text-gray-300 font-bold rounded-xl transition-colors mb-4"
+          >
+            📋 View Squad History
+          </motion.button>
+        )}
+
+        {/* Squad History Panel */}
+        <AnimatePresence>
+          {showSquadHistory && !squadsGenerated && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4"
+            >
+              <SquadHistory isAdmin={isAdmin} onLoadSquad={handleLoadSquad} />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Player Selector Section */}
         {!squadsGenerated && (
           <motion.div
