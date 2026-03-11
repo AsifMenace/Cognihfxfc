@@ -42,25 +42,26 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
   const [expandedSquadId, setExpandedSquadId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
 
-  // Fetch squad history
+  // Fetch squad history from database (last 24 hours)
   useEffect(() => {
     const fetchSquadHistory = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // For now, we'll fetch from localStorage since we don't have a backend endpoint
-        // In production, you'd call: /.netlify/functions/getSquadHistory
-        const storedSquads = localStorage.getItem("squadHistory");
-        if (storedSquads) {
-          const parsed = JSON.parse(storedSquads);
-          // Sort by date, newest first
-          parsed.sort(
-            (a: Squad, b: Squad) =>
-              new Date(b.generationDate).getTime() -
-              new Date(a.generationDate).getTime(),
-          );
-          setSquads(parsed);
+        const response = await fetch("/.netlify/functions/getSquadHistory");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch squad history");
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.squads) {
+          // Already sorted by backend, newest first
+          setSquads(data.squads);
+        } else {
+          setError("Failed to load squad history");
         }
       } catch (err) {
         setError("Failed to load squad history");
@@ -79,14 +80,9 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
 
     setDeleting(squadId);
     try {
-      // Remove from localStorage
-      const storedSquads = localStorage.getItem("squadHistory");
-      if (storedSquads) {
-        const parsed = JSON.parse(storedSquads);
-        const filtered = parsed.filter((s: Squad) => s.id !== squadId);
-        localStorage.setItem("squadHistory", JSON.stringify(filtered));
-        setSquads(filtered);
-      }
+      // Remove from local state
+      setSquads(squads.filter((s) => s.id !== squadId));
+      // TODO: Call backend delete endpoint if you create one
     } catch (err) {
       console.error("Error deleting squad:", err);
       alert("Failed to delete squad");
@@ -166,7 +162,9 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
       >
         <div className="flex items-center gap-3 mb-4">
           <FaHistory className="text-yellow-400 text-xl" />
-          <h2 className="text-xl font-black text-yellow-400">Squad History</h2>
+          <h2 className="text-xl font-black text-yellow-400">
+            Squad History (Last 24H)
+          </h2>
         </div>
         <div className="text-center py-8">
           <div className="animate-spin w-8 h-8 border-3 border-yellow-400 border-t-transparent rounded-full mx-auto" />
@@ -196,9 +194,11 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
         className="bg-slate-800/50 rounded-2xl border border-yellow-500/20 p-6 text-center"
       >
         <FaHistory className="text-4xl text-gray-500 mx-auto mb-3" />
-        <p className="text-gray-400 font-semibold">No squad history yet</p>
+        <p className="text-gray-400 font-semibold">
+          No squad history in the last 24 hours
+        </p>
         <p className="text-sm text-gray-500">
-          Generate your first squad to see it here!
+          Generate and save a squad to see it here!
         </p>
       </motion.div>
     );
@@ -213,7 +213,9 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <FaHistory className="text-yellow-400 text-xl" />
-        <h2 className="text-xl font-black text-yellow-400">Squad History</h2>
+        <h2 className="text-xl font-black text-yellow-400">
+          Squad History (Last 24H)
+        </h2>
         <span className="ml-auto bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full text-sm font-bold">
           {squads.length} Squad{squads.length !== 1 ? "s" : ""}
         </span>

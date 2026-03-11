@@ -13,6 +13,7 @@ const AddPlayer: React.FC = () => {
     goals: "",
     assists: "",
     appearances: "",
+    skill: "",
     photo: "",
     bio: "",
   });
@@ -31,7 +32,7 @@ const AddPlayer: React.FC = () => {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -86,6 +87,7 @@ const AddPlayer: React.FC = () => {
       goals: Number(form.goals) || 0,
       assists: Number(form.assists) || 0,
       appearances: Number(form.appearances) || 0,
+      skill: form.skill ? Number(form.skill) : undefined,
       bio: form.bio,
     };
 
@@ -119,6 +121,7 @@ const AddPlayer: React.FC = () => {
         goals: "",
         assists: "",
         appearances: "",
+        skill: "",
         photo: "",
         bio: "",
       });
@@ -271,6 +274,21 @@ const AddPlayer: React.FC = () => {
             onChange={handleChange}
             className="w-full p-2 border rounded"
           />
+
+          {/* Skill Level */}
+          <div>
+            <label className="block mb-1 font-medium">Skill Level (1-10)</label>
+            <input
+              type="number"
+              name="skill"
+              placeholder="Skill (1-10)"
+              value={form.skill}
+              onChange={handleChange}
+              min="1"
+              max="10"
+              className="w-full p-2 border rounded"
+            />
+          </div>
 
           {/* Image upload */}
           <div>

@@ -40,6 +40,7 @@ export const handler = async (event) => {
       assists,
       appearances,
       photo, // Cloudinary URL here
+      skill,
       bio,
     } = data;
 
@@ -57,11 +58,11 @@ export const handler = async (event) => {
 
     await sql`
       INSERT INTO players
-        (name, position, age, nationality, jersey_number, height, weight, goals, assists, appearances, photo, bio)
+        (name, position, age, nationality, jersey_number, height, weight, goals, assists, appearances, skill, photo, bio)
       VALUES
         (${name}, ${position}, ${age}, ${nationality}, ${jerseyNumber}, ${height}, ${weight}, ${
       goals || 0
-    }, ${assists || 0}, ${appearances || 0}, ${playerPhoto}, ${bio || ""});
+    }, ${assists || 0}, ${appearances || 0}, ${skill || null}, ${playerPhoto}, ${bio || ""});
     `;
 
     return {

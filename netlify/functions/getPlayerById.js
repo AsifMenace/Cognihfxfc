@@ -40,7 +40,8 @@ export const handler = async (event) => {
         saves,
         appearances,
         photo,
-        bio
+        bio,
+        skill
       FROM players
       WHERE id = ${id}
       LIMIT 1
