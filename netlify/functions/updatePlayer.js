@@ -42,6 +42,7 @@ export const handler = async (event) => {
       appearances,
       photo,
       bio,
+      skill,
     } = data;
 
     if (!id) {
@@ -68,7 +69,8 @@ export const handler = async (event) => {
         saves = ${saves},
         appearances = ${appearances},
         photo = ${photo},
-        bio = ${bio}
+        bio = ${bio},
+        skill = ${skill}
       WHERE id = ${id};
     `;
 

@@ -14,6 +14,7 @@ interface Player {
   assists: number;
   saves: number;
   appearances: number;
+  skill: number;
   photo: string;
   bio: string;
 }
@@ -61,7 +62,7 @@ const EditPlayer: React.FC = () => {
 
   // Handle input changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     if (!form) return;
     setForm({ ...form, [e.target.name]: e.target.value } as Player);
@@ -116,6 +117,7 @@ const EditPlayer: React.FC = () => {
           goals: Number(form.goals),
           assists: Number(form.assists),
           appearances: Number(form.appearances),
+          skill: Number(form.skill),
         }),
       });
 
@@ -221,25 +223,37 @@ const EditPlayer: React.FC = () => {
             placeholder="Assists"
             className="w-full border p-2 rounded"
           />
-
-          {form.position === "Goalkeeper" && (
+          <div>
+            {form.position === "Goalkeeper" && (
+              <input
+                type="number"
+                name="saves"
+                value={form.saves}
+                onChange={handleChange}
+                placeholder="Saves"
+                className="w-full border p-2 rounded"
+              />
+            )}
             <input
               type="number"
-              name="saves"
-              value={form.saves}
+              name="appearances"
+              value={form.appearances}
               onChange={handleChange}
-              placeholder="Saves"
+              placeholder="Appearances"
               className="w-full border p-2 rounded"
             />
-          )}
-          <input
-            type="number"
-            name="appearances"
-            value={form.appearances}
-            onChange={handleChange}
-            placeholder="Appearances"
-            className="w-full border p-2 rounded"
-          />
+            <label className="block mb-1 font-medium">Skill Level (1-10)</label>
+            <input
+              type="number"
+              name="skill"
+              value={form.skill || ""}
+              onChange={handleChange}
+              placeholder="Skill (1-10)"
+              min="1"
+              max="10"
+              className="w-full border p-2 rounded"
+            />
+          </div>
           {/* Image */}
           <div>
             <label className="block mb-1 font-medium">Player Photo</label>

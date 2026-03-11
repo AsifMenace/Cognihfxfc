@@ -14,6 +14,7 @@ import { GetRecentMatch } from "../components/GetRecentMatch";
 import ThemeProvider from "../components/ThemeProvider";
 import Card from "../components/Card";
 import Title from "../components/Title";
+import { SquadCreatorWidget } from "../components/SquadCreatorWidget";
 
 interface TopScorer {
   id: number;
@@ -69,7 +70,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | undefined>(
-    undefined
+    undefined,
   );
 
   const BASE_URL =
@@ -107,7 +108,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
             Number(month) - 1,
             Number(day),
             Number(hour),
-            Number(minute)
+            Number(minute),
           );
         };
 
@@ -115,7 +116,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           .filter((m) => parseMatchDateTime(m) >= now)
           .sort(
             (a, b) =>
-              parseMatchDateTime(a).getTime() - parseMatchDateTime(b).getTime()
+              parseMatchDateTime(a).getTime() - parseMatchDateTime(b).getTime(),
           );
 
         setNextGame(upcoming[0] || null);
@@ -142,7 +143,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
       Number(month) - 1,
       Number(day),
       Number(hour),
-      Number(minute)
+      Number(minute),
     );
     return matchDateTime >= now;
   }).length;
@@ -248,6 +249,10 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           <PushSubscribeButton />
         </div>
 
+        <div className="mt-16 md:mt-20">
+          <SquadCreatorWidget />
+        </div>
+
         {/* Next Match */}
         <section className="py-8 md:py-16">
           <motion.div
@@ -329,7 +334,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                               year: "numeric",
                               month: "long",
                               day: "numeric",
-                            }
+                            },
                           )}{" "}
                           at {nextGame.time}
                         </div>

@@ -1,4 +1,3 @@
-// functions/linkSquadToMatch.js
 import { neon } from "@netlify/neon";
 
 const sql = neon(process.env.DATABASE_URL);
@@ -84,7 +83,7 @@ export default async (req, context) => {
       SELECT id, team_a_json, team_b_json, status, match_id
       FROM squad_generations
       WHERE id = ${squadId}
-
+      AND deleted_at IS NULL
       LIMIT 1
     `;
 
@@ -93,23 +92,6 @@ export default async (req, context) => {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
-    }
-
-    const squadData = squad[0];
-
-    // Check if match already has a squad linked
-    let existingLinkedSquadId = null;
-    if (squadData.match_id) {
-      const existingSquad = await sql`
-        SELECT id FROM squad_generations
-        WHERE match_id = ${matchId}
-
-        LIMIT 1
-      `;
-
-      if (existingSquad && existingSquad.length > 0) {
-        existingLinkedSquadId = existingSquad[0].id;
-      }
     }
 
     // Convert team name/ID to team_id from database
@@ -144,34 +126,32 @@ export default async (req, context) => {
       }
     }
 
-    // Step 1: If match already has a linked squad, unlink it
-    if (existingLinkedSquadId && existingLinkedSquadId !== squadId) {
-      await sql`
-        DELETE FROM match_players
-        WHERE match_id = ${matchId}
-      `;
+    // ============================================================================
+    // CLEAN DELETION LOGIC - Simple and reliable
+    // ============================================================================
 
-      await sql`
-        UPDATE squad_generations
-        SET
-          match_id = NULL,
-          status = 'created',
-          linked_at = NULL
-        WHERE id = ${existingLinkedSquadId}
-      `;
-    } else if (squadData.match_id && squadData.match_id !== matchId) {
-      await sql`
-        DELETE FROM match_players
-        WHERE match_id = ${squadData.match_id}
-      `;
-    } else if (squadData.match_id === matchId) {
-      await sql`
-        DELETE FROM match_players
-        WHERE match_id = ${matchId}
-      `;
-    }
+    // Step 1: Always delete ALL existing match_players for this match FIRST
+    await sql`
+      DELETE FROM match_players
+      WHERE match_id = ${matchId}
+    `;
 
-    // Step 2: Insert new match_players records for Team A
+    // Step 2: Unlink any squad previously linked to this match (except current squad)
+    await sql`
+      UPDATE squad_generations
+      SET
+        match_id = NULL,
+        status = 'created',
+        linked_at = NULL
+      WHERE match_id = ${matchId}
+      AND id != ${squadId}
+    `;
+
+    // ============================================================================
+    // INSERT NEW PLAYERS
+    // ============================================================================
+
+    // Step 3: Insert new match_players records for Team A
     const teamAInserts = teamA.map((player) => ({
       match_id: matchId,
       player_id: player.id,
@@ -185,7 +165,7 @@ export default async (req, context) => {
       `;
     }
 
-    // Step 3: Insert new match_players records for Team B
+    // Step 4: Insert new match_players records for Team B
     const teamBInserts = teamB.map((player) => ({
       match_id: matchId,
       player_id: player.id,
@@ -199,7 +179,7 @@ export default async (req, context) => {
       `;
     }
 
-    // Step 4: Update squad_generations to mark as linked
+    // Step 5: Update squad_generations to mark as linked
     const updatedSquad = await sql`
       UPDATE squad_generations
       SET
@@ -224,8 +204,6 @@ export default async (req, context) => {
           totalPlayersLinked: teamA.length + teamB.length,
           teamAAssignedTo,
           teamBAssignedTo,
-          replacedExistingSquad:
-            !!existingLinkedSquadId && existingLinkedSquadId !== squadId,
         },
       }),
       {
