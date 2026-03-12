@@ -14,7 +14,6 @@ import { GetRecentMatch } from "../components/GetRecentMatch";
 import ThemeProvider from "../components/ThemeProvider";
 import Card from "../components/Card";
 import Title from "../components/Title";
-import { SquadCreatorWidget } from "../components/SquadCreatorWidget";
 
 interface TopScorer {
   id: number;
@@ -39,6 +38,7 @@ interface Player {
   appearances: number;
   photo: string;
   bio: string;
+  team_id?: number;
 }
 
 interface Match {
@@ -56,6 +56,12 @@ interface Match {
   home_team_color?: string | null;
   away_team_name?: string | null;
   away_team_color?: string | null;
+  cogni_id?: number | null;
+  cogni_name?: string | null;
+  cogni_color?: string | null;
+  opponent_id?: number | null;
+  opponent_name?: string | null;
+  opponent_color?: string | null;
 }
 
 type HomeProps = {
@@ -67,6 +73,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
   const [topScorers, setTopScorers] = useState<TopScorer[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [nextGame, setNextGame] = useState<Match | null>(null);
+  const [lineups, setLineups] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | undefined>(
@@ -120,6 +127,27 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           );
 
         setNextGame(upcoming[0] || null);
+
+        // Fetch lineups for next match
+        if (upcoming[0]) {
+          try {
+            const lineupsRes = await fetch(
+              `${BASE_URL}/getLineup?match_id=${upcoming[0].id}`,
+            );
+            if (lineupsRes.ok) {
+              const lineupsData: Player[] = await lineupsRes.json();
+              console.log("Lineups fetched:", lineupsData);
+              setLineups(lineupsData);
+            } else {
+              console.warn(
+                "Failed to fetch lineups, status:",
+                lineupsRes.status,
+              );
+            }
+          } catch (err) {
+            console.warn("Failed to fetch lineups:", err);
+          }
+        }
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
@@ -147,6 +175,90 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
     );
     return matchDateTime >= now;
   }).length;
+
+  // Sort players by position: GK, DEF, MID, FW
+  const sortPlayersByPosition = (players: Player[]): Player[] => {
+    const positionOrder: { [key: string]: number } = {
+      goalkeeper: 0,
+      gk: 0,
+      defender: 1,
+      def: 1,
+      midfielder: 2,
+      mid: 2,
+      forward: 3,
+      fw: 3,
+    };
+
+    return [...players].sort((a, b) => {
+      const posA = positionOrder[a.position.toLowerCase()] ?? 99;
+      const posB = positionOrder[b.position.toLowerCase()] ?? 99;
+      return posA - posB;
+    });
+  };
+
+  // Render team lineup
+  const renderTeamLineup = (
+    teamId: number,
+    teamName: string,
+    colorClass: string,
+    teamPlayers: Player[],
+  ) => (
+    <div key={teamId}>
+      <h3
+        className="text-xs sm:text-sm md:text-lg font-black mb-2 px-2"
+        style={{ color: colorClass }}
+      >
+        {teamName.toUpperCase()}
+      </h3>
+
+      {teamPlayers.length === 0 ? (
+        <p className="text-gray-500 text-center text-xs sm:text-sm">
+          No players assigned.
+        </p>
+      ) : (
+        <div className="space-y-0.5 sm:space-y-1">
+          {teamPlayers.map((player) => (
+            <Link
+              key={player.id}
+              to={`/player/${player.id}`}
+                className="flex items-center gap-2 sm:gap-2 bg-slate-700/50 hover:bg-slate-700/70 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 text-left border border-slate-600 hover:border-slate-500 transition-all group relative"
+            >
+              <img
+                src={player.photo}
+                alt={player.name}
+                className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full object-cover object-top flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-white text-xs sm:text-xs md:text-sm truncate">
+                  {player.name}
+                </div>
+                <div className="text-xs text-gray-400 flex items-center gap-0.5">
+                  <span>
+                    {player.position.toLowerCase().includes("keeper") ||
+                    player.position.toLowerCase() === "gk"
+                      ? "🧤"
+                      : player.position.toLowerCase().includes("defender") ||
+                          player.position.toLowerCase() === "def"
+                        ? "🛡️"
+                        : player.position
+                              .toLowerCase()
+                              .includes("midfielder") ||
+                            player.position.toLowerCase() === "mid"
+                          ? "🎯"
+                          : player.position.toLowerCase().includes("forward") ||
+                              player.position.toLowerCase() === "fw"
+                            ? "⚡"
+                            : "⚽"}
+                  </span>
+                  {player.position} #{player.jerseyNumber}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <ThemeProvider>
@@ -242,15 +354,28 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           </div>
         </motion.section>
 
+        {/* Squad Creator CTA */}
+        <motion.div
+          className="py-8 md:py-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1, duration: 0.6 }}
+        >
+          <div className="text-center">
+            <Link
+              to="/squad-creator"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white font-black text-lg md:text-xl rounded-full hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 animate-pulse hover:animate-none"
+            >
+              ⚡ TRY SQUAD CREATOR
+            </Link>
+          </div>
+        </motion.div>
+
         <div className="mt-6 text-center">
           <p className="mb-2 text-lg text-white">
             Get notified about new bookings & Polls
           </p>
           <PushSubscribeButton />
-        </div>
-
-        <div className="mt-16 md:mt-20">
-          <SquadCreatorWidget />
         </div>
 
         {/* Next Match */}
@@ -423,6 +548,62 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
             </div>
           </motion.div>
         </section>
+
+        {/* Lineups for Next Match */}
+        {nextGame && lineups.length > 0 && (
+          <section className="py-8 md:py-16">
+            <motion.div
+              className="max-w-4xl mx-auto"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.2, duration: 0.8 }}
+            >
+              <h2 className="text-6xl md:text-8xl font-black text-center mb-8 tracking-tighter">
+                <span className="text-yellow-400 drop-shadow-lg">LINEUPS</span>
+              </h2>
+              <Card className="border-yellow-500/30">
+                {/* INTERNAL TEAMS: home & away - side by side */}
+                {nextGame.home_team_id && nextGame.away_team_id && (
+                  <div className="grid grid-cols-2 gap-2 md:gap-8 mb-8">
+                    {/* Home Team */}
+                    <div>
+                      {(() => {
+                        const homeTeamPlayers = sortPlayersByPosition(
+                          lineups.filter(
+                            (p) => p.team_id === nextGame.home_team_id,
+                          ),
+                        );
+                        return renderTeamLineup(
+                          nextGame.home_team_id!,
+                          nextGame.home_team_name || "Home Team",
+                          nextGame.home_team_color || "#3b82f6",
+                          homeTeamPlayers,
+                        );
+                      })()}
+                    </div>
+
+                    {/* Away Team */}
+                    <div>
+                      {(() => {
+                        const awayTeamPlayers = sortPlayersByPosition(
+                          lineups.filter(
+                            (p) => p.team_id === nextGame.away_team_id,
+                          ),
+                        );
+                        return renderTeamLineup(
+                          nextGame.away_team_id!,
+                          nextGame.away_team_name || "Away Team",
+                          nextGame.away_team_color || "#8b5cf6",
+                          awayTeamPlayers,
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          </section>
+        )}
 
         {isAdmin && (
           <section className="max-w-lg mx-auto my-6">

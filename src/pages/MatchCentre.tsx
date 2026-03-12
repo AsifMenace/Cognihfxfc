@@ -453,45 +453,78 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     teamPlayers: Player[]
   ) => (
     <div key={teamId}>
-      <h3 className="text-xl font-black mb-4" style={{ color: colorClass }}>
+      <h3 className="text-sm sm:text-base md:text-lg font-black mb-3 px-2" style={{ color: colorClass }}>
         {teamName.toUpperCase()}
       </h3>
 
       {teamPlayers.length === 0 ? (
-        <p className="text-gray-500 text-center">No players assigned.</p>
+        <p className="text-gray-500 text-center text-xs sm:text-sm">No players assigned.</p>
       ) : (
-        <div className="flex gap-4 overflow-x-auto py-2">
+        <div className="space-y-1 sm:space-y-2 max-h-[600px] overflow-y-auto pr-2">
           {teamPlayers.map((player) => (
-            <div key={player.id} className="relative group flex-shrink-0 w-40">
-              <Link
-                to={`/player/${player.id}`}
-                className="block bg-slate-700/50 backdrop-blur-sm rounded-xl p-4 text-center hover:scale-105 transition-all border border-slate-600"
-              >
-                <img
-                  src={player.photo}
-                  alt={player.name}
-                  className="w-16 h-16 rounded-full mx-auto object-cover object-top mb-2"
-                />
-                <div className="font-bold text-white">{player.name}</div>
-                <div className="text-xs text-gray-400">
+            <Link
+              key={player.id}
+              to={`/player/${player.id}`}
+              className="flex items-center gap-2 sm:gap-3 bg-slate-700/50 hover:bg-slate-700/70 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-left border border-slate-600 hover:border-slate-500 transition-all group relative"
+            >
+              <img
+                src={player.photo}
+                alt={player.name}
+                className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full object-cover object-top flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-white text-xs sm:text-sm md:text-base truncate">
+                  {player.name}
+                </div>
+                <div className="text-xs text-gray-400 flex items-center gap-1">
+                  <span>
+                    {player.position.toLowerCase().includes("keeper") || player.position.toLowerCase() === "gk" ? "🧤" :
+                     player.position.toLowerCase().includes("defender") || player.position.toLowerCase() === "def" ? "🛡️" :
+                     player.position.toLowerCase().includes("midfielder") || player.position.toLowerCase() === "mid" ? "🎯" :
+                     player.position.toLowerCase().includes("forward") || player.position.toLowerCase() === "fw" ? "⚡" :
+                     "⚽"}
+                  </span>
                   {player.position} #{player.jerseyNumber}
                 </div>
-              </Link>
+              </div>
               {isAdmin && (
                 <button
-                  onClick={() => handleRemovePlayer(player.id)}
-                  className="absolute top-2 right-2 text-red-400 hover:text-red-300 bg-slate-800 rounded-full w-6 h-6 flex items-center justify-center"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleRemovePlayer(player.id);
+                  }}
+                  className="text-red-400 hover:text-red-300 bg-slate-800 rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center flex-shrink-0 text-xs"
                   title="Remove"
                 >
                   X
                 </button>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       )}
     </div>
   );
+
+  // Sort players by position: GK, DEF, MID, FW
+  const sortPlayersByPosition = (players: Player[]): Player[] => {
+    const positionOrder: { [key: string]: number } = {
+      goalkeeper: 0,
+      gk: 0,
+      defender: 1,
+      def: 1,
+      midfielder: 2,
+      mid: 2,
+      forward: 3,
+      fw: 3,
+    };
+
+    return [...players].sort((a, b) => {
+      const posA = positionOrder[a.position.toLowerCase()] ?? 99;
+      const posB = positionOrder[b.position.toLowerCase()] ?? 99;
+      return posA - posB;
+    });
+  };
 
   return (
     <ThemeProvider>
@@ -986,56 +1019,65 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             LINEUPS
           </h2>
 
-          <div className="space-y-8">
-            {/* INTERNAL TEAMS: home & away */}
-            {playingTeamIds.map((teamId) => {
-              const { name: teamName, colorClass } = teamMap[teamId];
-              const teamPlayers = groupedLineups[teamName] || [];
-              return renderTeamLineup(
-                teamId,
-                teamName,
-                colorClass,
-                teamPlayers
-              );
-            })}
+          {/* INTERNAL TEAMS: home & away - side by side */}
+          {playingTeamIds.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-8">
+              {playingTeamIds.map((teamId) => {
+                const { name: teamName, colorClass } = teamMap[teamId];
+                const teamPlayers = sortPlayersByPosition(
+                  groupedLineups[teamName] || []
+                );
+                return renderTeamLineup(
+                  teamId,
+                  teamName,
+                  colorClass,
+                  teamPlayers
+                );
+              })}
+            </div>
+          )}
 
-            {/* EXTERNAL TEAMS: cogni & opponent */}
-            {match?.cogni_id &&
-              match?.cogni_name &&
-              !playingTeamIds.includes(match.cogni_id) && (
-                <>
-                  {(() => {
-                    const cogniPlayers = lineups.filter(
-                      (p) => p.team_id === match.cogni_id
-                    );
-                    return renderTeamLineup(
-                      match.cogni_id!,
-                      match.cogni_name!,
-                      match.cogni_color || "#e5e7eb",
-                      cogniPlayers
-                    );
-                  })()}
-                </>
-              )}
+          {/* EXTERNAL TEAMS: cogni & opponent - stacked below */}
+          {(match?.cogni_id ||
+            (match?.opponent_id && !playingTeamIds.includes(match.opponent_id!))) && (
+            <div className="space-y-6 border-t border-slate-600 pt-6">
+              {match?.cogni_id &&
+                match?.cogni_name &&
+                !playingTeamIds.includes(match.cogni_id) && (
+                  <>
+                    {(() => {
+                      const cogniPlayers = sortPlayersByPosition(
+                        lineups.filter((p) => p.team_id === match.cogni_id)
+                      );
+                      return renderTeamLineup(
+                        match.cogni_id!,
+                        match.cogni_name!,
+                        match.cogni_color || "#e5e7eb",
+                        cogniPlayers
+                      );
+                    })()}
+                  </>
+                )}
 
-            {match?.opponent_id &&
-              match?.opponent_name &&
-              !playingTeamIds.includes(match.opponent_id) && (
-                <>
-                  {(() => {
-                    const opponentPlayers = lineups.filter(
-                      (p) => p.team_id === match.opponent_id
-                    );
-                    return renderTeamLineup(
-                      match.opponent_id!,
-                      match.opponent_name!,
-                      match.opponent_color || "#e5e7eb",
-                      opponentPlayers
-                    );
-                  })()}
-                </>
-              )}
-          </div>
+              {match?.opponent_id &&
+                match?.opponent_name &&
+                !playingTeamIds.includes(match.opponent_id) && (
+                  <>
+                    {(() => {
+                      const opponentPlayers = sortPlayersByPosition(
+                        lineups.filter((p) => p.team_id === match.opponent_id)
+                      );
+                      return renderTeamLineup(
+                        match.opponent_id!,
+                        match.opponent_name!,
+                        match.opponent_color || "#e5e7eb",
+                        opponentPlayers
+                      );
+                    })()}
+                  </>
+                )}
+            </div>
+          )}
         </Card>
 
         {/* Admin: Add Players */}
