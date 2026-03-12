@@ -453,30 +453,30 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     teamPlayers: Player[]
   ) => (
     <div key={teamId}>
-      <h3 className="text-sm sm:text-base md:text-lg font-black mb-3 px-2" style={{ color: colorClass }}>
+      <h3 className="text-xs sm:text-sm md:text-lg font-black mb-2 px-2" style={{ color: colorClass }}>
         {teamName.toUpperCase()}
       </h3>
 
       {teamPlayers.length === 0 ? (
         <p className="text-gray-500 text-center text-xs sm:text-sm">No players assigned.</p>
       ) : (
-        <div className="space-y-1 sm:space-y-2 max-h-[600px] overflow-y-auto pr-2">
+        <div className="space-y-0.5 sm:space-y-1">
           {teamPlayers.map((player) => (
             <Link
               key={player.id}
               to={`/player/${player.id}`}
-              className="flex items-center gap-2 sm:gap-3 bg-slate-700/50 hover:bg-slate-700/70 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-left border border-slate-600 hover:border-slate-500 transition-all group relative"
+              className="flex items-center gap-2 sm:gap-2 bg-slate-700/50 hover:bg-slate-700/70 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 text-left border border-slate-600 hover:border-slate-500 transition-all group relative"
             >
               <img
                 src={player.photo}
                 alt={player.name}
-                className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full object-cover object-top flex-shrink-0"
+                className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full object-cover object-top flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-white text-xs sm:text-sm md:text-base truncate">
+                <div className="font-bold text-white text-xs sm:text-xs md:text-sm truncate">
                   {player.name}
                 </div>
-                <div className="text-xs text-gray-400 flex items-center gap-1">
+                <div className="text-xs text-gray-400 flex items-center gap-0.5">
                   <span>
                     {player.position.toLowerCase().includes("keeper") || player.position.toLowerCase() === "gk" ? "🧤" :
                      player.position.toLowerCase().includes("defender") || player.position.toLowerCase() === "def" ? "🛡️" :
@@ -1021,7 +1021,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
           {/* INTERNAL TEAMS: home & away - side by side */}
           {playingTeamIds.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-8">
+            <div className="grid grid-cols-2 gap-2 md:gap-8 mb-8">
               {playingTeamIds.map((teamId) => {
                 const { name: teamName, colorClass } = teamMap[teamId];
                 const teamPlayers = sortPlayersByPosition(
