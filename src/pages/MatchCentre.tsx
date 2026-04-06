@@ -143,7 +143,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     if (!match) return;
     try {
       const res = await fetch(
-        `/.netlify/functions/getMatchGoals?matchId=${match.id}`
+        `/.netlify/functions/getMatchGoals?matchId=${match.id}`,
       );
       if (!res.ok) throw new Error("Failed to fetch goal scorers");
       const data: Scorer[] = await res.json();
@@ -157,7 +157,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     if (!match?.id) return;
     try {
       const res = await fetch(
-        `/.netlify/functions/getMatchStats?matchId=${match.id}`
+        `/.netlify/functions/getMatchStats?matchId=${match.id}`,
       );
       if (!res.ok) throw new Error("Failed to fetch match stats");
       const data = await res.json();
@@ -248,7 +248,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   async function handleRemovePlayer(playerId: number) {
     if (
       !window.confirm(
-        "Are you sure you want to remove this player from the match?"
+        "Are you sure you want to remove this player from the match?",
       )
     )
       return;
@@ -283,7 +283,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       return;
     }
     const alreadyAdded = selectedPlayers.some((p) =>
-      lineups.some((lp) => lp.id === p.value)
+      lineups.some((lp) => lp.id === p.value),
     );
     if (alreadyAdded) {
       alert("One or more selected players are already added to the match.");
@@ -302,7 +302,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       });
       if (response.ok) {
         const lineupRes = await fetch(
-          `${API_BASE}/getLineup?match_id=${match?.id}`
+          `${API_BASE}/getLineup?match_id=${match?.id}`,
         );
         if (lineupRes.ok) {
           const lineupData = await lineupRes.json();
@@ -387,13 +387,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   });
 
   const homeScorers = scorers.filter(
-    (s) => s.team_name === match?.home_team_name
+    (s) => s.team_name === match?.home_team_name,
   );
   const awayScorers = scorers.filter(
-    (s) => s.team_name === match?.away_team_name
+    (s) => s.team_name === match?.away_team_name,
   );
   const opponentScorers = scorers.filter(
-    (s) => s.team_name === match?.opponent_name
+    (s) => s.team_name === match?.opponent_name,
   );
   const cogniScorers = scorers.filter((s) => s.team_name === match?.cogni_name);
 
@@ -450,15 +450,20 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     teamId: number,
     teamName: string,
     colorClass: string,
-    teamPlayers: Player[]
+    teamPlayers: Player[],
   ) => (
     <div key={teamId}>
-      <h3 className="text-xs sm:text-sm md:text-lg font-black mb-2 px-2" style={{ color: colorClass }}>
+      <h3
+        className="text-xs sm:text-sm md:text-lg font-black mb-2 px-2"
+        style={{ color: colorClass }}
+      >
         {teamName.toUpperCase()}
       </h3>
 
       {teamPlayers.length === 0 ? (
-        <p className="text-gray-500 text-center text-xs sm:text-sm">No players assigned.</p>
+        <p className="text-gray-500 text-center text-xs sm:text-sm">
+          No players assigned.
+        </p>
       ) : (
         <div className="space-y-0.5 sm:space-y-1">
           {teamPlayers.map((player) => (
@@ -478,11 +483,21 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 </div>
                 <div className="text-xs text-gray-400 flex items-center gap-0.5">
                   <span>
-                    {player.position.toLowerCase().includes("keeper") || player.position.toLowerCase() === "gk" ? "🧤" :
-                     player.position.toLowerCase().includes("defender") || player.position.toLowerCase() === "def" ? "🛡️" :
-                     player.position.toLowerCase().includes("midfielder") || player.position.toLowerCase() === "mid" ? "🎯" :
-                     player.position.toLowerCase().includes("forward") || player.position.toLowerCase() === "fw" ? "⚡" :
-                     "⚽"}
+                    {player.position.toLowerCase().includes("keeper") ||
+                    player.position.toLowerCase() === "gk"
+                      ? "🧤"
+                      : player.position.toLowerCase().includes("defender") ||
+                          player.position.toLowerCase() === "def"
+                        ? "🛡️"
+                        : player.position
+                              .toLowerCase()
+                              .includes("midfielder") ||
+                            player.position.toLowerCase() === "mid"
+                          ? "🎯"
+                          : player.position.toLowerCase().includes("forward") ||
+                              player.position.toLowerCase() === "fw"
+                            ? "⚡"
+                            : "⚽"}
                   </span>
                   {player.position} #{player.jerseyNumber}
                 </div>
@@ -674,6 +689,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                           {s.player_name}
                         </p>
                       </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleRemoveGoal(s.id, s.player_id)}
+                          className="text-red-400 hover:text-red-300 text-xs w-5 h-5"
+                        >
+                          X
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -732,6 +755,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
                         ⚽
                       </span>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleRemoveGoal(s.id, s.player_id)}
+                          className="text-red-400 hover:text-red-300 text-xs w-5 h-5"
+                        >
+                          X
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -800,7 +831,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     value={selectedTeamId}
                     onChange={(e) =>
                       setSelectedTeamId(
-                        e.target.value === "" ? "" : Number(e.target.value)
+                        e.target.value === "" ? "" : Number(e.target.value),
                       )
                     }
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
@@ -866,7 +897,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       // 🆕 AUTO-FILL using YOUR data structure
                       if (playerId && matchStats.length > 0) {
                         const existingStat = matchStats.find(
-                          (stat) => stat.id === parseInt(playerId)
+                          (stat) => stat.id === parseInt(playerId),
                         );
                         if (existingStat) {
                           setAssistsCount(existingStat.assists.toString());
@@ -1025,13 +1056,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               {playingTeamIds.map((teamId) => {
                 const { name: teamName, colorClass } = teamMap[teamId];
                 const teamPlayers = sortPlayersByPosition(
-                  groupedLineups[teamName] || []
+                  groupedLineups[teamName] || [],
                 );
                 return renderTeamLineup(
                   teamId,
                   teamName,
                   colorClass,
-                  teamPlayers
+                  teamPlayers,
                 );
               })}
             </div>
@@ -1039,7 +1070,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
           {/* EXTERNAL TEAMS: cogni & opponent - stacked below */}
           {(match?.cogni_id ||
-            (match?.opponent_id && !playingTeamIds.includes(match.opponent_id!))) && (
+            (match?.opponent_id &&
+              !playingTeamIds.includes(match.opponent_id!))) && (
             <div className="space-y-6 border-t border-slate-600 pt-6">
               {match?.cogni_id &&
                 match?.cogni_name &&
@@ -1047,13 +1079,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <>
                     {(() => {
                       const cogniPlayers = sortPlayersByPosition(
-                        lineups.filter((p) => p.team_id === match.cogni_id)
+                        lineups.filter((p) => p.team_id === match.cogni_id),
                       );
                       return renderTeamLineup(
                         match.cogni_id!,
                         match.cogni_name!,
                         match.cogni_color || "#e5e7eb",
-                        cogniPlayers
+                        cogniPlayers,
                       );
                     })()}
                   </>
@@ -1065,13 +1097,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <>
                     {(() => {
                       const opponentPlayers = sortPlayersByPosition(
-                        lineups.filter((p) => p.team_id === match.opponent_id)
+                        lineups.filter((p) => p.team_id === match.opponent_id),
                       );
                       return renderTeamLineup(
                         match.opponent_id!,
                         match.opponent_name!,
                         match.opponent_color || "#e5e7eb",
-                        opponentPlayers
+                        opponentPlayers,
                       );
                     })()}
                   </>
@@ -1145,8 +1177,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                         backgroundColor: state.isSelected
                           ? "#334155"
                           : state.isFocused
-                          ? "#334155"
-                          : "#1e293b",
+                            ? "#334155"
+                            : "#1e293b",
                         color: "white",
                         padding: "10px 12px",
                       }),
@@ -1161,7 +1193,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedPlayers.map((player) => {
                       const playerData = allPlayers.find(
-                        (p) => p.id === player.value
+                        (p) => p.id === player.value,
                       );
                       return (
                         <div
@@ -1174,8 +1206,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                             onClick={() =>
                               setSelectedPlayers(
                                 selectedPlayers.filter(
-                                  (p) => p.value !== player.value
-                                )
+                                  (p) => p.value !== player.value,
+                                ),
                               )
                             }
                             className="ml-1 text-amber-300 hover:text-red-400 transition-colors"
@@ -1197,7 +1229,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     value={selectedTeamId}
                     onChange={(e) =>
                       setSelectedTeamId(
-                        e.target.value === "" ? "" : Number(e.target.value)
+                        e.target.value === "" ? "" : Number(e.target.value),
                       )
                     }
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
