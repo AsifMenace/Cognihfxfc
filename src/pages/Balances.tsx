@@ -118,7 +118,7 @@ export default function Balances() {
                   Status
                 </th>
                 <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[100px]">
-                  Initial Deposit
+                  Cash Deposited
                 </th>
 
                 <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[80px]">
@@ -155,9 +155,7 @@ export default function Balances() {
                   <td className="px-6 py-5 text-right text-lg font-bold text-gray-300 min-w-[100px]">
                     ${player.startingBalance.toFixed(2)}
                   </td>
-                  <td className="px-6 py-5 text-right text-lg font-bold text-gray-300 min-w-[100px]">
-                    ${player.deposit2.toFixed(2)}
-                  </td>
+
                   <td className="px-6 py-5 text-right text-xl font-black text-yellow-400 min-w-[80px]">
                     {player.gamesAttended}
                   </td>
