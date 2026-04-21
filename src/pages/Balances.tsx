@@ -1,5 +1,5 @@
 // src/pages/Balances.tsx - MOBILE-FIRST ✅
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface Player {
   player: string;
@@ -35,7 +35,7 @@ interface Summary {
 export default function Balances() {
   const [data, setData] = useState<BalancesData>({
     players: [],
-    totals: { playerCount: 0, corePlayers: 0, totalRunningBalance: "0" },
+    totals: { playerCount: 0, corePlayers: 0, totalRunningBalance: '0' },
     summary: {
       coreFundsCollected: 0,
       totalBookingCosts: 0,
@@ -49,7 +49,7 @@ export default function Balances() {
   const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
-    fetch("/.netlify/functions/getBalances")
+    fetch('/.netlify/functions/getBalances')
       .then((res) => res.json())
       .then((result: BalancesData & { summary: Summary }) => setData(result))
       .catch(console.error)
@@ -68,16 +68,16 @@ export default function Balances() {
   // Flip signs for display (negative → positive)
   const displayPlayers = data.players.map((player) => {
     // Determine balance status and color based on raw runningBalance
-    let balanceStatus: "owed" | "low" | "almost-finished" | "deposited";
+    let balanceStatus: 'owed' | 'low' | 'almost-finished' | 'deposited';
 
     if (player.runningBalance > 0) {
-      balanceStatus = "owed"; // RED
-    } else if (player.runningBalance >= -20 && player.runningBalance <= 0) {
-      balanceStatus = "almost-finished"; // ORANGE
-    } else if (player.runningBalance >= -40 && player.runningBalance < -20) {
-      balanceStatus = "low"; // YELLOW
+      balanceStatus = 'owed'; // RED
+    } else if (player.runningBalance >= -3 && player.runningBalance <= 0) {
+      balanceStatus = 'almost-finished'; // ORANGE
+    } else if (player.runningBalance >= -8 && player.runningBalance < -20) {
+      balanceStatus = 'low'; // YELLOW
     } else {
-      balanceStatus = "deposited"; // GREEN
+      balanceStatus = 'deposited'; // GREEN
     }
 
     return {
@@ -95,18 +95,13 @@ export default function Balances() {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-black min-h-screen">
       {/* Dark Yellow Header */}
       <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-wide mb-8 bg-gradient-to-r bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 drop-shadow-2xl">
-        PLAYER{" "}
-        <span className="text-transparent text-white drop-shadow-2xl">
-          BALANCES
-        </span>
+        PLAYER <span className="text-transparent text-white drop-shadow-2xl">BALANCES</span>
       </h1>
 
       {/* Dark Table Container */}
       <div className="bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/50 overflow-hidden border border-gray-700/50">
         <div className="p-6 bg-gradient-to-r from-gray-700/30 to-gray-800/50 border-b border-yellow-500/20">
-          <h2 className="text-xl font-black text-white mb-1 tracking-wide">
-            Account Details 💰
-          </h2>
+          <h2 className="text-xl font-black text-white mb-1 tracking-wide">Account Details 💰</h2>
           <p className="text-sm text-gray-400 font-medium">
             Swipe horizontally to view all columns
           </p>
@@ -123,11 +118,9 @@ export default function Balances() {
                   Status
                 </th>
                 <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[100px]">
-                  Initial Deposit
+                  Cash Deposited
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[100px]">
-                  Second Deposit
-                </th>
+
                 <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[80px]">
                   Games Played
                 </th>
@@ -144,19 +137,16 @@ export default function Balances() {
             </thead>
             <tbody className="divide-y divide-gray-700">
               {displayPlayers.map((player, i) => (
-                <tr
-                  key={i}
-                  className="hover:bg-gray-700/50 transition-all duration-200"
-                >
+                <tr key={i} className="hover:bg-gray-700/50 transition-all duration-200">
                   <td className="sticky left-0 z-10 px-6 py-5 font-black text-lg text-white min-w-[120px] bg-gray-800/90">
                     {player.player}
                   </td>
                   <td className="px-6 py-5 min-w-[90px]">
                     <span
                       className={`inline-flex px-3 py-1.5 rounded-full text-sm font-bold shadow-lg ${
-                        player.coreStatus.includes("Core")
-                          ? "bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-white shadow-emerald-500/50"
-                          : "bg-gradient-to-r from-gray-600/90 to-gray-700/90 text-gray-200 shadow-gray-500/50"
+                        player.coreStatus.includes('Core')
+                          ? 'bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-white shadow-emerald-500/50'
+                          : 'bg-gradient-to-r from-gray-600/90 to-gray-700/90 text-gray-200 shadow-gray-500/50'
                       }`}
                     >
                       {player.coreStatus}
@@ -165,9 +155,7 @@ export default function Balances() {
                   <td className="px-6 py-5 text-right text-lg font-bold text-gray-300 min-w-[100px]">
                     ${player.startingBalance.toFixed(2)}
                   </td>
-                  <td className="px-6 py-5 text-right text-lg font-bold text-gray-300 min-w-[100px]">
-                    ${player.deposit2.toFixed(2)}
-                  </td>
+
                   <td className="px-6 py-5 text-right text-xl font-black text-yellow-400 min-w-[80px]">
                     {player.gamesAttended}
                   </td>
@@ -179,16 +167,16 @@ export default function Balances() {
                   </td>
                   <td
                     className={`px-6 py-5 text-right text-xl font-black min-w-[100px] shadow-lg px-4 py-2 rounded-xl mx-2 inline-block ${
-                      player.balanceStatus === "owed"
-                        ? "bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-red-500/50"
-                        : player.balanceStatus === "low"
-                          ? "bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-yellow-500/50"
-                          : player.balanceStatus === "almost-finished"
-                            ? "bg-gradient-to-r from-orange-300 to-yellow-600 text-white shadow-orange-500/50"
-                            : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/50"
+                      player.balanceStatus === 'owed'
+                        ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-red-500/50'
+                        : player.balanceStatus === 'low'
+                          ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-yellow-500/50'
+                          : player.balanceStatus === 'almost-finished'
+                            ? 'bg-gradient-to-r from-orange-300 to-yellow-600 text-white shadow-orange-500/50'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/50'
                     }`}
                   >
-                    {player.balanceStatus === "owed" ? "-" : ""}$
+                    {player.balanceStatus === 'owed' ? '-' : ''}$
                     {Math.abs(player.runningBalance).toFixed(2)}
                   </td>
                 </tr>
@@ -205,7 +193,7 @@ export default function Balances() {
             onClick={() => setShowSummary(!showSummary)}
             className="px-8 py-3 bg-gradient-to-r from-yellow-500/90 to-amber-500/90 text-black font-black text-lg rounded-xl shadow-xl hover:shadow-yellow-500/25 hover:scale-105 transition-all border border-yellow-400/50"
           >
-            {showSummary ? "↑ Hide Summary" : "↓ Show Summary Details"}
+            {showSummary ? '↑ Hide Summary' : '↓ Show Summary Details'}
           </button>
         </div>
 
@@ -213,41 +201,41 @@ export default function Balances() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 shadow-2xl">
             {[
               {
-                label: "Core Funds Collected (A)",
+                label: 'Core Funds Collected (A)',
                 value: data.summary.coreFundsCollected,
               },
               {
-                label: "Total Booking Costs (B)",
+                label: 'Total Booking Costs (B)',
                 value: data.summary.totalBookingCosts,
-                color: "blue-400",
+                color: 'blue-400',
               },
               {
-                label: "Funds After Booking (C) (A - B)",
+                label: 'Funds After Booking (C) (A - B)',
                 value: data.summary.totalFundsRemaining,
               },
               {
-                label: "Non-Core Cash Received (D)",
+                label: 'Non-Core Cash Received (D)',
                 value: data.summary.nonCoreCashReceived,
-                color: "lime-400",
+                color: 'lime-400',
               },
               {
-                label: "Actual Funds Remaining (C + D)",
+                label: 'Actual Funds Remaining (C + D)',
                 value: data.summary.actualFundsRemaining,
               },
               // {
               //   label: "Deposits To Exhaust / Refund (E)",
               //   value: data.summary.coreFundsToExhaust,
               // },
-            ].map(({ label, value, color = "emerald-400" }) => {
+            ].map(({ label, value, color = 'emerald-400' }) => {
               const isPositive = (value ?? 0) >= 0;
               const textColor =
-                color === "blue-400"
-                  ? "text-blue-400"
-                  : color === "lime-400"
-                    ? "text-lime-400"
+                color === 'blue-400'
+                  ? 'text-blue-400'
+                  : color === 'lime-400'
+                    ? 'text-lime-400'
                     : isPositive
-                      ? "text-emerald-400"
-                      : "text-red-400";
+                      ? 'text-emerald-400'
+                      : 'text-red-400';
 
               return (
                 <div
@@ -260,7 +248,7 @@ export default function Balances() {
                   <p className={`mt-2 text-2xl font-black ${textColor}`}>
                     {(() => {
                       const num = value ?? 0;
-                      const sign = num < 0 ? "-" : "";
+                      const sign = num < 0 ? '-' : '';
                       const absValue = Math.abs(num).toFixed(2);
                       return `${sign}$${absValue}`;
                     })()}
@@ -275,9 +263,7 @@ export default function Balances() {
       {displayPlayers.length === 0 && (
         <div className="text-center py-20">
           <div className="text-6xl text-gray-600 mb-6">📊</div>
-          <p className="text-2xl font-black text-gray-400 mb-2">
-            No Players Found
-          </p>
+          <p className="text-2xl font-black text-gray-400 mb-2">No Players Found</p>
           <p className="text-gray-500">Check back later for balance updates</p>
         </div>
       )}
