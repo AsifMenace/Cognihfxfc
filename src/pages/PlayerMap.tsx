@@ -89,6 +89,8 @@ function FitBounds({ players }: { players: Player[] }) {
 }
 
 const HALIFAX_CENTER: [number, number] = [44.6488, -63.5752];
+const MATCH_LOCATION: [number, number] = [44.65727487683051, -63.6602592188191];
+// approx for 210 Thomas Raddall Dr (you can refine later)
 
 const POSITION_COLORS: Record<string, string> = {
   Goalkeeper: '#f59e0b',
@@ -96,6 +98,47 @@ const POSITION_COLORS: Record<string, string> = {
   Midfielder: '#8b5cf6',
   Forward: '#ef4444',
 };
+
+function createGroundIcon(): L.DivIcon {
+  return L.divIcon({
+    html: `
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+        <div style="
+          background:#22c55e;
+          color:white;
+          font-size:18px;
+          width:42px;
+          height:42px;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          border:3px solid white;
+          box-shadow:0 3px 10px rgba(0,0,0,0.4);
+        ">
+          ⚽
+        </div>
+        <div style="
+          margin-top:4px;
+          background:rgba(2,6,23,0.9);
+          color:white;
+          font-size:10px;
+          font-weight:600;
+          padding:2px 8px;
+          border-radius:10px;
+          white-space:nowrap;
+          border:1px solid rgba(255,255,255,0.1);
+        ">
+          Match Venue
+        </div>
+      </div>
+    `,
+    className: '',
+    iconSize: [42, 60],
+    iconAnchor: [21, 42],
+    popupAnchor: [0, -42],
+  });
+}
 
 const PlayerMap: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -247,6 +290,21 @@ const PlayerMap: React.FC = () => {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <FitBounds players={filtered} />
+                <Marker position={MATCH_LOCATION} icon={createGroundIcon()}>
+                  <Popup>
+                    <div style={{ fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+                        ⚽ Match Venue
+                      </div>
+
+                      <div style={{ fontSize: 12, color: '#475569' }}>
+                        210 Thomas Raddall Dr
+                        <br />
+                        Halifax, NS
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
                 {filtered.map((player) => (
                   <Marker
                     key={player.id}
@@ -350,7 +408,7 @@ const PlayerMap: React.FC = () => {
                               href={`tel:${player.contact}`}
                               style={{ color: '#3b82f6', fontWeight: 500, textDecoration: 'none' }}
                             >
-                              {player.contact}
+                              Call
                             </a>
                           </div>
                         )}
