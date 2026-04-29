@@ -72,9 +72,16 @@ function createPlayerIcon(player: Player, highlighted: boolean): L.DivIcon {
   });
 }
 
-function FitBounds({ players }: { players: Player[] }) {
+function FitBounds({
+  players,
+  selectedPlayer,
+}: {
+  players: Player[];
+  selectedPlayer: Player | null;
+}) {
   const map = useMap();
   useEffect(() => {
+    if (selectedPlayer) return;
     const pts = [
       ...players.filter((p) => p.lat != null && p.lng != null),
 
@@ -306,7 +313,7 @@ const PlayerMap: React.FC = () => {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                <FitBounds players={filtered} />
+                <FitBounds players={filtered} selectedPlayer={selectedPlayer} />
                 <FlyToPlayer player={selectedPlayer} />
                 <Marker position={MATCH_LOCATION} icon={createGroundIcon()}>
                   <Popup>
@@ -335,8 +342,8 @@ const PlayerMap: React.FC = () => {
 
                       click: () => {
                         setHighlightedId(player.id);
-
-                        setSelectedPlayer(player); // ✅ THIS is the new line
+                        setSelectedPlayer(null); // reset
+                        setTimeout(() => setSelectedPlayer(player), 0); // retrigger
                       },
                     }}
                   >
