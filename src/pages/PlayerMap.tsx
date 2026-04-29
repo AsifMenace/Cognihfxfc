@@ -75,7 +75,11 @@ function createPlayerIcon(player: Player, highlighted: boolean): L.DivIcon {
 function FitBounds({ players }: { players: Player[] }) {
   const map = useMap();
   useEffect(() => {
-    const pts = players.filter((p) => p.lat != null && p.lng != null);
+    const pts = [
+      ...players.filter((p) => p.lat != null && p.lng != null),
+
+      { lat: MATCH_LOCATION[0], lng: MATCH_LOCATION[1] },
+    ];
     if (pts.length === 0) return;
     if (pts.length === 1) {
       map.setView([pts[0].lat!, pts[0].lng!], 15);
@@ -140,12 +144,25 @@ function createGroundIcon(): L.DivIcon {
   });
 }
 
+function FlyToPlayer({ player }: { player: Player | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (player?.lat && player?.lng) {
+      map.flyTo([player.lat, player.lng], 14, { duration: 0.6 });
+    }
+  }, [player, map]);
+
+  return null;
+}
+
 const PlayerMap: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterCar, setFilterCar] = useState<'all' | 'car' | 'nocar'>('all');
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -290,6 +307,7 @@ const PlayerMap: React.FC = () => {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <FitBounds players={filtered} />
+                <FlyToPlayer player={selectedPlayer} />
                 <Marker position={MATCH_LOCATION} icon={createGroundIcon()}>
                   <Popup>
                     <div style={{ fontFamily: "'Inter','Segoe UI',sans-serif" }}>
@@ -312,7 +330,14 @@ const PlayerMap: React.FC = () => {
                     icon={createPlayerIcon(player, highlightedId === player.id)}
                     eventHandlers={{
                       mouseover: () => setHighlightedId(player.id),
+
                       mouseout: () => setHighlightedId(null),
+
+                      click: () => {
+                        setHighlightedId(player.id);
+
+                        setSelectedPlayer(player); // ✅ THIS is the new line
+                      },
                     }}
                   >
                     <Popup>
