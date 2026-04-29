@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Zap } from "lucide-react"; // ← ADD THIS (for fire icon)
-import AddDropdown from "./AddDropDown";
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Zap } from 'lucide-react'; // ← ADD THIS (for fire icon)
+import AddDropdown from './AddDropDown';
 import {
   Home,
   Calendar,
@@ -19,7 +19,8 @@ import {
   X,
   Search,
   DollarSign,
-} from "lucide-react";
+  MapPin,
+} from 'lucide-react';
 
 // Define Player type
 interface Player {
@@ -47,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Player[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
@@ -57,14 +58,14 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
-    setSearchQuery("");
+    setSearchQuery('');
     setSearchResults([]);
   }, [location]);
 
@@ -78,14 +79,14 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
 
     setIsSearching(true);
     try {
-      const response = await fetch("/.netlify/functions/getPlayers");
+      const response = await fetch('/.netlify/functions/getPlayers');
       const players: Player[] = await response.json();
       const filtered = players.filter((player: Player) =>
-        player.name.toLowerCase().includes(query.toLowerCase()),
+        player.name.toLowerCase().includes(query.toLowerCase())
       );
       setSearchResults(filtered.slice(0, 5));
     } catch (error) {
-      console.error("Search error:", error);
+      console.error('Search error:', error);
     } finally {
       setIsSearching(false);
     }
@@ -96,29 +97,30 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
   };
 
   const mainNavLinks = [
-    { to: "/", label: "Home", icon: Home },
-    { to: "/games", label: "Fixtures", icon: Calendar },
-    { to: "/squad", label: "Squad", icon: Users },
-    { to: "/squad-creator", label: "Squad Creator", icon: Zap },
-    { to: "/standings", label: "Standings", icon: Trophy },
-    { to: "/gallery", label: "Gallery", icon: Camera },
-    { to: "/balances", label: "Balances", icon: DollarSign },
+    { to: '/', label: 'Home', icon: Home },
+    { to: '/games', label: 'Fixtures', icon: Calendar },
+    { to: '/squad', label: 'Squad', icon: Users },
+    { to: '/squad-creator', label: 'Squad Creator', icon: Zap },
+    { to: '/standings', label: 'Standings', icon: Trophy },
+    { to: '/gallery', label: 'Gallery', icon: Camera },
+    { to: '/balances', label: 'Balances', icon: DollarSign },
+    { to: '/player-map', label: 'Player Map', icon: MapPin },
   ];
 
   const adminLinks = [
-    { to: "/add-player", label: "Add Player", icon: UserPlus },
-    { to: "/add-match", label: "Add Match", icon: CalendarPlus },
-    { to: "/add-team", label: "Add Team", icon: ShieldPlus },
-    { to: "/add-booking", label: "Add Booking", icon: Clock },
-    { to: "/add-notification", label: "Add Notification", icon: BellIcon },
-    { to: "/add-news", label: "Add News", icon: Newspaper },
+    { to: '/add-player', label: 'Add Player', icon: UserPlus },
+    { to: '/add-match', label: 'Add Match', icon: CalendarPlus },
+    { to: '/add-team', label: 'Add Team', icon: ShieldPlus },
+    { to: '/add-booking', label: 'Add Booking', icon: Clock },
+    { to: '/add-notification', label: 'Add Notification', icon: BellIcon },
+    { to: '/add-news', label: 'Add News', icon: Newspaper },
   ];
 
   return (
     <>
       <header
         className={`bg-slate-900 text-white shadow-lg fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? "bg-slate-900/95 backdrop-blur-md shadow-xl" : ""
+          isScrolled ? 'bg-slate-900/95 backdrop-blur-md shadow-xl' : ''
         }`}
       >
         <div className="container mx-auto px-4 py-3">
@@ -134,9 +136,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               </div>
               <div>
                 <h1 className="text-lg md:text-xl font-bold">COGNI HFX FC</h1>
-                <p className="text-xs md:text-sm text-slate-300">
-                  Football Club
-                </p>
+                <p className="text-xs md:text-sm text-slate-300">Football Club</p>
               </div>
             </Link>
 
@@ -150,8 +150,8 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                     to={link.to}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                       isActive(link.to)
-                        ? "bg-blue-600 text-white shadow-lg"
-                        : "hover:bg-slate-700 text-slate-300 hover:text-white"
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'hover:bg-slate-700 text-slate-300 hover:text-white'
                     }`}
                   >
                     <Icon size={18} />
@@ -166,7 +166,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
               {isAdmin ? (
                 <button
                   onClick={() => {
-                    navigate("/");
+                    navigate('/');
                     setIsAdmin(false);
                   }}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
@@ -208,7 +208,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                       to={`/player/${player.id}`}
                       className="block px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
                       onClick={() => {
-                        setSearchQuery("");
+                        setSearchQuery('');
                         setSearchResults([]);
                       }}
                     >
@@ -221,9 +221,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                           />
                         )}
                         <div>
-                          <div className="font-semibold text-gray-900">
-                            {player.name}
-                          </div>
+                          <div className="font-semibold text-gray-900">{player.name}</div>
                           <div className="text-sm text-gray-500">
                             {player.position} • #{player.jerseyNumber}
                           </div>
@@ -250,9 +248,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
       {/* Mobile Menu Overlay */}
       <div
         className={`fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity duration-300 ${
-          isMobileMenuOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsMobileMenuOpen(false)}
       />
@@ -260,7 +256,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
       {/* Mobile Slide-out Menu */}
       <div
         className={`fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-slate-900 z-50 lg:hidden transform transition-transform duration-300 ${
-          isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
@@ -300,7 +296,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                     to={`/player/${player.id}`}
                     className="block px-3 py-3 hover:bg-slate-700 border-b border-slate-700 last:border-b-0 transition-colors"
                     onClick={() => {
-                      setSearchQuery("");
+                      setSearchQuery('');
                       setSearchResults([]);
                       setIsMobileMenuOpen(false);
                     }}
@@ -314,9 +310,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                         />
                       )}
                       <div>
-                        <div className="text-white text-sm font-medium">
-                          {player.name}
-                        </div>
+                        <div className="text-white text-sm font-medium">{player.name}</div>
                         <div className="text-slate-400 text-xs">
                           {player.position} • #{player.jerseyNumber}
                         </div>
@@ -339,8 +333,8 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                   to={link.to}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive(link.to)
-                      ? "bg-blue-600 text-white"
-                      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                      ? 'bg-blue-600 text-white'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
                   <Icon size={20} />
@@ -365,8 +359,8 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
                       to={link.to}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                         isActive(link.to)
-                          ? "bg-blue-600 text-white"
-                          : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
                       <Icon size={20} />
@@ -383,7 +377,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
             {isAdmin ? (
               <button
                 onClick={() => {
-                  navigate("/");
+                  navigate('/');
                   setIsAdmin(false);
                   setIsMobileMenuOpen(false);
                 }}

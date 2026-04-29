@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 interface Player {
   id: number;
@@ -17,6 +17,9 @@ interface Player {
   skill: number;
   photo: string;
   bio: string;
+  address: string;
+  hasCar: boolean;
+  contact: string;
 }
 
 const EditPlayer: React.FC = () => {
@@ -30,28 +33,27 @@ const EditPlayer: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // 🔹 Replace with your Cloudinary details
-  const CLOUDINARY_URL =
-    "https://api.cloudinary.com/v1_1/mycloudasif/image/upload";
-  const UPLOAD_PRESET = "unsigned_preset";
+  const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/mycloudasif/image/upload';
+  const UPLOAD_PRESET = 'unsigned_preset';
 
-  const BASE_URL =
-    process.env.NODE_ENV === "development"
-      ? "/.netlify/functions"
-      : "/.netlify/functions";
+  const BASE_URL = '/.netlify/functions';
 
-  // Fetch existing player by ID
   useEffect(() => {
     const fetchPlayer = async () => {
       try {
         const res = await fetch(`${BASE_URL}/getPlayerById?id=${id}`);
-        if (!res.ok) throw new Error("Failed to fetch player");
+        if (!res.ok) throw new Error('Failed to fetch player');
         const data: Player = await res.json();
-        setForm(data);
+        // Ensure new fields have safe defaults if not yet in DB
+        setForm({
+          ...data,
+          address: data.address ?? '',
+          hasCar: data.hasCar ?? false,
+          contact: data.contact ?? '',
+        });
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else setError("An unexpected error occurred.");
+        if (err instanceof Error) setError(err.message);
+        else setError('An unexpected error occurred.');
       } finally {
         setLoading(false);
       }
@@ -60,15 +62,16 @@ const EditPlayer: React.FC = () => {
     fetchPlayer();
   }, [BASE_URL, id]);
 
-  // Handle input changes
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!form) return;
-    setForm({ ...form, [e.target.name]: e.target.value } as Player);
+    const target = e.target;
+    if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+      setForm({ ...form, [target.name]: target.checked });
+    } else {
+      setForm({ ...form, [target.name]: target.value } as Player);
+    }
   };
 
-  // Upload image to Cloudinary
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!form) return;
     const files = e.target.files;
@@ -80,24 +83,21 @@ const EditPlayer: React.FC = () => {
 
     try {
       const fd = new FormData();
-      fd.append("file", file);
-      fd.append("upload_preset", UPLOAD_PRESET);
+      fd.append('file', file);
+      fd.append('upload_preset', UPLOAD_PRESET);
 
-      const res = await fetch(CLOUDINARY_URL, { method: "POST", body: fd });
-      if (!res.ok) throw new Error("Image upload failed");
+      const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('Image upload failed');
       const data = await res.json();
-
       setForm({ ...form, photo: data.secure_url });
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else setError("An unexpected error occurred.");
+      if (err instanceof Error) setError(err.message);
+      else setError('An unexpected error occurred.');
     } finally {
       setUploadingImage(false);
     }
   };
 
-  // Submit updates
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form) return;
@@ -108,8 +108,8 @@ const EditPlayer: React.FC = () => {
 
     try {
       const res = await fetch(`${BASE_URL}/updatePlayer`, {
-        method: "POST", // or PUT
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
           age: Number(form.age),
@@ -121,24 +121,25 @@ const EditPlayer: React.FC = () => {
         }),
       });
 
+      const resData = await res.json();
+
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Update failed");
+        // Surface geocoding errors clearly to the admin
+        throw new Error(resData.error || 'Update failed');
       }
 
-      setSuccess("Player updated successfully!");
+      setSuccess('Player updated successfully!');
       setTimeout(() => navigate(`/player/${form.id}`), 1000);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else setError("An unexpected error occurred.");
+      if (err instanceof Error) setError(err.message);
+      else setError('An unexpected error occurred.');
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) return <div className="p-4">Loading player data...</div>;
-  if (error) return <div className="p-4 text-red-600">{error}</div>;
+  if (error && !form) return <div className="p-4 text-red-600">{error}</div>;
   if (!form) return null;
 
   return (
@@ -151,6 +152,7 @@ const EditPlayer: React.FC = () => {
           <h2 className="text-2xl font-bold">Edit Player</h2>
           {success && <p className="text-green-600">{success}</p>}
           {error && <p className="text-red-600">{error}</p>}
+
           <input
             name="name"
             value={form.name}
@@ -224,7 +226,7 @@ const EditPlayer: React.FC = () => {
             className="w-full border p-2 rounded"
           />
           <div>
-            {form.position === "Goalkeeper" && (
+            {form.position === 'Goalkeeper' && (
               <input
                 type="number"
                 name="saves"
@@ -246,7 +248,7 @@ const EditPlayer: React.FC = () => {
             <input
               type="number"
               name="skill"
-              value={form.skill || ""}
+              value={form.skill || ''}
               onChange={handleChange}
               placeholder="Skill (1-10)"
               min="1"
@@ -254,21 +256,53 @@ const EditPlayer: React.FC = () => {
               className="w-full border p-2 rounded"
             />
           </div>
+
+          {/* Contact & Location */}
+          <div className="border-t pt-4 space-y-4">
+            <h3 className="font-semibold text-slate-700">Contact & Location</h3>
+
+            <input
+              type="tel"
+              name="contact"
+              placeholder="Phone number (e.g. 9056928230)"
+              value={form.contact}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
+
+            <input
+              type="text"
+              name="address"
+              placeholder="Street address (e.g. 5670 Spring Garden Road)"
+              value={form.address}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
+            <p className="text-xs text-slate-400 -mt-2">
+              Halifax, NS is appended automatically for map geocoding. Saving a new address will
+              update the map pin.
+            </p>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="hasCar"
+                checked={form.hasCar}
+                onChange={handleChange}
+                className="w-4 h-4 accent-blue-600"
+              />
+              <span className="font-medium text-slate-700">Has a car</span>
+            </label>
+          </div>
+
           {/* Image */}
           <div>
             <label className="block mb-1 font-medium">Player Photo</label>
             <input type="file" accept="image/*" onChange={handleFileChange} />
-            {uploadingImage && (
-              <p className="text-blue-600">Uploading image...</p>
-            )}
-            {form.photo && (
-              <img
-                src={form.photo}
-                alt="Preview"
-                className="mt-2 max-w-xs rounded"
-              />
-            )}
+            {uploadingImage && <p className="text-blue-600">Uploading image...</p>}
+            {form.photo && <img src={form.photo} alt="Preview" className="mt-2 max-w-xs rounded" />}
           </div>
+
           <textarea
             name="bio"
             value={form.bio}
@@ -277,12 +311,13 @@ const EditPlayer: React.FC = () => {
             rows={4}
             className="w-full border p-2 rounded"
           />
+
           <button
             type="submit"
             disabled={saving || uploadingImage}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </form>
       </div>
