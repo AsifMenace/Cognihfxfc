@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Target,
@@ -12,10 +12,10 @@ import {
   Ruler,
   Weight,
   Pencil,
-} from "lucide-react";
-import ThemeProvider from "../components/ThemeProvider";
-import Card from "../components/Card";
-import Title from "../components/Title";
+} from 'lucide-react';
+import ThemeProvider from '../components/ThemeProvider';
+import Card from '../components/Card';
+import Title from '../components/Title';
 
 interface Player {
   id: number;
@@ -32,6 +32,9 @@ interface Player {
   appearances: number;
   photo: string;
   bio: string;
+  skill: string;
+  address: string;
+  hasCar: boolean;
 }
 
 const PlayerDetail: React.FC = () => {
@@ -41,10 +44,7 @@ const PlayerDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const API_URL =
-      process.env.NODE_ENV === "development"
-        ? `/.netlify/functions/getPlayerById?id=${id}`
-        : `/.netlify/functions/getPlayerById?id=${id}`;
+    const API_URL = `/.netlify/functions/getPlayerById?id=${id}`;
 
     const fetchPlayer = async () => {
       try {
@@ -55,7 +55,7 @@ const PlayerDetail: React.FC = () => {
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
-        } else setError("An unexpected error occurred.");
+        } else setError('An unexpected error occurred.');
       } finally {
         setLoading(false);
       }
@@ -65,16 +65,16 @@ const PlayerDetail: React.FC = () => {
 
   const getPositionColor = (position: string) => {
     switch (position) {
-      case "Goalkeeper":
-        return "bg-yellow-600/20 text-yellow-400 border border-yellow-600/40";
-      case "Defender":
-        return "bg-blue-600/20 text-blue-400 border border-blue-600/40";
-      case "Midfielder":
-        return "bg-green-600/20 text-green-400 border border-green-600/40";
-      case "Forward":
-        return "bg-red-600/20 text-red-400 border border-red-600/40";
+      case 'Goalkeeper':
+        return 'bg-yellow-600/20 text-yellow-400 border border-yellow-600/40';
+      case 'Defender':
+        return 'bg-blue-600/20 text-blue-400 border border-blue-600/40';
+      case 'Midfielder':
+        return 'bg-green-600/20 text-green-400 border border-green-600/40';
+      case 'Forward':
+        return 'bg-red-600/20 text-red-400 border border-red-600/40';
       default:
-        return "bg-gray-600/20 text-gray-400 border border-gray-600/40";
+        return 'bg-gray-600/20 text-gray-400 border border-gray-600/40';
     }
   };
 
@@ -82,9 +82,7 @@ const PlayerDetail: React.FC = () => {
     return (
       <ThemeProvider>
         <div className="flex items-center justify-center py-32">
-          <div className="text-3xl font-black text-yellow-400 animate-pulse">
-            LOADING PLAYER...
-          </div>
+          <div className="text-3xl font-black text-yellow-400 animate-pulse">LOADING PLAYER...</div>
         </div>
       </ThemeProvider>
     );
@@ -95,9 +93,7 @@ const PlayerDetail: React.FC = () => {
       <ThemeProvider>
         <div className="flex items-center justify-center py-32">
           <div className="text-center space-y-6">
-            <h1 className="text-3xl font-black text-red-400">
-              {error || "PLAYER NOT FOUND"}
-            </h1>
+            <h1 className="text-3xl font-black text-red-400">{error || 'PLAYER NOT FOUND'}</h1>
             <Link
               to="/squad"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg"
@@ -147,19 +143,14 @@ const PlayerDetail: React.FC = () => {
                         player.position
                       )}`}
                       style={{
-                        background:
-                          "linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6))",
+                        background: 'linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.6))',
                         border: `2px solid`,
                         borderImage: `linear-gradient(135deg, ${
-                          getPositionColor(player.position).match(
-                            /bg-([a-z]+)-/
-                          )?.[1] || "yellow"
+                          getPositionColor(player.position).match(/bg-([a-z]+)-/)?.[1] || 'yellow'
                         }-400, ${
-                          getPositionColor(player.position).match(
-                            /bg-([a-z]+)-/
-                          )?.[1] || "amber"
+                          getPositionColor(player.position).match(/bg-([a-z]+)-/)?.[1] || 'amber'
                         }-600) 1`,
-                        textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+                        textShadow: '0 1px 2px rgba(0,0,0,0.6)',
                       }}
                     >
                       {player.position}
@@ -187,9 +178,7 @@ const PlayerDetail: React.FC = () => {
                   <MapPin className="text-yellow-400" size={20} />
                   <div>
                     <div className="text-gray-400">Nationality</div>
-                    <div className="font-bold text-white">
-                      {player.nationality}
-                    </div>
+                    <div className="font-bold text-white">{player.nationality}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -210,18 +199,14 @@ const PlayerDetail: React.FC = () => {
                   <User className="text-yellow-400" size={20} />
                   <div>
                     <div className="text-gray-400">Jersey</div>
-                    <div className="font-bold text-white">
-                      #{player.jerseyNumber}
-                    </div>
+                    <div className="font-bold text-white">#{player.jerseyNumber}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Users className="text-yellow-400" size={20} />
                   <div>
                     <div className="text-gray-400">Appearances</div>
-                    <div className="font-bold text-white">
-                      {player.appearances}
-                    </div>
+                    <div className="font-bold text-white">{player.appearances}</div>
                   </div>
                 </div>
               </div>
@@ -252,19 +237,17 @@ const PlayerDetail: React.FC = () => {
                 <div className="grid grid-cols-3 gap-6 text-center">
                   <div>
                     <div className="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                      {player.position === "Goalkeeper" ? (
+                      {player.position === 'Goalkeeper' ? (
                         <ShieldCheck className="text-blue-400" size={32} />
                       ) : (
                         <Target className="text-blue-400" size={32} />
                       )}
                     </div>
                     <div className="text-4xl font-black text-white">
-                      {player.position === "Goalkeeper"
-                        ? player.saves
-                        : player.goals}
+                      {player.position === 'Goalkeeper' ? player.saves : player.goals}
                     </div>
                     <div className="text-sm text-gray-400">
-                      {player.position === "Goalkeeper" ? "Saves" : "Goals"}
+                      {player.position === 'Goalkeeper' ? 'Saves' : 'Goals'}
                     </div>
                   </div>
 
@@ -272,18 +255,14 @@ const PlayerDetail: React.FC = () => {
                     <div className="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Trophy className="text-green-400" size={32} />
                     </div>
-                    <div className="text-4xl font-black text-white">
-                      {player.assists}
-                    </div>
+                    <div className="text-4xl font-black text-white">{player.assists}</div>
                     <div className="text-sm text-gray-400">Assists</div>
                   </div>
                   <div>
                     <div className="w-20 h-20 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Users className="text-purple-400" size={32} />
                     </div>
-                    <div className="text-4xl font-black text-white">
-                      {player.appearances}
-                    </div>
+                    <div className="text-4xl font-black text-white">{player.appearances}</div>
                     <div className="text-sm text-gray-400">Appearances</div>
                   </div>
                 </div>
@@ -295,9 +274,7 @@ const PlayerDetail: React.FC = () => {
           <div className="space-y-6">
             <Card className="border-blue-500/30">
               <div className="p-6">
-                <h3 className="text-lg font-black text-white mb-4">
-                  QUICK STATS
-                </h3>
+                <h3 className="text-lg font-black text-white mb-4">QUICK STATS</h3>
                 <div className="space-y-4 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Goals per game</span>
@@ -313,9 +290,7 @@ const PlayerDetail: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Goal contributions</span>
-                    <span className="font-bold text-white">
-                      {player.goals + player.assists}
-                    </span>
+                    <span className="font-bold text-white">{player.goals + player.assists}</span>
                   </div>
                 </div>
               </div>
@@ -325,9 +300,7 @@ const PlayerDetail: React.FC = () => {
             <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
               <div className="p-6 text-center">
                 <h3 className="text-lg font-black mb-4">JERSEY NUMBER</h3>
-                <div className="text-6xl md:text-7xl font-black mb-2">
-                  #{player.jerseyNumber}
-                </div>
+                <div className="text-6xl md:text-7xl font-black mb-2">#{player.jerseyNumber}</div>
                 <div className="text-sm opacity-90">{player.name}</div>
               </div>
             </Card>
@@ -340,9 +313,7 @@ const PlayerDetail: React.FC = () => {
             <h2 className="text-2xl font-black text-yellow-400 mb-4">
               ABOUT {player.name.toUpperCase()}
             </h2>
-            <p className="text-gray-300 leading-relaxed text-lg">
-              {player.bio}
-            </p>
+            <p className="text-gray-300 leading-relaxed text-lg">{player.bio}</p>
           </div>
         </Card>
       </div>
