@@ -500,11 +500,18 @@ const PlayerMap: React.FC = () => {
                   key={player.id}
                   onMouseEnter={() => setHighlightedId(player.id)}
                   onMouseLeave={() => setHighlightedId(null)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-default transition-all duration-150 ${
-                    highlightedId === player.id
-                      ? 'bg-slate-700 border-slate-500 shadow-lg'
-                      : 'bg-slate-800/60 border-slate-700/50 hover:bg-slate-700/60'
-                  }`}
+                  onClick={() => {
+                    setHighlightedId(player.id);
+
+                    // 🔥 trigger map movement
+                    setSelectedPlayer(null);
+                    setTimeout(() => setSelectedPlayer(player), 0);
+                  }}
+                  className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+    highlightedId === player.id
+      ? 'bg-slate-700 border-slate-500 shadow-lg'
+      : 'bg-slate-800/60 border-slate-700/50 hover:bg-slate-700/60'
+  }"
                 >
                   {player.photo ? (
                     <img
