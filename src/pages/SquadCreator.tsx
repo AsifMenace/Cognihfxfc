@@ -1,12 +1,12 @@
 // src/pages/SquadCreator.tsx
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { PlayerSelector } from "../components/PlayerSelector";
-import { TeamDisplay } from "../components/TeamDisplay";
-import { EditTeamsModal } from "../components/EditTeamsModal";
-import { MatchLinkingModal } from "../components/MatchLinkingModal";
-import { FaStar, FaFire, FaCheck } from "react-icons/fa";
-import { SquadHistory } from "../components/SquadHistory";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PlayerSelector } from '../components/PlayerSelector';
+import { TeamDisplay } from '../components/TeamDisplay';
+import { EditTeamsModal } from '../components/EditTeamsModal';
+import { MatchLinkingModal } from '../components/MatchLinkingModal';
+import { FaStar, FaFire, FaCheck } from 'react-icons/fa';
+import { SquadHistory } from '../components/SquadHistory';
 
 interface SquadCreatorProps {
   isAdmin: boolean;
@@ -70,24 +70,22 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        const response = await fetch(
-          "/.netlify/functions/getPlayersForSquadCreator",
-        );
+        const response = await fetch('/.netlify/functions/getPlayersForSquadCreator');
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("Response status:", response.status);
-          console.error("Response text:", errorText);
+          console.error('Response status:', response.status);
+          console.error('Response text:', errorText);
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
         setAllPlayers(data.players);
       } catch (error) {
-        console.error("Error fetching players:", error);
+        console.error('Error fetching players:', error);
         setGeneration({
           loading: false,
-          error: `Failed to load players: ${error instanceof Error ? error.message : "Unknown error"}`,
+          error: `Failed to load players: ${error instanceof Error ? error.message : 'Unknown error'}`,
           success: false,
         });
       }
@@ -102,8 +100,8 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
       if (prev.includes(playerId)) {
         return prev.filter((id) => id !== playerId);
       } else {
-        // Limit selection to 14 or 16
-        if (prev.length >= 16) {
+        // Raised cap from 16 to 20
+        if (prev.length >= 20) {
           return prev;
         }
         return [...prev, playerId];
@@ -113,10 +111,17 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
 
   // Generate balanced squads
   const handleGenerateSquads = async () => {
-    if (selectedPlayerIds.length !== 14 && selectedPlayerIds.length !== 16) {
+    const count = selectedPlayerIds.length;
+
+    // Validation for even numbers between 14 and 20[cite: 2]
+    if (count < 14 || count > 20 || count % 2 !== 0) {
+      let errorMessage = `Select an even number of players between 14 and 20.`;
+      if (count % 2 !== 0)
+        errorMessage = `You have an odd number (${count}) of players selected. Please select one more or one less.`;
+
       setGeneration({
         loading: false,
-        error: `Select exactly 14 or 16 players (${selectedPlayerIds.length} selected)`,
+        error: errorMessage,
         success: false,
       });
       return;
@@ -125,19 +130,16 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
     setGeneration({ loading: true, error: null, success: false });
 
     try {
-      const response = await fetch(
-        "/.netlify/functions/generateBalancedSquads",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ playerIds: selectedPlayerIds }),
-        },
-      );
+      const response = await fetch('/.netlify/functions/generateBalancedSquads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerIds: selectedPlayerIds }),
+      });
 
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || "Failed to generate squads");
+        throw new Error(data.error || 'Failed to generate squads');
       }
 
       setTeamA(data.teamA.players);
@@ -146,13 +148,12 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
 
       // Scroll to teams on mobile
       setTimeout(() => {
-        window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
+        window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
       }, 100);
     } catch (error) {
       setGeneration({
         loading: false,
-        error:
-          error instanceof Error ? error.message : "Failed to generate squads",
+        error: error instanceof Error ? error.message : 'Failed to generate squads',
         success: false,
       });
     }
@@ -168,17 +169,17 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
       const teamASkill = teamA.reduce((sum, p) => sum + (p.skill || 0), 0);
       const teamBSkill = teamB.reduce((sum, p) => sum + (p.skill || 0), 0);
       const teamAFW = teamA
-        .filter((p) => p.position?.toUpperCase() === "FORWARD")
+        .filter((p) => p.position?.toUpperCase() === 'FORWARD')
         .reduce((sum, p) => sum + (p.skill || 0), 0);
       const teamBFW = teamB
-        .filter((p) => p.position?.toUpperCase() === "FORWARD")
+        .filter((p) => p.position?.toUpperCase() === 'FORWARD')
         .reduce((sum, p) => sum + (p.skill || 0), 0);
 
-      const response = await fetch("/.netlify/functions/saveSquadGeneration", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/.netlify/functions/saveSquadGeneration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          generationDate: new Date().toISOString().split("T")[0],
+          generationDate: new Date().toISOString().split('T')[0],
           teamA,
           teamB,
           teamATotalSkill: teamASkill,
@@ -191,32 +192,32 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || "Failed to save squad");
+        throw new Error(data.error || 'Failed to save squad');
       }
 
       setSavedSquadId(data.squad.id);
       // Also save to localStorage for history
       const squadForHistory = {
         id: data.squad.id,
-        generationDate: new Date().toISOString().split("T")[0],
+        generationDate: new Date().toISOString().split('T')[0],
         teamA,
         teamB,
         teamATotalSkill: teamASkill,
         teamBTotalSkill: teamBSkill,
         teamAFWSkill: teamAFW,
         teamBFWSkill: teamBFW,
-        status: "created",
+        status: 'created',
       };
 
-      const storedSquads = localStorage.getItem("squadHistory");
+      const storedSquads = localStorage.getItem('squadHistory');
       const squads = storedSquads ? JSON.parse(storedSquads) : [];
       squads.push(squadForHistory);
-      localStorage.setItem("squadHistory", JSON.stringify(squads));
+      localStorage.setItem('squadHistory', JSON.stringify(squads));
       setGeneration({ loading: false, error: null, success: true });
     } catch (error) {
       setGeneration({
         loading: false,
-        error: error instanceof Error ? error.message : "Failed to save squad",
+        error: error instanceof Error ? error.message : 'Failed to save squad',
         success: false,
       });
     }
@@ -238,9 +239,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
           SQUAD CREATOR
           <FaStar className="text-yellow-500" />
         </h1>
-        <p className="text-sm text-gray-400">
-          Create balanced teams for friendly matches
-        </p>
+        <p className="text-sm text-gray-400">Create balanced teams for friendly matches</p>
       </motion.div>
 
       {/* Error Message */}
@@ -252,9 +251,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
             exit={{ opacity: 0, y: -10 }}
             className="mb-4 bg-red-500/20 border border-red-500 rounded-xl p-4"
           >
-            <p className="text-red-300 text-sm font-medium">
-              {generation.error}
-            </p>
+            <p className="text-red-300 text-sm font-medium">{generation.error}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -269,9 +266,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
             className="mb-4 bg-green-500/20 border border-green-500 rounded-xl p-4 flex items-center gap-2"
           >
             <FaCheck className="text-green-400" />
-            <p className="text-green-300 text-sm font-medium">
-              Squad saved successfully!
-            </p>
+            <p className="text-green-300 text-sm font-medium">Squad saved successfully!</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -294,7 +289,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
           {showSquadHistory && !squadsGenerated && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
+              animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               className="mb-4"
             >
@@ -304,11 +299,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
         </AnimatePresence>
         {/* Player Selector Section */}
         {!squadsGenerated && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
             <PlayerSelector
               allPlayers={allPlayers}
               selectedPlayerIds={selectedPlayerIds}

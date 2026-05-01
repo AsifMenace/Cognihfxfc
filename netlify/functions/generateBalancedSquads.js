@@ -1,5 +1,5 @@
 // functions/generateBalancedSquads.js
-import { neon } from "@netlify/neon";
+import { neon } from '@netlify/neon';
 
 const sql = neon(process.env.DATABASE_URL);
 
@@ -13,13 +13,12 @@ function calculateTotalSkill(players) {
 
 function calculateFWSkill(players) {
   return players
-    .filter((p) => p.position?.toUpperCase() === "FORWARD")
+    .filter((p) => p.position?.toUpperCase() === 'FORWARD')
     .reduce((sum, p) => sum + (p.skill || 0), 0);
 }
 
 function getGKCount(players) {
-  return players.filter((p) => p.position?.toUpperCase() === "GOALKEEPER")
-    .length;
+  return players.filter((p) => p.position?.toUpperCase() === 'GOALKEEPER').length;
 }
 
 function getPositionBreakdown(players) {
@@ -34,22 +33,18 @@ function getPositionBreakdown(players) {
     const pos = p.position?.toUpperCase();
 
     // Match full position names
-    if (pos === "GOALKEEPER") breakdown.GK++;
-    else if (pos === "DEFENDER") breakdown.DEF++;
-    else if (pos === "MIDFIELDER") breakdown.MID++;
-    else if (pos === "FORWARD") breakdown.FW++;
+    if (pos === 'GOALKEEPER') breakdown.GK++;
+    else if (pos === 'DEFENDER') breakdown.DEF++;
+    else if (pos === 'MIDFIELDER') breakdown.MID++;
+    else if (pos === 'FORWARD') breakdown.FW++;
   });
 
   return breakdown;
 }
 
 function calculateScore(teamA, teamB) {
-  const skillDiff = Math.abs(
-    calculateTotalSkill(teamA) - calculateTotalSkill(teamB),
-  );
-  const fwSkillDiff = Math.abs(
-    calculateFWSkill(teamA) - calculateFWSkill(teamB),
-  );
+  const skillDiff = Math.abs(calculateTotalSkill(teamA) - calculateTotalSkill(teamB));
+  const fwSkillDiff = Math.abs(calculateFWSkill(teamA) - calculateFWSkill(teamB));
 
   let positionBalance = 0;
   const breakdownA = getPositionBreakdown(teamA);
@@ -85,10 +80,10 @@ function groupByPosition(players) {
     const pos = p.position?.toUpperCase();
 
     // Match full position names
-    if (pos === "GOALKEEPER") groups.GK.push(p);
-    else if (pos === "DEFENDER") groups.DEF.push(p);
-    else if (pos === "MIDFIELDER") groups.MID.push(p);
-    else if (pos === "FORWARD") groups.FW.push(p);
+    if (pos === 'GOALKEEPER') groups.GK.push(p);
+    else if (pos === 'DEFENDER') groups.DEF.push(p);
+    else if (pos === 'MIDFIELDER') groups.MID.push(p);
+    else if (pos === 'FORWARD') groups.FW.push(p);
   });
 
   return groups;
@@ -171,21 +166,21 @@ function generateOptimalSquads(players, teamSize, iterations = 1000) {
 
 export default async (req, context) => {
   // Handle CORS preflight
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
       headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
@@ -194,33 +189,35 @@ export default async (req, context) => {
     const { playerIds } = body;
 
     if (!playerIds || !Array.isArray(playerIds) || playerIds.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "playerIds array is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: 'playerIds array is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const totalPlayers = playerIds.length;
 
-    let teamSize;
-    if (totalPlayers === 14) {
-      teamSize = 7;
-    } else if (totalPlayers === 16) {
-      teamSize = 8;
-    } else {
+    // NEW DYNAMIC VALIDATION
+    if (totalPlayers % 2 !== 0) {
       return new Response(
         JSON.stringify({
-          error: `Invalid number of players. Need 14 (7v7) or 16 (8v8), got ${totalPlayers}`,
+          error: `You selected ${totalPlayers} players. Please select an even number for balanced teams.`,
         }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    if (totalPlayers < 14 || totalPlayers > 20) {
+      return new Response(
+        JSON.stringify({
+          error: `Invalid number of players. Support is for 14 to 20 players, you provided ${totalPlayers}.`,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Dynamic team size calculation
+    const teamSize = totalPlayers / 2;
 
     // Fetch player details
     const players = await sql`
@@ -231,13 +228,10 @@ export default async (req, context) => {
     `;
 
     if (players.length !== playerIds.length) {
-      return new Response(
-        JSON.stringify({ error: "One or more players not found" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: 'One or more players not found' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Generate optimal squads
@@ -250,12 +244,12 @@ export default async (req, context) => {
     if (!result) {
       return new Response(
         JSON.stringify({
-          error: "Could not generate balanced squads. Try different players.",
+          error: 'Could not generate balanced squads. Try different players.',
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
+          headers: { 'Content-Type': 'application/json' },
+        }
       );
     }
 
@@ -292,7 +286,7 @@ export default async (req, context) => {
           skillDifference,
           fwSkillDifference,
           generationTime,
-          algorithm: "iterative-optimized-c",
+          algorithm: 'iterative-optimized-c',
           iterations: 1000,
           balanced: skillDifference <= 2,
         },
@@ -300,13 +294,13 @@ export default async (req, context) => {
       {
         status: 200,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
-      },
+      }
     );
   } catch (error) {
-    console.error("Error generating squads:", error);
+    console.error('Error generating squads:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -315,10 +309,10 @@ export default async (req, context) => {
       {
         status: 500,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
-      },
+      }
     );
   }
 };
