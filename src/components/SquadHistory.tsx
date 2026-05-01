@@ -36,7 +36,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
   const [expandedSquadId, setExpandedSquadId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
 
-  // Fetch squad history from database (last 4 days)
+  // Fetch squad history from database (last 4 days) abc
   useEffect(() => {
     const fetchSquadHistory = async () => {
       try {
