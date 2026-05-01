@@ -1,13 +1,7 @@
 // src/components/squad-creator/SquadHistory.tsx
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  FaHistory,
-  FaTrash,
-  FaEye,
-  FaChevronDown,
-  FaChevronUp,
-} from "react-icons/fa";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaHistory, FaTrash, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 interface Player {
   id: number;
@@ -42,17 +36,17 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
   const [expandedSquadId, setExpandedSquadId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
 
-  // Fetch squad history from database (last 24 hours)
+  // Fetch squad history from database (last 4 days)
   useEffect(() => {
     const fetchSquadHistory = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const response = await fetch("/.netlify/functions/getSquadHistory");
+        const response = await fetch('/.netlify/functions/getSquadHistory');
 
         if (!response.ok) {
-          throw new Error("Failed to fetch squad history");
+          throw new Error('Failed to fetch squad history');
         }
 
         const data = await response.json();
@@ -61,10 +55,10 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
           // Already sorted by backend, newest first
           setSquads(data.squads);
         } else {
-          setError("Failed to load squad history");
+          setError('Failed to load squad history');
         }
       } catch (err) {
-        setError("Failed to load squad history");
+        setError('Failed to load squad history');
         console.error(err);
       } finally {
         setLoading(false);
@@ -76,7 +70,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
 
   // Delete squad
   const handleDeleteSquad = async (squadId: number) => {
-    if (!window.confirm("Are you sure you want to delete this squad?")) return;
+    if (!window.confirm('Are you sure you want to delete this squad?')) return;
 
     setDeleting(squadId);
     try {
@@ -84,8 +78,8 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
       setSquads(squads.filter((s) => s.id !== squadId));
       // TODO: Call backend delete endpoint if you create one
     } catch (err) {
-      console.error("Error deleting squad:", err);
-      alert("Failed to delete squad");
+      console.error('Error deleting squad:', err);
+      alert('Failed to delete squad');
     } finally {
       setDeleting(null);
     }
@@ -95,41 +89,41 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
   const handleLoadSquad = (squad: Squad) => {
     onLoadSquad(squad);
     // Scroll to top
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const getPositionEmoji = (position: string) => {
     const pos = position.toUpperCase();
-    if (pos === "GOALKEEPER" || pos === "GK") return "⚽";
-    if (pos === "DEFENDER" || pos === "DEF") return "🛡️";
-    if (pos === "MIDFIELDER" || pos === "MID") return "🔄";
-    if (pos === "FORWARD" || pos === "FW") return "⚡";
-    return "👤";
+    if (pos === 'GOALKEEPER' || pos === 'GK') return '⚽';
+    if (pos === 'DEFENDER' || pos === 'DEF') return '🛡️';
+    if (pos === 'MIDFIELDER' || pos === 'MID') return '🔄';
+    if (pos === 'FORWARD' || pos === 'FW') return '⚡';
+    return '👤';
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "linked":
-        return "bg-green-500/20 text-green-300";
-      case "edited":
-        return "bg-blue-500/20 text-blue-300";
-      case "played":
-        return "bg-purple-500/20 text-purple-300";
+      case 'linked':
+        return 'bg-green-500/20 text-green-300';
+      case 'edited':
+        return 'bg-blue-500/20 text-blue-300';
+      case 'played':
+        return 'bg-purple-500/20 text-purple-300';
       default:
-        return "bg-gray-500/20 text-gray-300";
+        return 'bg-gray-500/20 text-gray-300';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "linked":
-        return "🔗 Linked to Match";
-      case "edited":
-        return "✏️ Edited";
-      case "played":
-        return "✅ Played";
+      case 'linked':
+        return '🔗 Linked to Match';
+      case 'edited':
+        return '✏️ Edited';
+      case 'played':
+        return '✅ Played';
       default:
-        return "📝 Created";
+        return '📝 Created';
     }
   };
 
@@ -162,9 +156,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
       >
         <div className="flex items-center gap-3 mb-4">
           <FaHistory className="text-yellow-400 text-xl" />
-          <h2 className="text-xl font-black text-yellow-400">
-            Squad History (Last 24H)
-          </h2>
+          <h2 className="text-xl font-black text-yellow-400">Squad History (Last 4 Days)</h2>
         </div>
         <div className="text-center py-8">
           <div className="animate-spin w-8 h-8 border-3 border-yellow-400 border-t-transparent rounded-full mx-auto" />
@@ -194,12 +186,8 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
         className="bg-slate-800/50 rounded-2xl border border-yellow-500/20 p-6 text-center"
       >
         <FaHistory className="text-4xl text-gray-500 mx-auto mb-3" />
-        <p className="text-gray-400 font-semibold">
-          No squad history in the last 24 hours
-        </p>
-        <p className="text-sm text-gray-500">
-          Generate and save a squad to see it here!
-        </p>
+        <p className="text-gray-400 font-semibold">No squad history in the last 4 days</p>
+        <p className="text-sm text-gray-500">Generate and save a squad to see it here!</p>
       </motion.div>
     );
   }
@@ -213,11 +201,9 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <FaHistory className="text-yellow-400 text-xl" />
-        <h2 className="text-xl font-black text-yellow-400">
-          Squad History (Last 24H)
-        </h2>
+        <h2 className="text-xl font-black text-yellow-400">Squad History (Last 4 Days)</h2>
         <span className="ml-auto bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full text-sm font-bold">
-          {squads.length} Squad{squads.length !== 1 ? "s" : ""}
+          {squads.length} Squad{squads.length !== 1 ? 's' : ''}
         </span>
       </div>
 
@@ -235,28 +221,20 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
             >
               {/* Squad Summary */}
               <button
-                onClick={() =>
-                  setExpandedSquadId(
-                    expandedSquadId === squad.id ? null : squad.id,
-                  )
-                }
+                onClick={() => setExpandedSquadId(expandedSquadId === squad.id ? null : squad.id)}
                 className="w-full p-4 flex items-center justify-between hover:bg-slate-700/70 transition-colors"
               >
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-2xl">
-                      {squad.teamA.length === 7 ? "7v7" : "8v8"}
+                      {`${squad.teamA.length}v${squad.teamB.length}`}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-yellow-400 font-bold">
                         {squad.teamATotalSkill} vs {squad.teamBTotalSkill}
                       </span>
-                      {Math.abs(
-                        squad.teamATotalSkill - squad.teamBTotalSkill,
-                      ) <= 2 && (
-                        <span className="text-green-400 text-sm">
-                          ✓ Balanced
-                        </span>
+                      {Math.abs(squad.teamATotalSkill - squad.teamBTotalSkill) <= 2 && (
+                        <span className="text-green-400 text-sm">✓ Balanced</span>
                       )}
                     </div>
                   </div>
@@ -308,11 +286,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
                   )}
 
                   <span className="text-gray-400 text-lg">
-                    {expandedSquadId === squad.id ? (
-                      <FaChevronUp />
-                    ) : (
-                      <FaChevronDown />
-                    )}
+                    {expandedSquadId === squad.id ? <FaChevronUp /> : <FaChevronDown />}
                   </span>
                 </div>
               </button>
@@ -322,16 +296,14 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
                 {expandedSquadId === squad.id && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
+                    animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2 }}
                     className="border-t border-slate-600/50 bg-slate-700/30 p-4 space-y-4"
                   >
                     {/* Team A */}
                     <div>
-                      <h4 className="font-bold text-blue-300 mb-2">
-                        🔵 Team A
-                      </h4>
+                      <h4 className="font-bold text-blue-300 mb-2">🔵 Team A</h4>
                       <div className="space-y-1 text-sm">
                         {sortPlayersByPosition(squad.teamA).map((player) => (
                           <div
@@ -340,9 +312,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
                           >
                             <div className="flex items-center gap-2">
                               <span>{getPositionEmoji(player.position)}</span>
-                              <span className="text-gray-300">
-                                {player.name}
-                              </span>
+                              <span className="text-gray-300">{player.name}</span>
                             </div>
                             {isAdmin && player.skill && (
                               <span className="text-yellow-400 text-xs font-bold">
@@ -365,9 +335,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
                           >
                             <div className="flex items-center gap-2">
                               <span>{getPositionEmoji(player.position)}</span>
-                              <span className="text-gray-300">
-                                {player.name}
-                              </span>
+                              <span className="text-gray-300">{player.name}</span>
                             </div>
                             {isAdmin && player.skill && (
                               <span className="text-yellow-400 text-xs font-bold">

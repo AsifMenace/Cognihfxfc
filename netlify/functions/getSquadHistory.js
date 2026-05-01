@@ -1,30 +1,30 @@
 // functions/getSquadHistory.js
-import { neon } from "@netlify/neon";
+import { neon } from '@netlify/neon';
 
 const sql = neon(process.env.DATABASE_URL);
 
 export default async (req, context) => {
   // Handle CORS preflight
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
       headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
 
-  if (req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+  if (req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
   try {
-    // Fetch all squads created in the last 24 hours
+    // Fetch all squads created in the last 4 days
     const squads = await sql`
       SELECT
         id,
@@ -41,7 +41,7 @@ export default async (req, context) => {
         linked_at
       FROM squad_generations
       WHERE deleted_at IS NULL
-      AND created_at >= NOW() - INTERVAL '24 hours'
+      AND created_at >= NOW() - INTERVAL '96 hours'
       ORDER BY created_at DESC
       LIMIT 50
     `;
@@ -71,13 +71,13 @@ export default async (req, context) => {
       {
         status: 200,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
-      },
+      }
     );
   } catch (error) {
-    console.error("Error fetching squad history:", error);
+    console.error('Error fetching squad history:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -86,10 +86,10 @@ export default async (req, context) => {
       {
         status: 500,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
-      },
+      }
     );
   }
 };
