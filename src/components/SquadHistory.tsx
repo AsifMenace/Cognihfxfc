@@ -226,7 +226,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
               >
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-white-400-2xl">
+                    <span className="text-zinc-100 text-2xl">
                       {`${squad.teamA.length}v${squad.teamB.length}`}
                     </span>
                     <div className="flex items-center gap-2">
