@@ -36,10 +36,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
   const CLOUDINARY_URL =
     "https://api.cloudinary.com/v1_1/mycloudasif/image/upload";
   const UPLOAD_PRESET = "unsigned_preset";
-  const API_BASE =
-    process.env.NODE_ENV === "development"
-      ? "/.netlify/functions"
-      : "/.netlify/functions";
+  const API_BASE = "/.netlify/functions";
 
   useEffect(() => {
     fetch(`${API_BASE}/getGallery`)
@@ -111,7 +108,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
       setGalleryImages((prev) => prev.filter((img) => img.id !== id));
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || "Upload failed");
+        setError(err.message || "Delete failed");
       } else {
         setError("An unexpected error occurred");
       }

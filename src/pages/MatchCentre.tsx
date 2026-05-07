@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
@@ -76,8 +76,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const [statsKey, setStatsKey] = useState(0); // Add this line with your other useState
   const [matchStats, setMatchStats] = useState<MatchStat[]>([]);
 
   type PlayerOption = {
@@ -223,7 +221,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
       if (response.ok) {
         setStatsSuccess("✅ Match stats added successfully!");
-        setSelectedPlayerId("");
+        setSelectedStatsPlayerId("");
         setAssistsCount("");
         setSavesCount("");
 
@@ -395,7 +393,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const opponentScorers = scorers.filter(
     (s) => s.team_name === match?.opponent_name,
   );
-  const cogniScorers = scorers.filter((s) => s.team_name === match?.cogni_name);
+
 
   async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -1192,9 +1190,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   {/* Custom Selected Pills (Below Input) */}
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedPlayers.map((player) => {
-                      const playerData = allPlayers.find(
-                        (p) => p.id === player.value,
-                      );
                       return (
                         <div
                           key={player.value}

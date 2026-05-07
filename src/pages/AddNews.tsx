@@ -67,10 +67,7 @@ const AddNews: React.FC = () => {
     setSuccess(null);
 
     try {
-      const API_URL =
-        process.env.NODE_ENV === "development"
-          ? "/.netlify/functions/addNews"
-          : "/.netlify/functions/addNews";
+      const API_URL = "/.netlify/functions/addNews";
 
       const res = await fetch(API_URL, {
         method: "POST",

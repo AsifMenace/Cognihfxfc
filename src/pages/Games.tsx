@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { Calendar, MapPin, Clock, Home, Plane } from "lucide-react";
 import { Link } from "react-router-dom";
 import { parseMatchDateTime } from "../components/dateUtils";
@@ -41,16 +41,6 @@ const formatDate = (match: Match) => {
   });
 };
 
-interface GoalScorersProps {
-  matchId: number;
-  match: {
-    home_team_id?: number | null;
-    away_team_id?: number | null;
-    opponent_id?: number | null;
-    cogni_id?: number | null;
-  };
-}
-
 interface GoalDetail {
   id: number;
   player_id: number;
@@ -59,23 +49,23 @@ interface GoalDetail {
   team_id: number;
 }
 
-function GoalScorers({ matchId, match }: GoalScorersProps) {
-  const [goalDetails, setGoalDetails] = useState<GoalDetail[]>([]);
+interface GoalScorersProps {
+  goals: GoalDetail[];
+  match: {
+    home_team_id?: number | null;
+    away_team_id?: number | null;
+    opponent_id?: number | null;
+    cogni_id?: number | null;
+  };
+}
 
-  useEffect(() => {
-    fetch(`${API_BASE}/getMatchGoals?matchId=${matchId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setGoalDetails(data as GoalDetail[]);
-      });
-  }, [matchId]);
-
+function GoalScorers({ goals, match }: GoalScorersProps) {
   const homeScorers: GoalDetail[] = [];
   const awayScorers: GoalDetail[] = [];
 
   if (match.home_team_id || match.cogni_id) {
     homeScorers.push(
-      ...goalDetails.filter(
+      ...goals.filter(
         (g) => g.team_id == match.home_team_id || g.team_id == match.cogni_id
       )
     );
@@ -83,7 +73,7 @@ function GoalScorers({ matchId, match }: GoalScorersProps) {
 
   if (match.away_team_id || match.opponent_id) {
     awayScorers.push(
-      ...goalDetails.filter(
+      ...goals.filter(
         (g) => g.team_id == match.away_team_id || g.team_id == match.opponent_id
       )
     );
@@ -128,14 +118,18 @@ function GoalScorers({ matchId, match }: GoalScorersProps) {
 
 export default function Games() {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [goalsMap, setGoalsMap] = useState<Record<number, GoalDetail[]>>({});
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/getMatches`)
-      .then((res) => res.json())
-      .then((data) => {
-        setMatches(data);
+    Promise.all([
+      fetch(`${API_BASE}/getMatches`).then((r) => r.json()),
+      fetch(`${API_BASE}/getAllMatchGoals`).then((r) => r.json()),
+    ])
+      .then(([matchesData, goalsData]) => {
+        setMatches(matchesData);
+        setGoalsMap(goalsData);
         setLoading(false);
       })
       .catch((err) => {
@@ -194,26 +188,47 @@ export default function Games() {
     (a, b) => parseMatchDateTime(b).getTime() - parseMatchDateTime(a).getTime()
   );
 
+  const nextMatchId = upcomingMatches[0]?.id ?? null;
   const orderedMatches = [...upcomingMatches, ...pastMatches];
-
-  // Replace the entire return statement after the loading check with this:
+  const groupedMatches = groupByMonth(orderedMatches);
+  const monthKeys = Object.keys(groupedMatches);
 
   return (
     <ThemeProvider>
       <Title>UPCOMING FIXTURES</Title>
 
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Season Filter Dropdown */}
-        <div className="flex justify-center mb-8">
-          <select className="px-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-yellow-500 focus:outline-none">
-            <option>2025/26 Season</option>
-            {/* Add more seasons dynamically if available from API */}
-            <option>2024/25 Season</option>
-          </select>
+        {/* Month Filter */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          <button
+            onClick={() => setSelectedMonth(null)}
+            className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+              selectedMonth === null
+                ? "bg-yellow-500 text-black"
+                : "bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700"
+            }`}
+          >
+            All
+          </button>
+          {monthKeys.map((month) => (
+            <button
+              key={month}
+              onClick={() => setSelectedMonth(month)}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                selectedMonth === month
+                  ? "bg-yellow-500 text-black"
+                  : "bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700"
+              }`}
+            >
+              {month}
+            </button>
+          ))}
         </div>
 
         {/* Grouped Matches */}
-        {Object.entries(groupByMonth(orderedMatches)).map(
+        {Object.entries(groupedMatches)
+          .filter(([month]) => selectedMonth === null || month === selectedMonth)
+          .map(
           ([month, monthGames]) => (
             <section key={month} className="mb-12">
               {/* Month Heading */}
@@ -224,7 +239,7 @@ export default function Games() {
 
               {/* Games List */}
               <div className="space-y-6">
-                {monthGames.map((game, index) => {
+                {monthGames.map((game) => {
                   const isInternal = game.home_team_name && game.away_team_name;
                   const scores = game.result ? game.result.split("-") : [];
 
@@ -301,24 +316,38 @@ export default function Games() {
                             </div>
 
                             {/* Score */}
-                            {game.result && scores.length === 2 && (
-                              <div className="flex items-center justify-center space-x-2">
-                                <span className="px-4 py-2 bg-green-600 text-3xl font-extrabold text-white rounded border border-green-500 shadow">
-                                  {scores[0]}
-                                </span>
-                                <span className="text-2xl font-bold text-gray-400">
-                                  -
-                                </span>
-                                <span className="px-4 py-2 bg-green-600 text-3xl font-extrabold text-white rounded border border-green-500 shadow">
-                                  {scores[1]}
-                                </span>
-                              </div>
-                            )}
+                            {game.result && scores.length === 2 && (() => {
+                              const s0 = parseInt(scores[0], 10);
+                              const s1 = parseInt(scores[1], 10);
+                              const isDraw = s0 === s1;
+                              const homeWin = s0 > s1;
+                              const homeStyle = isDraw
+                                ? "bg-yellow-600 border-yellow-500"
+                                : homeWin
+                                ? "bg-green-600 border-green-500"
+                                : "bg-red-700 border-red-600";
+                              const awayStyle = isDraw
+                                ? "bg-yellow-600 border-yellow-500"
+                                : !homeWin
+                                ? "bg-green-600 border-green-500"
+                                : "bg-red-700 border-red-600";
+                              return (
+                                <div className="flex items-center justify-center space-x-2">
+                                  <span className={`px-4 py-2 ${homeStyle} text-3xl font-extrabold text-white rounded border shadow`}>
+                                    {scores[0]}
+                                  </span>
+                                  <span className="text-2xl font-bold text-gray-400">-</span>
+                                  <span className={`px-4 py-2 ${awayStyle} text-3xl font-extrabold text-white rounded border shadow`}>
+                                    {scores[1]}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Goal Scorers */}
                           <GoalScorers
-                            matchId={game.id}
+                            goals={goalsMap[game.id] ?? []}
                             match={{
                               home_team_id: game.home_team_id,
                               away_team_id: game.away_team_id,
@@ -403,7 +432,7 @@ export default function Games() {
                         </div>
 
                         {/* Next Match */}
-                        {index === 0 && !isPastMatch(game) && (
+                        {game.id === nextMatchId && (
                           <div className="flex justify-center -mt-3 mb-3 z-10">
                             <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-red-600 text-white animate-pulse">
                               Next Match
@@ -414,7 +443,7 @@ export default function Games() {
                         {/* Bottom Accent */}
                         <div
                           className={`h-1 ${
-                            index === 0
+                            game.id === nextMatchId
                               ? "bg-red-500"
                               : isInternal
                               ? "bg-purple-500"
