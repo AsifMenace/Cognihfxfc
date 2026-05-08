@@ -1,6 +1,11 @@
 import { neon } from "@netlify/neon";
+import { validateAdmin } from "./validateAdmin.js";
 
 export async function handler(event) {
+  if (!validateAdmin(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+  }
+
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }

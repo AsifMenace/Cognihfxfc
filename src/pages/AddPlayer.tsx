@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { getAdminHeaders } from '../utils/auth';
 
 const AddPlayer: React.FC = () => {
   const [form, setForm] = useState({
@@ -53,11 +54,7 @@ const AddPlayer: React.FC = () => {
       formData.append('file', file);
       formData.append('upload_preset', UPLOAD_PRESET);
 
-      const response = await fetch(CLOUDINARY_URL, {
-        method: 'POST',
-        body: formData,
-      });
-
+      const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
       if (!response.ok) throw new Error('Image upload failed');
 
       const data = await response.json();
@@ -85,15 +82,12 @@ const AddPlayer: React.FC = () => {
       assists: Number(form.assists) || 0,
       appearances: Number(form.appearances) || 0,
       skill: form.skill ? Number(form.skill) : undefined,
-      hasCar: form.hasCar,
-      contact: form.contact,
-      address: form.address,
     };
 
     try {
       const res = await fetch('/.netlify/functions/addPlayer', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify(body),
       });
 
@@ -104,22 +98,9 @@ const AddPlayer: React.FC = () => {
 
       setSuccess('Player added successfully!');
       setForm({
-        name: '',
-        position: '',
-        age: '',
-        nationality: '',
-        jerseyNumber: '',
-        height: '',
-        weight: '',
-        goals: '',
-        assists: '',
-        appearances: '',
-        skill: '',
-        photo: '',
-        bio: '',
-        address: '',
-        hasCar: false,
-        contact: '',
+        name: '', position: '', age: '', nationality: '', jerseyNumber: '',
+        height: '', weight: '', goals: '', assists: '', appearances: '',
+        skill: '', photo: '', bio: '', address: '', hasCar: false, contact: '',
       });
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
@@ -129,202 +110,140 @@ const AddPlayer: React.FC = () => {
     }
   };
 
+  const inputCls = "w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none";
+  const labelCls = "block mb-1 text-sm font-bold text-gray-300";
+  const sectionLabelCls = "text-xs font-black text-yellow-400 uppercase tracking-widest mb-4 pt-2";
+
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="container mx-auto px-4 max-w-3xl">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-black py-8">
+      <div className="container mx-auto px-4 max-w-2xl">
+        <h1 className="text-3xl font-black text-yellow-400 text-center mb-8">ADD PLAYER</h1>
         <form
           onSubmit={handleSubmit}
-          className="max-w-3xl mx-auto p-4 bg-white shadow rounded space-y-4"
+          className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 p-6 md:p-8 space-y-4 shadow-2xl"
         >
-          <h2 className="text-2xl font-bold mb-4">Add New Player</h2>
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {success && <p className="text-green-400 text-sm">{success}</p>}
 
-          {error && <p className="text-red-600">{error}</p>}
-          {success && <p className="text-green-600">{success}</p>}
+          {/* Identity */}
+          <p className={sectionLabelCls}>Player Info</p>
 
-          <input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded"
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className={labelCls}>Name</label>
+              <input type="text" name="name" placeholder="Full name" value={form.name} onChange={handleChange} required className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Position</label>
+              <select name="position" value={form.position} onChange={handleChange} required className={inputCls}>
+                <option value="" disabled>Select position</option>
+                <option value="Goalkeeper">Goalkeeper</option>
+                <option value="Defender">Defender</option>
+                <option value="Midfielder">Midfielder</option>
+                <option value="Forward">Forward</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Jersey Number</label>
+              <input type="number" name="jerseyNumber" placeholder="e.g. 9" value={form.jerseyNumber} onChange={handleChange} required className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Age</label>
+              <input type="number" name="age" placeholder="e.g. 24" value={form.age} onChange={handleChange} required className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Nationality</label>
+              <input type="text" name="nationality" placeholder="e.g. Canadian" value={form.nationality} onChange={handleChange} required className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Height</label>
+              <input type="text" name="height" placeholder='e.g. 5&apos;11"' value={form.height} onChange={handleChange} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Weight</label>
+              <input type="text" name="weight" placeholder="e.g. 75kg" value={form.weight} onChange={handleChange} className={inputCls} />
+            </div>
+          </div>
 
-          <select
-            name="position"
-            value={form.position}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 rounded-md bg-white text-gray-900 text-base font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-          >
-            <option value="" disabled>
-              Select Position
-            </option>
-            <option value="Goalkeeper">Goalkeeper</option>
-            <option value="Defender">Defender</option>
-            <option value="Midfielder">Midfielder</option>
-            <option value="Forward">Forward</option>
-          </select>
-
-          <input
-            type="number"
-            name="age"
-            placeholder="Age"
-            value={form.age}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="text"
-            name="nationality"
-            placeholder="Nationality"
-            value={form.nationality}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="number"
-            name="jerseyNumber"
-            placeholder="Jersey Number"
-            value={form.jerseyNumber}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="text"
-            name="height"
-            placeholder="Height"
-            value={form.height}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="text"
-            name="weight"
-            placeholder="Weight"
-            value={form.weight}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="number"
-            name="goals"
-            placeholder="Goals"
-            value={form.goals}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="number"
-            name="assists"
-            placeholder="Assists"
-            value={form.assists}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="number"
-            name="appearances"
-            placeholder="Appearances"
-            value={form.appearances}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-
-          <div>
-            <label className="block mb-1 font-medium">Skill Level (1-10)</label>
-            <input
-              type="number"
-              name="skill"
-              placeholder="Skill (1-10)"
-              value={form.skill}
-              onChange={handleChange}
-              min="1"
-              max="10"
-              className="w-full p-2 border rounded"
-            />
+          {/* Stats */}
+          <div className="border-t border-slate-700 pt-4">
+            <p className={sectionLabelCls}>Statistics</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Goals</label>
+                <input type="number" name="goals" placeholder="0" value={form.goals} onChange={handleChange} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Assists</label>
+                <input type="number" name="assists" placeholder="0" value={form.assists} onChange={handleChange} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Appearances</label>
+                <input type="number" name="appearances" placeholder="0" value={form.appearances} onChange={handleChange} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Skill Level (1–10)</label>
+                <input type="number" name="skill" placeholder="e.g. 7" min="1" max="10" value={form.skill} onChange={handleChange} className={inputCls} />
+              </div>
+            </div>
           </div>
 
           {/* Contact & Location */}
-          <div className="border-t pt-4 space-y-4">
-            <h3 className="font-semibold text-slate-700">Contact & Location</h3>
-
-            <input
-              type="tel"
-              name="contact"
-              placeholder="Phone number (e.g. 9056928230)"
-              value={form.contact}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            />
-
-            <input
-              type="text"
-              name="address"
-              placeholder="Street address (e.g. 5670 Spring Garden Road)"
-              value={form.address}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            />
-            <p className="text-xs text-slate-400 -mt-2">
-              Halifax, NS is appended automatically for map geocoding.
-            </p>
-
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                name="hasCar"
-                checked={form.hasCar}
-                onChange={handleChange}
-                className="w-4 h-4 accent-blue-600"
-              />
-              <span className="font-medium text-slate-700">Has a car</span>
-            </label>
+          <div className="border-t border-slate-700 pt-4">
+            <p className={sectionLabelCls}>Contact & Location</p>
+            <div className="space-y-3">
+              <div>
+                <label className={labelCls}>Phone Number</label>
+                <input type="tel" name="contact" placeholder="e.g. 9056928230" value={form.contact} onChange={handleChange} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Street Address</label>
+                <input type="text" name="address" placeholder="e.g. 5670 Spring Garden Road" value={form.address} onChange={handleChange} className={inputCls} />
+                <p className="text-xs text-gray-500 mt-1">Halifax, NS appended automatically for map geocoding.</p>
+              </div>
+              <label className="flex items-center gap-3 cursor-pointer py-1">
+                <input type="checkbox" name="hasCar" checked={form.hasCar} onChange={handleChange} className="w-4 h-4 accent-yellow-400" />
+                <span className="text-gray-300 font-medium">Has a car</span>
+              </label>
+            </div>
           </div>
 
-          {/* Image upload */}
-          <div>
-            <label className="block mb-1 font-medium">Upload Player Photo</label>
-            <input type="file" accept="image/*" onChange={handleFileChange} className="w-full" />
-            {uploadingImage && <p className="text-sm text-blue-600 mt-1">Uploading image...</p>}
-            {form.photo && (
-              <img src={form.photo} alt="Player preview" className="mt-2 max-w-xs rounded" />
-            )}
+          {/* Photo & Bio */}
+          <div className="border-t border-slate-700 pt-4">
+            <p className={sectionLabelCls}>Photo & Bio</p>
+            <div className="space-y-4">
+              <div>
+                <label className={labelCls}>Player Photo</label>
+                <label className="flex items-center gap-4 cursor-pointer mt-1">
+                  <span className="px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-500 hover:to-purple-500 transition text-sm">
+                    Choose File
+                  </span>
+                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                  <span className="text-gray-400 text-sm">{form.photo ? "Photo ready" : "No file selected"}</span>
+                </label>
+                {uploadingImage && <p className="text-cyan-400 text-sm mt-2">Uploading...</p>}
+                {form.photo && <img src={form.photo} alt="Preview" className="mt-3 w-32 h-40 object-cover rounded-lg shadow-lg" />}
+              </div>
+              <div>
+                <label className={labelCls}>Bio</label>
+                <textarea name="bio" placeholder="Short player bio..." value={form.bio} onChange={handleChange} rows={3} className={`${inputCls} resize-none`} />
+              </div>
+            </div>
           </div>
-
-          <textarea
-            name="bio"
-            placeholder="Bio"
-            value={form.bio}
-            onChange={handleChange}
-            rows={4}
-            className="w-full p-2 border rounded"
-          />
 
           <button
             type="submit"
             disabled={loading || uploadingImage}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
+            className="w-full py-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-black rounded-lg hover:scale-105 transition-all disabled:opacity-50 mt-2"
           >
-            {loading ? 'Adding...' : 'Add Player'}
+            {loading ? 'ADDING...' : 'ADD PLAYER'}
           </button>
         </form>
 
-        <div className="text-center mt-8">
+        <div className="text-center mt-6">
           <Link
             to="/squad"
-            className="inline-block px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg"
           >
             ← Back to Squad
           </Link>

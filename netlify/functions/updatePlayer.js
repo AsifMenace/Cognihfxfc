@@ -1,4 +1,5 @@
 import { neon } from '@netlify/neon';
+import { validateAdmin } from './validateAdmin.js';
 
 const sql = neon();
 
@@ -29,10 +30,14 @@ export const handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
       },
       body: '',
     };
+  }
+
+  if (!validateAdmin(event)) {
+    return { statusCode: 401, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
   if (event.httpMethod !== 'POST' && event.httpMethod !== 'PUT') {

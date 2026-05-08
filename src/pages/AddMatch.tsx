@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { getAdminHeaders } from "../utils/auth";
 interface Team {
   id: number;
   name: string;
@@ -145,7 +146,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
     try {
       const res = await fetch("/.netlify/functions/addMatches", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify(payload),
       });
       const data = await res.json();

@@ -1,6 +1,6 @@
-// src/components/squad-creator/MatchLinkingModal.tsx
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getAdminHeaders } from '../utils/auth';
 import { FaTimes, FaArrowRight, FaCheck } from 'react-icons/fa';
 
 interface Player {
@@ -113,7 +113,7 @@ export function MatchLinkingModal({
     try {
       const response = await fetch('/.netlify/functions/linkSquadToMatch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           squadId,
           matchId: selectedMatch.id,

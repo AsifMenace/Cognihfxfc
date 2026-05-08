@@ -1,2 +1,2 @@
-// src/config.ts
-export const ADMIN_PASSWORD = "aaa";
+// Kept for backwards compatibility — password auth is now handled server-side
+export {};

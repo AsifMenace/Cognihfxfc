@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Filter, Upload, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getAdminHeaders } from "../utils/auth";
 
 type GalleryProps = {
   isAdmin: boolean;
@@ -101,7 +102,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
     try {
       const res = await fetch(`${API_BASE}/deleteGalleryPhoto`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ id }),
       });
       if (!res.ok) throw new Error("Delete failed");
@@ -122,7 +123,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
     try {
       const res = await fetch(`${API_BASE}/addGalleryPhoto`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ image_url: imageUrl, caption, category }),
       });
       if (!res.ok) throw new Error("Save failed");

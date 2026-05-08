@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getAdminHeaders } from "../utils/auth";
 
 type Props = {
   matchId: number;
@@ -34,7 +35,7 @@ export const SetPlayerOfTheMatch: React.FC<Props> = ({ matchId, isAdmin }) => {
     try {
       const res = await fetch("/.netlify/functions/setPlayerOfTheMatch", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           match_id: matchId,
           player_id: selectedPlayerId,

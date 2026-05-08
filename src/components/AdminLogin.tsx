@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // 👈 Added useLocation
-import { ADMIN_PASSWORD } from "../Config";
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 type AdminLoginProps = {
   setIsAdmin: (isAdmin: boolean) => void;
@@ -9,24 +8,35 @@ type AdminLoginProps = {
 export function AdminLogin({ setIsAdmin }: AdminLoginProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation(); // 👈 Reads intended path
+  const location = useLocation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setError(null);
-      setIsAdmin(true);
-
-      // 👈 Smart redirect!
-      const intendedPath = location.state?.intended || "/";
-      navigate(intendedPath, { replace: true });
-    } else {
-      setError("Incorrect password");
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/.netlify/functions/adminLogin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        localStorage.setItem("adminToken", password);
+        setIsAdmin(true);
+        const intendedPath = location.state?.intended || "/";
+        navigate(intendedPath, { replace: true });
+      } else {
+        setError("Incorrect password");
+      }
+    } catch {
+      setError("Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Rest of component EXACTLY same...
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <form
@@ -46,9 +56,10 @@ export function AdminLogin({ setIsAdmin }: AdminLoginProps) {
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-3 py-2 rounded w-full"
+          disabled={loading}
+          className="bg-blue-600 text-white px-3 py-2 rounded w-full disabled:bg-blue-300"
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
         {error && <p className="text-red-600 mt-2">{error}</p>}
       </form>
