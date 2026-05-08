@@ -708,10 +708,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 <TeamBadge
                   color={match?.home_team_color || match?.cogni_color}
                   name={match?.home_team_name || match?.cogni_name || ""}
-                  size={52}
+                  size={36}
                 />
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+                  <h4 className="text-sm sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight truncate">
                     {match?.home_team_name || match?.cogni_name}
                   </h4>
                   <p className="text-blue-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
@@ -761,7 +761,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             <div className="group">
               <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-700/50 group-hover:border-purple-500/50 transition-all duration-300 justify-end">
                 <div className="min-w-0 flex-1 text-right">
-                  <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+                  <h4 className="text-sm sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight truncate">
                     {match?.away_team_name || match?.opponent_name}
                   </h4>
                   <p className="text-purple-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
@@ -774,7 +774,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 <TeamBadge
                   color={match?.away_team_color || match?.opponent_color}
                   name={match?.away_team_name || match?.opponent_name || ""}
-                  size={52}
+                  size={36}
                 />
               </div>
 
