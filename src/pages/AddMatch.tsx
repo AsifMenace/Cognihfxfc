@@ -70,6 +70,20 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
     }
   }, [id]);
 
+  // Auto-populate competition with "League Month YYYY" when date changes,
+  // unless the user has set a custom value (non-league tag like "Cup").
+  useEffect(() => {
+    if (!form.date) return;
+    const isAutoLeague = !form.competition || /^League \w+ \d{4}$/.test(form.competition);
+    if (!isAutoLeague) return;
+    const [year, month] = form.date.split("-");
+    const label = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(undefined, {
+      month: "long",
+      year: "numeric",
+    });
+    setForm((f) => ({ ...f, competition: `League ${label}` }));
+  }, [form.date]);
+
   // Update form field with check to clear opponent or teams mutually
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -286,13 +300,18 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
             className={inputCls}
           />
 
-          <label className={labelCls}>Competition</label>
+          <label className={labelCls}>
+            Competition{" "}
+            <span className="text-gray-500 font-normal text-xs">
+              (e.g. Cup, Friendly — leave blank, league is automatic by month)
+            </span>
+          </label>
           <input
             type="text"
             name="competition"
             value={form.competition}
             onChange={handleChange}
-            placeholder="Competition"
+            placeholder="e.g. Cup, Friendly (optional)"
             className={inputCls}
           />
 
