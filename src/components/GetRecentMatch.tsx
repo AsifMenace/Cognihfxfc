@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFutbol } from "@fortawesome/free-solid-svg-icons";
+import { TeamBadge } from "./TeamBadge";
 
 type Match = {
   id: number;
@@ -20,9 +19,6 @@ type Goal = {
   id: number;
 };
 
-const SoccerBallIcon = () => (
-  <FontAwesomeIcon icon={faFutbol} className="mr-1 text-white" />
-);
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
@@ -95,7 +91,14 @@ export const GetRecentMatch: React.FC = () => {
     );
   }
 
-  const [homeScore, awayScore] = match.result.split("-").map((s) => s.trim());
+  const [homeScoreStr, awayScoreStr] = match.result.split("-").map((s) => s.trim());
+  const homeScore = Number(homeScoreStr);
+  const awayScore = Number(awayScoreStr);
+  const isDraw = homeScore === awayScore;
+  const homeWon = homeScore > awayScore;
+
+  const homeScoreColor = isDraw ? "text-yellow-400" : homeWon ? "text-green-400" : "text-red-400";
+  const awayScoreColor = isDraw ? "text-yellow-400" : !homeWon ? "text-green-400" : "text-red-400";
 
   return (
     <div className="max-w-md mx-auto rounded-2xl shadow-2xl p-6 bg-gradient-to-br from-slate-900 via-blue-900/80 to-slate-900/50 backdrop-blur-xl border border-blue-500/30 text-white overflow-hidden hover:shadow-blue-500/25 transition-all duration-500">
@@ -110,48 +113,32 @@ export const GetRecentMatch: React.FC = () => {
       </div>
 
       {/* Score */}
-      <div className="flex items-center justify-between mb-8 px-4">
+      <div className="flex items-center justify-between mb-8 px-2">
         {/* Home Team */}
-        <div className="min-w-0 flex-1 text-left">
-          <div className="relative group">
-            <p className="text-sm font-bold text-gray-300 truncate leading-tight">
-              {match.home_team_name}
-            </p>
-            <div
-              className="pointer-events-none absolute left-0 top-full mt-1 max-w-xs
-                    px-2 py-1 rounded bg-black/80 text-xs text-white opacity-0
-                    group-hover:opacity-100 transition-opacity z-20"
-            >
-              {match.home_team_name}
-            </div>
-          </div>
+        <div className="flex flex-col items-center gap-1 flex-1">
+          <TeamBadge color={match.home_team_color} name={match.home_team_name} size={36} />
+          <p className="text-xs font-bold text-white text-center truncate w-full">
+            {match.home_team_name}
+          </p>
         </div>
 
         {/* Score */}
-        <div className="flex items-baseline gap-2 px-4 select-none">
-          <div className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent drop-shadow-2xl">
+        <div className="flex items-baseline gap-2 px-3 select-none">
+          <span className={`text-4xl lg:text-5xl font-black ${homeScoreColor}`}>
             {homeScore}
-          </div>
-          <div className="text-3xl font-bold text-gray-400">-</div>
-          <div className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent drop-shadow-2xl">
+          </span>
+          <span className="text-3xl font-bold text-gray-500">—</span>
+          <span className={`text-4xl lg:text-5xl font-black ${awayScoreColor}`}>
             {awayScore}
-          </div>
+          </span>
         </div>
 
         {/* Away Team */}
-        <div className="min-w-0 flex-1 text-left">
-          <div className="relative group">
-            <p className="text-sm font-bold text-gray-300 truncate leading-tight">
-              {match.away_team_name}
-            </p>
-            <div
-              className="pointer-events-none absolute left-0 top-full mt-1 max-w-xs
-                    px-2 py-1 rounded bg-black/80 text-xs text-white opacity-0
-                    group-hover:opacity-100 transition-opacity z-20"
-            >
-              {match.away_team_name}
-            </div>
-          </div>
+        <div className="flex flex-col items-center gap-1 flex-1">
+          <TeamBadge color={match.away_team_color} name={match.away_team_name} size={36} />
+          <p className="text-xs font-bold text-white text-center truncate w-full">
+            {match.away_team_name}
+          </p>
         </div>
       </div>
 

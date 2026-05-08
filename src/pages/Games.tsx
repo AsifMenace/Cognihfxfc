@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { TeamBadge } from "../components/TeamBadge";
 import { Calendar, MapPin, Clock, Home, Plane } from "lucide-react";
 import { Link } from "react-router-dom";
 import { parseMatchDateTime } from "../components/dateUtils";
@@ -306,20 +307,14 @@ export default function Games() {
                             <div className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 flex justify-center items-center space-x-3">
                               {isInternal ? (
                                 <>
-                                  <span
-                                    style={{
-                                      color: game.home_team_color || "#e5e7eb",
-                                    }}
-                                  >
-                                    {game.home_team_name}
+                                  <span className="flex flex-col items-center gap-1">
+                                    <TeamBadge color={game.home_team_color} name={game.home_team_name || ""} size={32} />
+                                    <span className="text-white text-sm font-bold">{game.home_team_name}</span>
                                   </span>
                                   <span className="text-gray-400">vs</span>
-                                  <span
-                                    style={{
-                                      color: game.away_team_color || "#e5e7eb",
-                                    }}
-                                  >
-                                    {game.away_team_name}
+                                  <span className="flex flex-col items-center gap-1">
+                                    <TeamBadge color={game.away_team_color} name={game.away_team_name || ""} size={32} />
+                                    <span className="text-white text-sm font-bold">{game.away_team_name}</span>
                                   </span>
                                 </>
                               ) : (

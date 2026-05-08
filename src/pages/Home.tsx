@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Calendar, Users, Trophy, Target, ChevronRight } from "lucide-react";
 import { parseMatchDateTime } from "../components/dateUtils";
 import CountdownTimer from "../components/CountdownTimer";
+import { TeamBadge } from "../components/TeamBadge";
 import { motion } from "framer-motion";
 import LatestNews from "./LatestNews";
 import UpcomingBookings from "./UpcomingBookings";
@@ -190,10 +191,8 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
     teamPlayers: Player[],
   ) => (
     <div key={teamId}>
-      <h3
-        className="text-xs sm:text-sm md:text-lg font-black mb-2 px-2"
-        style={{ color: colorClass }}
-      >
+      <h3 className="flex items-center gap-2 text-xs sm:text-sm md:text-lg font-black mb-2 px-2 text-white">
+        <TeamBadge color={colorClass} name={teamName} size={24} />
         {teamName.toUpperCase()}
       </h3>
 
@@ -400,20 +399,14 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                     <div className="text-lg md:text-2xl font-black text-white mb-2 flex justify-center items-center space-x-4">
                       {nextGame.home_team_name && nextGame.away_team_name ? (
                         <>
-                          <span
-                            style={{
-                              color: nextGame.home_team_color ?? "#fff",
-                            }}
-                          >
-                            {nextGame.home_team_name}
+                          <span className="flex flex-col items-center gap-1">
+                            <TeamBadge color={nextGame.home_team_color} name={nextGame.home_team_name || ""} size={32} />
+                            <span className="text-white text-sm font-bold">{nextGame.home_team_name}</span>
                           </span>
                           <span className="text-gray-500">vs</span>
-                          <span
-                            style={{
-                              color: nextGame.away_team_color ?? "#fff",
-                            }}
-                          >
-                            {nextGame.away_team_name}
+                          <span className="flex flex-col items-center gap-1">
+                            <TeamBadge color={nextGame.away_team_color} name={nextGame.away_team_name || ""} size={32} />
+                            <span className="text-white text-sm font-bold">{nextGame.away_team_name}</span>
                           </span>
                         </>
                       ) : (
