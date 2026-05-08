@@ -596,42 +596,48 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 : "text-red-400";
 
               return (
-                <div className="flex items-center justify-between gap-2 md:gap-6">
-                  {/* Home team */}
-                  <div className="flex-1 flex flex-col items-center gap-2 text-center">
-                    <TeamBadge color={homeColor} name={homeTeamName} size={56} />
-                    <span className="font-black text-sm md:text-xl text-white leading-tight">
-                      {homeTeamName.toUpperCase()}
-                    </span>
+                <div>
+                  <div className="flex items-center justify-between gap-1 sm:gap-4 md:gap-6">
+                    {/* Home team */}
+                    <div className="flex-1 flex flex-col items-center gap-1 text-center min-w-0">
+                      <TeamBadge color={homeColor} name={homeTeamName} size={40} />
+                      <span className="font-black text-xs sm:text-sm md:text-lg text-white leading-tight truncate w-full px-1">
+                        {homeTeamName.toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Score / VS */}
+                    <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
+                      {homeScore !== null ? (
+                        <>
+                          <span className={`text-4xl sm:text-5xl md:text-7xl font-black tabular-nums ${homeScoreColor}`}>
+                            {homeScore}
+                          </span>
+                          <span className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-600">—</span>
+                          <span className={`text-4xl sm:text-5xl md:text-7xl font-black tabular-nums ${awayScoreColor}`}>
+                            {awayScore}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-500">VS</span>
+                      )}
+                    </div>
+
+                    {/* Away team */}
+                    <div className="flex-1 flex flex-col items-center gap-1 text-center min-w-0">
+                      <TeamBadge color={awayColor} name={awayTeamName} size={40} />
+                      <span className="font-black text-xs sm:text-sm md:text-lg text-white leading-tight truncate w-full px-1">
+                        {awayTeamName.toUpperCase()}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Score */}
-                  <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-                    {homeScore !== null ? (
-                      <>
-                        <span className={`text-5xl md:text-7xl font-black tabular-nums ${homeScoreColor}`}>
-                          {homeScore}
-                        </span>
-                        <span className="text-3xl md:text-5xl font-black text-slate-600">—</span>
-                        <span className={`text-5xl md:text-7xl font-black tabular-nums ${awayScoreColor}`}>
-                          {awayScore}
-                        </span>
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-3xl md:text-4xl font-black text-slate-500">VS</span>
-                        <CountdownTimer kickOff={kickoffDate} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Away team */}
-                  <div className="flex-1 flex flex-col items-center gap-2 text-center">
-                    <TeamBadge color={awayColor} name={awayTeamName} size={56} />
-                    <span className="font-black text-sm md:text-xl text-white leading-tight">
-                      {awayTeamName.toUpperCase()}
-                    </span>
-                  </div>
+                  {/* Countdown below the scoreboard row so it never squeezes team names */}
+                  {homeScore === null && (
+                    <div className="mt-4 flex justify-center">
+                      <CountdownTimer kickOff={kickoffDate} />
+                    </div>
+                  )}
                 </div>
               );
             })()}
