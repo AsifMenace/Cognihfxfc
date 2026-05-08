@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Calendar, MapPin, Clock, Home, Plane } from "lucide-react";
 import { Link } from "react-router-dom";
 import { parseMatchDateTime } from "../components/dateUtils";
@@ -121,6 +121,18 @@ export default function Games() {
   const [goalsMap, setGoalsMap] = useState<Record<number, GoalDetail[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -199,30 +211,40 @@ export default function Games() {
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Month Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
-          <button
-            onClick={() => setSelectedMonth(null)}
-            className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
-              selectedMonth === null
-                ? "bg-yellow-500 text-black"
-                : "bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700"
-            }`}
-          >
-            All
-          </button>
-          {monthKeys.map((month) => (
+        <div className="flex justify-center mb-8">
+          <div className="relative" ref={dropdownRef}>
             <button
-              key={month}
-              onClick={() => setSelectedMonth(month)}
-              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                selectedMonth === month
-                  ? "bg-yellow-500 text-black"
-                  : "bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700"
-              }`}
+              onClick={() => setDropdownOpen((o) => !o)}
+              className="flex items-center gap-3 px-5 py-2.5 rounded-full font-bold text-sm bg-slate-800 border border-yellow-500/40 text-yellow-400 hover:border-yellow-400 hover:bg-slate-700 transition-all shadow-lg shadow-yellow-500/10"
             >
-              {month}
+              <Calendar size={15} className="text-yellow-400" />
+              {selectedMonth ?? "All Matches"}
+              <svg
+                className={`w-4 h-4 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-          ))}
+
+            {dropdownOpen && (
+              <div className="absolute z-50 mt-2 left-1/2 -translate-x-1/2 w-48 bg-slate-800 border border-yellow-500/30 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
+                {[null, ...monthKeys].map((month) => (
+                  <button
+                    key={month ?? "__all__"}
+                    onClick={() => { setSelectedMonth(month); setDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors ${
+                      selectedMonth === month
+                        ? "bg-yellow-500 text-slate-900"
+                        : "text-gray-300 hover:bg-slate-700 hover:text-yellow-400"
+                    }`}
+                  >
+                    {month ?? "All Matches"}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Grouped Matches */}
