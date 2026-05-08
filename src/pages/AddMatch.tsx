@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { getAdminHeaders } from "../utils/auth";
 interface Team {
   id: number;
   name: string;
@@ -145,7 +146,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
     try {
       const res = await fetch("/.netlify/functions/addMatches", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -177,39 +178,51 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
     }
   };
 
+  const inputCls = "w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none mb-3 disabled:opacity-50 disabled:cursor-not-allowed";
+  const labelCls = "block mb-1 text-sm font-bold text-gray-300";
+
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="container mx-auto px-4 max-w-3xl">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-black py-8">
+      <div className="container mx-auto px-4 max-w-2xl">
+        <h1 className="text-3xl font-black text-yellow-400 text-center mb-8">
+          {id ? "EDIT MATCH" : "ADD MATCH"}
+        </h1>
         <form
           onSubmit={handleSubmit}
-          className="max-w-md mx-auto p-6 bg-white rounded shadow my-8"
+          className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 p-6 md:p-8 space-y-2 shadow-2xl"
         >
-          <h2 className="text-xl font-bold mb-4">Add Match</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Date</label>
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+                required
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Kick-off Time</label>
+              <input
+                type="time"
+                name="time"
+                value={form.time}
+                onChange={handleChange}
+                required
+                className={inputCls}
+              />
+            </div>
+          </div>
 
-          <input
-            type="date"
-            name="date"
-            value={form.date}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded mb-3"
-          />
-          <input
-            type="time"
-            name="time"
-            value={form.time}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded mb-3"
-          />
-
-          <label className="block mb-1 font-semibold">Home Team</label>
+          <label className={labelCls}>Home Team</label>
           <select
             name="home_team_id"
             value={form.home_team_id}
             onChange={handleChange}
             disabled={!!form.opponent}
-            className="w-full p-2 border rounded mb-3"
+            className={inputCls}
           >
             <option value="">-- Select Home Team --</option>
             {teams.map((team) => (
@@ -219,13 +232,13 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
             ))}
           </select>
 
-          <label className="block mb-1 font-semibold">Away Team</label>
+          <label className={labelCls}>Away Team</label>
           <select
             name="away_team_id"
             value={form.away_team_id}
             onChange={handleChange}
             disabled={!!form.opponent}
-            className="w-full p-2 border rounded mb-3"
+            className={inputCls}
           >
             <option value="">-- Select Away Team --</option>
             {teams.map((team) => (
@@ -235,22 +248,26 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
             ))}
           </select>
 
-          <label className="block mb-1 font-semibold">
-            Opponent (for external matches)
-          </label>
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 border-t border-slate-600" />
+            <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">or</span>
+            <div className="flex-1 border-t border-slate-600" />
+          </div>
+
+          <label className={labelCls}>Opponent (external match)</label>
           <select
             name="opponent"
             value={form.opponent}
             onChange={handleChange}
             disabled={!!form.home_team_id || !!form.away_team_id}
-            className="w-full p-2 border rounded mb-3"
+            className={inputCls}
           >
             <option value="">-- Select Opponent --</option>
             {teams
               .filter(
                 (team) =>
                   !["Red", "Blue", "Black", "Cogni HFX FC"].includes(team.name)
-              ) // Avoid league teams or your own club
+              )
               .map((team) => (
                 <option key={team.id} value={team.name}>
                   {team.name}
@@ -258,6 +275,7 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
               ))}
           </select>
 
+          <label className={labelCls}>Venue</label>
           <input
             type="text"
             name="venue"
@@ -265,66 +283,68 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
             onChange={handleChange}
             placeholder="Venue"
             required
-            className="w-full p-2 border rounded mb-3"
+            className={inputCls}
           />
-          <input
-            type="text"
-            name="result"
-            value={form.result}
-            onChange={handleChange}
-            placeholder="Result (e.g., 2-1)"
-            className="w-full p-2 border rounded mb-3"
-          />
+
+          <label className={labelCls}>Competition</label>
           <input
             type="text"
             name="competition"
             value={form.competition}
             onChange={handleChange}
             placeholder="Competition"
-            className="w-full p-2 border rounded mb-3"
+            className={inputCls}
           />
+
+          <label className={labelCls}>Result (e.g. 2-1)</label>
+          <input
+            type="text"
+            name="result"
+            value={form.result}
+            onChange={handleChange}
+            placeholder="e.g. 2-1"
+            className={inputCls}
+          />
+
+          <label className={labelCls}>Video URL</label>
           <input
             type="url"
             name="video_url"
             value={form.video_url}
             onChange={handleChange}
-            placeholder="Video URL (YouTube or others)"
-            className="w-full p-2 border rounded mb-3"
+            placeholder="YouTube or other video URL"
+            className={inputCls}
           />
 
-          <label className="flex items-center mb-3">
+          <label className="flex items-center gap-3 py-2 cursor-pointer">
             <input
               type="checkbox"
               name="isHome"
               checked={form.isHome}
               onChange={handleChange}
-              className="mr-2"
+              className="w-4 h-4 accent-yellow-400"
             />
-            Home match
+            <span className="text-gray-300 font-medium">Home match</span>
           </label>
 
-          {error && <div className="text-red-500 mb-2">{error}</div>}
-          {success && <div className="text-green-600 mb-2">{success}</div>}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {success && <p className="text-green-400 text-sm">{success}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="w-full py-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-black rounded-lg hover:scale-105 transition-all disabled:opacity-50 mt-2"
           >
             {loading
-              ? id
-                ? "Updating..."
-                : "Adding..."
-              : id
-              ? "Update Match"
-              : "Add Match"}
+              ? id ? "Updating..." : "Adding..."
+              : id ? "UPDATE MATCH" : "ADD MATCH"}
           </button>
         </form>
-        {/* Back link */}
-        <div className="text-center mt-8">
+
+        <div className="text-center mt-6">
           <Link
             to="/games"
-            className="inline-block px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg"
           >
             ← Back to Games
           </Link>

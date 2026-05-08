@@ -1,7 +1,12 @@
 import { neon } from "@netlify/neon";
+import { validateAdmin } from "./validateAdmin.js";
 const sql = neon();
 
 export const handler = async (event) => {
+  if (!validateAdmin(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }), headers: { "Access-Control-Allow-Origin": "*" } };
+  }
+
   try {
     const { goal_id, player_id } = JSON.parse(event.body);
 

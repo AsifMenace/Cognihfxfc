@@ -80,10 +80,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
     undefined,
   );
 
-  const BASE_URL =
-    process.env.NODE_ENV === "development"
-      ? "/.netlify/functions"
-      : "/.netlify/functions";
+  const BASE_URL = "/.netlify/functions";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,17 +104,6 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
         setMatches(matchesData);
 
         const now = new Date();
-        const parseMatchDateTime = (match: Match) => {
-          const [year, month, day] = match.date.split("-");
-          const [hour = "0", minute = "0"] = (match.time || "00:00").split(":");
-          return new Date(
-            Number(year),
-            Number(month) - 1,
-            Number(day),
-            Number(hour),
-            Number(minute),
-          );
-        };
 
         const upcoming = matchesData
           .filter((m) => parseMatchDateTime(m) >= now)

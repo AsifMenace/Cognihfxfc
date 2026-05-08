@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Sun, Moon, MapPin, Clock, X } from "lucide-react";
+import { getAdminHeaders } from "../utils/auth";
 import Calendar from "../components/Calendar";
 
 type Booking = {
@@ -51,6 +52,7 @@ export default function UpcomingBookings({
     try {
       const res = await fetch(`/.netlify/functions/deleteBooking?id=${id}`, {
         method: "DELETE",
+        headers: getAdminHeaders(),
       });
 
       if (res.ok) {

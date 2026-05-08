@@ -1,13 +1,16 @@
 import { neon } from "@netlify/neon";
+import { validateAdmin } from "./validateAdmin.js";
 
 const sql = neon();
 
 export const handler = async (event) => {
+  if (!validateAdmin(event)) {
+    return { statusCode: 401, headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "Unauthorized" }) };
+  }
+
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
-
-  // Optionally: Check for admin authentication here!
 
   try {
     const { id, result } = JSON.parse(event.body);

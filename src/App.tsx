@@ -25,14 +25,12 @@ import { SquadCreator } from './pages/SquadCreator';
 import PlayerMap from './pages/PlayerMap';
 
 function App() {
-  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('isAdmin') === 'true');
+  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('adminToken') !== null);
 
   const handleSetIsAdmin = (value: boolean) => {
     setIsAdmin(value);
-    if (value) {
-      localStorage.setItem('isAdmin', 'true');
-    } else {
-      localStorage.removeItem('isAdmin');
+    if (!value) {
+      localStorage.removeItem('adminToken');
     }
   };
   const { updateAvailable, handleRefresh } = useServiceWorkerUpdate();
@@ -41,7 +39,7 @@ function App() {
       <ScrollToTop />
       <div className="min-h-screen bg-slate-50">
         <UpdatePrompt show={updateAvailable} onRefresh={handleRefresh} />
-        <Header isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
+        <Header isAdmin={isAdmin} setIsAdmin={handleSetIsAdmin} />
         <Routes>
           <Route path="/" element={<Home isAdmin={isAdmin} />} />
           <Route path="/games" element={<Games />} />

@@ -34,10 +34,7 @@ const Squad: React.FC<SquadProps> = ({ isAdmin }) => {
   const positionOrder = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
 
   useEffect(() => {
-    const API_URL =
-      process.env.NODE_ENV === "development"
-        ? "/.netlify/functions/getPlayers?sortBy=appearances&order=DESC"
-        : "/.netlify/functions/getPlayers?sortBy=appearances&order=DESC";
+    const API_URL = "/.netlify/functions/getPlayers?sortBy=appearances&order=DESC";
 
     const fetchPlayers = async () => {
       try {

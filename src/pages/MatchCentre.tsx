@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { getAdminHeaders } from "../utils/auth";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
 import { parseMatchDateTime } from "../components/dateUtils";
@@ -76,8 +77,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const [statsKey, setStatsKey] = useState(0); // Add this line with your other useState
   const [matchStats, setMatchStats] = useState<MatchStat[]>([]);
 
   type PlayerOption = {
@@ -212,7 +211,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     try {
       const response = await fetch("/.netlify/functions/addPlayerMatchStats", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           playerId: parseInt(selectedStatsPlayerId),
           matchId: match.id,
@@ -223,7 +222,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
       if (response.ok) {
         setStatsSuccess("✅ Match stats added successfully!");
-        setSelectedPlayerId("");
+        setSelectedStatsPlayerId("");
         setAssistsCount("");
         setSavesCount("");
 
@@ -255,7 +254,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     try {
       const res = await fetch("/.netlify/functions/removePlayerFromMatch", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ match_id: match?.id, player_id: playerId }),
       });
       if (res.ok) {
@@ -293,7 +292,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       const playerIds = selectedPlayers.map((p) => p.value);
       const response = await fetch("/.netlify/functions/addPlayerToMatch", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           match_id: match?.id,
           team_id: selectedTeamId,
@@ -395,7 +394,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const opponentScorers = scorers.filter(
     (s) => s.team_name === match?.opponent_name,
   );
-  const cogniScorers = scorers.filter((s) => s.team_name === match?.cogni_name);
+
 
   async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -406,7 +405,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     try {
       const res = await fetch("/.netlify/functions/addMatchGoal", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           match_id: match.id,
           player_id: Number(selectedPlayerId),
@@ -433,7 +432,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     try {
       const res = await fetch("/.netlify/functions/removeMatchGoal", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ goal_id: goalId, player_id: playerId }),
       });
       if (!res.ok) {
@@ -1003,7 +1002,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 if (typeof resultValue !== "string") return;
                 const resp = await fetch(`${API_BASE}/updateMatchResult`, {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: getAdminHeaders(),
                   body: JSON.stringify({ id: match.id, result: resultValue }),
                 });
                 if (resp.ok) {
@@ -1192,9 +1191,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   {/* Custom Selected Pills (Below Input) */}
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedPlayers.map((player) => {
-                      const playerData = allPlayers.find(
-                        (p) => p.id === player.value,
-                      );
                       return (
                         <div
                           key={player.value}

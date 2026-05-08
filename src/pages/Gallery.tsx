@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Filter, Upload, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getAdminHeaders } from "../utils/auth";
 
 type GalleryProps = {
   isAdmin: boolean;
@@ -36,10 +37,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
   const CLOUDINARY_URL =
     "https://api.cloudinary.com/v1_1/mycloudasif/image/upload";
   const UPLOAD_PRESET = "unsigned_preset";
-  const API_BASE =
-    process.env.NODE_ENV === "development"
-      ? "/.netlify/functions"
-      : "/.netlify/functions";
+  const API_BASE = "/.netlify/functions";
 
   useEffect(() => {
     fetch(`${API_BASE}/getGallery`)
@@ -104,14 +102,14 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
     try {
       const res = await fetch(`${API_BASE}/deleteGalleryPhoto`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ id }),
       });
       if (!res.ok) throw new Error("Delete failed");
       setGalleryImages((prev) => prev.filter((img) => img.id !== id));
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || "Upload failed");
+        setError(err.message || "Delete failed");
       } else {
         setError("An unexpected error occurred");
       }
@@ -125,7 +123,7 @@ const Gallery: React.FC<GalleryProps> = ({ isAdmin }) => {
     try {
       const res = await fetch(`${API_BASE}/addGalleryPhoto`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ image_url: imageUrl, caption, category }),
       });
       if (!res.ok) throw new Error("Save failed");
