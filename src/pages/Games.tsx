@@ -304,19 +304,19 @@ export default function Games() {
 
                           {/* Teams */}
                           <div className="text-center mb-8">
-                            <div className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 flex justify-center items-center space-x-3">
+                            <div className="font-bold text-white mb-4">
                               {isInternal ? (
-                                <>
-                                  <span className="flex flex-col items-center gap-1">
+                                <div className="flex justify-center items-end gap-3">
+                                  <div className="flex flex-col items-center gap-1 flex-1">
                                     <TeamBadge color={game.home_team_color} name={game.home_team_name || ""} size={32} />
-                                    <span className="text-white text-sm font-bold">{game.home_team_name}</span>
-                                  </span>
-                                  <span className="text-gray-400">vs</span>
-                                  <span className="flex flex-col items-center gap-1">
+                                    <span className="text-white text-sm font-bold truncate max-w-full">{game.home_team_name}</span>
+                                  </div>
+                                  <span className="text-gray-400 text-base mb-1 flex-shrink-0">vs</span>
+                                  <div className="flex flex-col items-center gap-1 flex-1">
                                     <TeamBadge color={game.away_team_color} name={game.away_team_name || ""} size={32} />
-                                    <span className="text-white text-sm font-bold">{game.away_team_name}</span>
-                                  </span>
-                                </>
+                                    <span className="text-white text-sm font-bold truncate max-w-full">{game.away_team_name}</span>
+                                  </div>
+                                </div>
                               ) : (
                                 <>
                                   <span className="text-yellow-400 font-bold">
@@ -350,11 +350,11 @@ export default function Games() {
                                 : "bg-red-700 border-red-600";
                               return (
                                 <div className="flex items-center justify-center space-x-2">
-                                  <span className={`px-4 py-2 ${homeStyle} text-3xl font-extrabold text-white rounded border shadow`}>
+                                  <span className={`px-2 sm:px-4 py-1 sm:py-2 ${homeStyle} text-xl sm:text-3xl font-extrabold text-white rounded border shadow`}>
                                     {scores[0]}
                                   </span>
-                                  <span className="text-2xl font-bold text-gray-400">-</span>
-                                  <span className={`px-4 py-2 ${awayStyle} text-3xl font-extrabold text-white rounded border shadow`}>
+                                  <span className="text-lg sm:text-2xl font-bold text-gray-400">-</span>
+                                  <span className={`px-2 sm:px-4 py-1 sm:py-2 ${awayStyle} text-xl sm:text-3xl font-extrabold text-white rounded border shadow`}>
                                     {scores[1]}
                                   </span>
                                 </div>

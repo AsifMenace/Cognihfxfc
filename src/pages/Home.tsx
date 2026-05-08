@@ -396,19 +396,19 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                     </span>
                   </div>
                   <div className="text-center mb-6">
-                    <div className="text-lg md:text-2xl font-black text-white mb-2 flex justify-center items-center space-x-4">
+                    <div className="font-black text-white mb-2">
                       {nextGame.home_team_name && nextGame.away_team_name ? (
-                        <>
-                          <span className="flex flex-col items-center gap-1">
+                        <div className="flex justify-center items-end gap-3">
+                          <div className="flex flex-col items-center gap-1 flex-1">
                             <TeamBadge color={nextGame.home_team_color} name={nextGame.home_team_name || ""} size={32} />
-                            <span className="text-white text-sm font-bold">{nextGame.home_team_name}</span>
-                          </span>
-                          <span className="text-gray-500">vs</span>
-                          <span className="flex flex-col items-center gap-1">
+                            <span className="text-white text-sm font-bold truncate max-w-full">{nextGame.home_team_name}</span>
+                          </div>
+                          <span className="text-gray-500 text-base mb-1 flex-shrink-0">vs</span>
+                          <div className="flex flex-col items-center gap-1 flex-1">
                             <TeamBadge color={nextGame.away_team_color} name={nextGame.away_team_name || ""} size={32} />
-                            <span className="text-white text-sm font-bold">{nextGame.away_team_name}</span>
-                          </span>
-                        </>
+                            <span className="text-white text-sm font-bold truncate max-w-full">{nextGame.away_team_name}</span>
+                          </div>
+                        </div>
                       ) : (
                         <>
                           <span className="text-yellow-400 font-black">
