@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { TeamBadge } from "../components/TeamBadge";
 
 type Scorer = {
   id: number;
@@ -215,10 +216,7 @@ export const LeagueStandings: React.FC = () => {
                         {index + 1}
                       </td>
                       <td className="py-3 px-6 flex items-center gap-3">
-                        <div
-                          className="w-5 h-5 rounded-full shadow-md"
-                          style={{ backgroundColor: team.team_color || "#666" }}
-                        />
+                        <TeamBadge color={team.team_color} name={team.team_name} size={28} />
                         <span className="font-semibold text-sm truncate">
                           {team.team_name.toUpperCase()}
                         </span>

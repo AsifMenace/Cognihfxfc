@@ -10,6 +10,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { SetPlayerOfTheMatch } from "../components/SetPlayerOfTheMatch";
 import { PlayerOfTheMatch } from "./PlayerOfTheMatch";
 import ThemeProvider from "../components/ThemeProvider";
+import { TeamBadge } from "../components/TeamBadge";
 import Card from "../components/Card";
 import Title from "../components/Title";
 import { MatchStats } from "../components/MatchStats";
@@ -452,10 +453,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     teamPlayers: Player[],
   ) => (
     <div key={teamId}>
-      <h3
-        className="text-xs sm:text-sm md:text-lg font-black mb-2 px-2"
-        style={{ color: colorClass }}
-      >
+      <h3 className="flex items-center gap-2 text-xs sm:text-sm md:text-lg font-black mb-2 px-2 text-white">
+        <TeamBadge color={colorClass} name={teamName} size={24} />
         {teamName.toUpperCase()}
       </h3>
 
@@ -545,42 +544,102 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       <div className="max-w-4xl mx-auto space-y-8">
         <Title>MATCH CENTRE</Title>
         {/* Match Header */}
-        <Card className="border-yellow-500/30">
-          <div className="text-center p-6">
-            <div className="text-3xl md:text-4xl flex-wrap font-black text-white mb-4 flex justify-center items-center gap-4">
-              {match?.home_team_name && match?.away_team_name ? (
-                <>
-                  <span style={{ color: match?.home_team_color || "#e5e7eb" }}>
-                    {match?.home_team_name}
-                  </span>
-                  <span className="text-gray-400">VS</span>
-                  <span style={{ color: match?.away_team_color || "#e5e7eb" }}>
-                    {match?.away_team_name}
-                  </span>
-                </>
+        <Card className="border-yellow-500/30 overflow-hidden">
+          <div className="p-6 md:p-8">
+
+            {/* Competition + status row */}
+            <div className="flex items-center justify-center gap-3 mb-6">
+              {match.competition && (
+                <span className="px-3 py-1 bg-blue-600/20 text-blue-300 rounded-full text-xs font-bold border border-blue-500/30">
+                  {match.competition}
+                </span>
+              )}
+              {match.result ? (
+                <span className="px-3 py-1 bg-slate-700 text-gray-300 rounded-full text-xs font-bold tracking-widest border border-slate-600">
+                  FULL TIME
+                </span>
               ) : (
-                <>
-                  <span className="text-yellow-400 font-black">
-                    {match?.cogni_name}
-                  </span>
-                  <span className="text-gray-400 mx-3">VS</span>
-                  <span>{match?.opponent_name}</span>
-                </>
+                <span className="px-3 py-1 bg-red-600/20 text-red-400 rounded-full text-xs font-bold border border-red-500/30 animate-pulse">
+                  UPCOMING
+                </span>
+              )}
+              {!match.home_team_name && (
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${match.isHome ? "bg-green-600/20 text-green-400 border border-green-500/30" : "bg-orange-600/20 text-orange-400 border border-orange-500/30"}`}>
+                  {match.isHome ? "HOME" : "AWAY"}
+                </span>
               )}
             </div>
 
-            <div className="text-2xl font-bold text-green-400 mb-4">
-              {match.result ? `RESULT: ${match.result}` : "LIVE"}
-            </div>
+            {/* Scoreboard */}
+            {(() => {
+              const scores = match.result ? match.result.split("-").map(Number) : null;
+              const homeScore = scores?.[0] ?? null;
+              const awayScore = scores?.[1] ?? null;
+              const isDraw = homeScore !== null && homeScore === awayScore;
+              const homeWon = homeScore !== null && awayScore !== null && homeScore > awayScore;
+              const awayWon = homeScore !== null && awayScore !== null && awayScore > homeScore;
 
-            <CountdownTimer kickOff={kickoffDate} />
+              const homeTeamName = match.home_team_name || match.cogni_name || "";
+              const awayTeamName = match.away_team_name || match.opponent_name || "";
+              const homeColor = match.home_team_color || match.cogni_color || "#e5e7eb";
+              const awayColor = match.away_team_color || match.opponent_color || "#e5e7eb";
 
-            <div className="flex flex-wrap justify-center gap-3 text-sm text-gray-300 mt-4">
-              <span className="px-3 py-1 bg-blue-600/20 text-blue-300 rounded-full font-bold">
-                {match.competition}
-              </span>
+              const homeScoreColor = isDraw
+                ? "text-yellow-400"
+                : homeWon
+                ? "text-green-400"
+                : "text-red-400";
+              const awayScoreColor = isDraw
+                ? "text-yellow-400"
+                : awayWon
+                ? "text-green-400"
+                : "text-red-400";
+
+              return (
+                <div className="flex items-center justify-between gap-2 md:gap-6">
+                  {/* Home team */}
+                  <div className="flex-1 flex flex-col items-center gap-2 text-center">
+                    <TeamBadge color={homeColor} name={homeTeamName} size={56} />
+                    <span className="font-black text-sm md:text-xl text-white leading-tight">
+                      {homeTeamName.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Score */}
+                  <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                    {homeScore !== null ? (
+                      <>
+                        <span className={`text-5xl md:text-7xl font-black tabular-nums ${homeScoreColor}`}>
+                          {homeScore}
+                        </span>
+                        <span className="text-3xl md:text-5xl font-black text-slate-600">—</span>
+                        <span className={`text-5xl md:text-7xl font-black tabular-nums ${awayScoreColor}`}>
+                          {awayScore}
+                        </span>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-3xl md:text-4xl font-black text-slate-500">VS</span>
+                        <CountdownTimer kickOff={kickoffDate} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Away team */}
+                  <div className="flex-1 flex flex-col items-center gap-2 text-center">
+                    <TeamBadge color={awayColor} name={awayTeamName} size={56} />
+                    <span className="font-black text-sm md:text-xl text-white leading-tight">
+                      {awayTeamName.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Info row */}
+            <div className="flex flex-wrap justify-center gap-3 text-sm text-gray-400 mt-6 pt-6 border-t border-slate-700/50">
               <span className="flex items-center gap-1">
-                <Calendar size={16} className="text-yellow-400" />
+                <Calendar size={14} className="text-yellow-400" />
                 {kickoffDate.toLocaleDateString("en-US", {
                   weekday: "long",
                   year: "numeric",
@@ -589,26 +648,17 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 })}
               </span>
               <span className="flex items-center gap-1">
-                <Clock size={16} className="text-yellow-400" />
+                <Clock size={14} className="text-yellow-400" />
                 {match.time}
               </span>
               <span className="flex items-center gap-1">
-                <MapPin size={16} className="text-yellow-400" />
+                <MapPin size={14} className="text-yellow-400" />
                 {match.venue}
-              </span>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  match.isHome
-                    ? "bg-green-600/20 text-green-400"
-                    : "bg-orange-600/20 text-orange-400"
-                }`}
-              >
-                {match.isHome ? "HOME" : "AWAY"}
               </span>
             </div>
 
             {isAdmin && (
-              <div className="mt-6">
+              <div className="mt-4 text-center">
                 <Link
                   to={`/match/edit/${match.id}`}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg"
@@ -649,18 +699,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             {/* LEFT: HOME/COGNI TEAM */}
             <div className="group">
               <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-700/50 group-hover:border-blue-500/50 transition-all duration-300">
-                <div
-                  className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl lg:text-2xl shadow-lg flex-shrink-0"
-                  style={{
-                    backgroundColor:
-                      match?.home_team_color || match?.cogni_color || "#3b82f6",
-                    color: "white",
-                    boxShadow: "0 0 20px rgba(59, 130, 246, 0.3)",
-                  }}
-                >
-                  {match?.home_team_name?.substring(0, 3).toUpperCase() ||
-                    "COGNI"}
-                </div>
+                <TeamBadge
+                  color={match?.home_team_color || match?.cogni_color}
+                  name={match?.home_team_name || match?.cogni_name || ""}
+                  size={52}
+                />
                 <div className="min-w-0 flex-1">
                   <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
                     {match?.home_team_name || match?.cogni_name}
@@ -722,21 +765,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       : ""}
                   </p>
                 </div>
-                <div
-                  className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl lg:text-2xl shadow-lg flex-shrink-0"
-                  style={{
-                    backgroundColor:
-                      match?.away_team_color ||
-                      match?.opponent_color ||
-                      "#8b5cf6",
-                    color: "white",
-                    boxShadow: "0 0 20px rgba(139, 92, 246, 0.3)",
-                  }}
-                >
-                  {(match?.away_team_name || match?.opponent_name)
-                    ?.substring(0, 3)
-                    .toUpperCase()}
-                </div>
+                <TeamBadge
+                  color={match?.away_team_color || match?.opponent_color}
+                  name={match?.away_team_name || match?.opponent_name || ""}
+                  size={52}
+                />
               </div>
 
               {awayScorers.length + opponentScorers.length > 0 ? (
