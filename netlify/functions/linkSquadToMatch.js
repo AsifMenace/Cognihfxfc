@@ -130,13 +130,24 @@ export default async (req, context) => {
     // CLEAN DELETION LOGIC - Simple and reliable
     // ============================================================================
 
-    // Step 1: Always delete ALL existing match_players for this match FIRST
+    // Step 1: Decrement appearances for players currently linked to this match
+    const existingPlayers = await sql`SELECT player_id FROM match_players WHERE match_id = ${matchId}`;
+    if (existingPlayers.length > 0) {
+      const existingIds = existingPlayers.map((p) => p.player_id);
+      await sql`
+        UPDATE players
+        SET appearances = GREATEST(0, COALESCE(appearances, 0) - 1)
+        WHERE id = ANY(${existingIds})
+      `;
+    }
+
+    // Step 2: Delete ALL existing match_players for this match
     await sql`
       DELETE FROM match_players
       WHERE match_id = ${matchId}
     `;
 
-    // Step 2: Unlink any squad previously linked to this match (except current squad)
+    // Step 3: Unlink any squad previously linked to this match (except current squad)
     await sql`
       UPDATE squad_generations
       SET
@@ -151,35 +162,33 @@ export default async (req, context) => {
     // INSERT NEW PLAYERS
     // ============================================================================
 
-    // Step 3: Insert new match_players records for Team A
-    const teamAInserts = teamA.map((player) => ({
-      match_id: matchId,
-      player_id: player.id,
-      team_id: teamAId,
-    }));
-
-    for (const record of teamAInserts) {
+    // Step 4: Insert new match_players records for Team A
+    for (const player of teamA) {
       await sql`
         INSERT INTO match_players (match_id, player_id, team_id)
-        VALUES (${record.match_id}, ${record.player_id}, ${record.team_id})
+        VALUES (${matchId}, ${player.id}, ${teamAId})
       `;
     }
 
-    // Step 4: Insert new match_players records for Team B
-    const teamBInserts = teamB.map((player) => ({
-      match_id: matchId,
-      player_id: player.id,
-      team_id: teamBId,
-    }));
-
-    for (const record of teamBInserts) {
+    // Step 5: Insert new match_players records for Team B
+    for (const player of teamB) {
       await sql`
         INSERT INTO match_players (match_id, player_id, team_id)
-        VALUES (${record.match_id}, ${record.player_id}, ${record.team_id})
+        VALUES (${matchId}, ${player.id}, ${teamBId})
       `;
     }
 
-    // Step 5: Update squad_generations to mark as linked
+    // Step 6: Increment appearances for newly linked players
+    const allNewPlayers = [...teamA, ...teamB].map((p) => p.id);
+    if (allNewPlayers.length > 0) {
+      await sql`
+        UPDATE players
+        SET appearances = COALESCE(appearances, 0) + 1
+        WHERE id = ANY(${allNewPlayers})
+      `;
+    }
+
+    // Step 7: Update squad_generations to mark as linked
     const updatedSquad = await sql`
       UPDATE squad_generations
       SET

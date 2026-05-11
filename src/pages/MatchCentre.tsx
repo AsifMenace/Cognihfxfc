@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { getAdminHeaders } from "../utils/auth";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import CountdownTimer from "../components/CountdownTimer";
@@ -68,7 +68,10 @@ interface MatchStat {
 
 const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [match, setMatch] = useState<Match | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [lineups, setLineups] = useState<Player[]>([]);
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -443,6 +446,25 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       await fetchScorers();
     } catch (error) {
       alert(`Error removing goal: ${(error as Error).message}`);
+    }
+  }
+
+  async function handleDeleteMatch() {
+    if (!match) return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/.netlify/functions/deleteMatch", {
+        method: "DELETE",
+        headers: { ...getAdminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ matchId: match.id }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed to delete match");
+      navigate("/games");
+    } catch (err) {
+      alert(`Error: ${(err as Error).message}`);
+      setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   }
 
@@ -1308,6 +1330,61 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               </button>
             </form>
           </Card>
+        )}
+
+        {/* Delete Match — admin only */}
+        {isAdmin && match && (
+          <div className="text-center">
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-red-600/20 border border-red-500/40 hover:bg-red-600/40 text-red-400 font-bold rounded-full transition-all"
+            >
+              🗑 Delete Match
+            </button>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && match && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-red-500/40 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+              <h2 className="text-xl font-black text-red-400 mb-2">Delete Match?</h2>
+              <p className="text-gray-400 text-sm mb-4">
+                This will permanently remove the match and all associated data:
+              </p>
+              <ul className="text-sm text-gray-500 space-y-1 mb-6 list-disc list-inside">
+                <li>Goals & scorers</li>
+                <li>Lineups (match players)</li>
+                <li>Player match stats</li>
+                <li>Player of the match</li>
+                <li>Squad link (squad history preserved)</li>
+              </ul>
+              <p className="text-xs text-red-400 font-semibold mb-5">This cannot be undone.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-gray-300 font-bold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteMatch}
+                  disabled={deleting}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Back Button */}

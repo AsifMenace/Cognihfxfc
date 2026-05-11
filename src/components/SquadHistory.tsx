@@ -15,8 +15,10 @@ interface Squad {
   generationDate: string;
   teamA: Player[];
   teamB: Player[];
+  teamC?: Player[] | null;
   teamATotalSkill: number;
   teamBTotalSkill: number;
+  teamCTotalSkill?: number | null;
   teamAFWSkill?: number;
   teamBFWSkill?: number;
   status: string;
@@ -27,9 +29,10 @@ interface Squad {
 interface SquadHistoryProps {
   isAdmin: boolean;
   onLoadSquad: (squad: Squad) => void;
+  squadMode: '2squad' | '3squad';
 }
 
-export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
+export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryProps) {
   const [squads, setSquads] = useState<Squad[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +55,10 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
         const data = await response.json();
 
         if (data.success && data.squads) {
-          // Already sorted by backend, newest first
-          setSquads(data.squads);
+          const filtered = data.squads.filter((s: Squad) =>
+            squadMode === '3squad' ? !!s.teamC : !s.teamC
+          );
+          setSquads(filtered);
         } else {
           setError('Failed to load squad history');
         }
@@ -227,13 +232,17 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-zinc-100 text-2xl">
-                      {`${squad.teamA.length}v${squad.teamB.length}`}
+                      {squad.teamC
+                        ? `${squad.teamA.length}v${squad.teamB.length}v${squad.teamC.length}`
+                        : `${squad.teamA.length}v${squad.teamB.length}`}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-yellow-400 font-bold">
-                        {squad.teamATotalSkill} vs {squad.teamBTotalSkill}
+                        {squad.teamC
+                          ? `${squad.teamATotalSkill} · ${squad.teamBTotalSkill} · ${squad.teamCTotalSkill}`
+                          : `${squad.teamATotalSkill} vs ${squad.teamBTotalSkill}`}
                       </span>
-                      {Math.abs(squad.teamATotalSkill - squad.teamBTotalSkill) <= 2 && (
+                      {!squad.teamC && Math.abs(squad.teamATotalSkill - squad.teamBTotalSkill) <= 2 && (
                         <span className="text-green-400 text-sm">✓ Balanced</span>
                       )}
                     </div>
@@ -303,7 +312,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
                   >
                     {/* Team A */}
                     <div>
-                      <h4 className="font-bold text-blue-300 mb-2">🔵 Team A</h4>
+                      <h4 className="font-bold text-blue-300 mb-2">🔵 {squad.teamC ? 'Squad A' : 'Team A'}</h4>
                       <div className="space-y-1 text-sm">
                         {sortPlayersByPosition(squad.teamA).map((player) => (
                           <div
@@ -326,7 +335,7 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
 
                     {/* Team B */}
                     <div>
-                      <h4 className="font-bold text-red-300 mb-2">🔴 Team B</h4>
+                      <h4 className="font-bold text-red-300 mb-2">🔴 {squad.teamC ? 'Squad B' : 'Team B'}</h4>
                       <div className="space-y-1 text-sm">
                         {sortPlayersByPosition(squad.teamB).map((player) => (
                           <div
@@ -346,6 +355,31 @@ export function SquadHistory({ isAdmin, onLoadSquad }: SquadHistoryProps) {
                         ))}
                       </div>
                     </div>
+
+                    {/* Team C (3-squad only) */}
+                    {squad.teamC && squad.teamC.length > 0 && (
+                      <div>
+                        <h4 className="font-bold text-green-300 mb-2">🟢 Squad C</h4>
+                        <div className="space-y-1 text-sm">
+                          {sortPlayersByPosition(squad.teamC).map((player) => (
+                            <div
+                              key={player.id}
+                              className="flex items-center justify-between p-2 bg-slate-600/30 rounded"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>{getPositionEmoji(player.position)}</span>
+                                <span className="text-gray-300">{player.name}</span>
+                              </div>
+                              {isAdmin && player.skill && (
+                                <span className="text-yellow-400 text-xs font-bold">
+                                  {player.skill}/10
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>

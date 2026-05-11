@@ -133,27 +133,90 @@ function generateRandomCombination(players, teamSize) {
 function generateOptimalSquads(players, teamSize, iterations = 1000) {
   let bestScore = Infinity;
   let bestCombination = null;
-  let successCount = 0;
-  let failCount = 0;
 
   for (let i = 0; i < iterations; i++) {
     const { teamA, teamB } = generateRandomCombination(players, teamSize);
 
-    if (teamA.length !== teamSize || teamB.length !== teamSize) {
-      failCount++;
-      continue;
-    }
+    if (teamA.length !== teamSize || teamB.length !== teamSize) continue;
 
-    successCount++;
     const score = calculateScore(teamA, teamB);
 
     if (score < bestScore) {
       bestScore = score;
       bestCombination = { teamA, teamB, score };
+      if (bestScore === 0) break;
+    }
+  }
 
-      if (bestScore === 0) {
-        break;
-      }
+  return bestCombination;
+}
+
+// ============================================================================
+// 3-SQUAD FUNCTIONS
+// ============================================================================
+
+function calculateScore3(teamA, teamB, teamC) {
+  return calculateScore(teamA, teamB) + calculateScore(teamB, teamC) + calculateScore(teamA, teamC);
+}
+
+function generateRandomCombination3(players, teamSizes) {
+  const [sizeA, sizeB, sizeC] = teamSizes;
+  const positions = groupByPosition(players);
+
+  const teamA = [];
+  const teamB = [];
+  const teamC = [];
+
+  // Distribute GKs — one per team where possible
+  const gkCount = positions.GK.length;
+  if (gkCount >= 3) {
+    teamA.push(positions.GK[0]);
+    teamB.push(positions.GK[1]);
+    teamC.push(positions.GK[2]);
+    positions.GK = positions.GK.slice(3);
+  } else if (gkCount === 2) {
+    teamA.push(positions.GK[0]);
+    teamB.push(positions.GK[1]);
+    if (positions.DEF.length > 0) teamC.push(positions.DEF.pop());
+    positions.GK = [];
+  } else if (gkCount === 1) {
+    teamA.push(positions.GK[0]);
+    if (positions.DEF.length > 0) teamB.push(positions.DEF.pop());
+    if (positions.DEF.length > 0) teamC.push(positions.DEF.pop());
+    positions.GK = [];
+  }
+
+  const remaining = [...positions.GK, ...positions.DEF, ...positions.MID, ...positions.FW];
+  const shuffled = shuffleArray(remaining);
+
+  for (const player of shuffled) {
+    if (teamA.length < sizeA) teamA.push(player);
+    else if (teamB.length < sizeB) teamB.push(player);
+    else if (teamC.length < sizeC) teamC.push(player);
+  }
+
+  return { teamA, teamB, teamC };
+}
+
+function generateOptimalSquads3(players, teamSizes, iterations = 1000) {
+  let bestScore = Infinity;
+  let bestCombination = null;
+
+  for (let i = 0; i < iterations; i++) {
+    const { teamA, teamB, teamC } = generateRandomCombination3(players, teamSizes);
+
+    if (
+      teamA.length !== teamSizes[0] ||
+      teamB.length !== teamSizes[1] ||
+      teamC.length !== teamSizes[2]
+    ) continue;
+
+    const score = calculateScore3(teamA, teamB, teamC);
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestCombination = { teamA, teamB, teamC, score };
+      if (bestScore === 0) break;
     }
   }
 
@@ -186,7 +249,7 @@ export default async (req, context) => {
 
   try {
     const body = await req.json();
-    const { playerIds } = body;
+    const { playerIds, squadCount = 2 } = body;
 
     if (!playerIds || !Array.isArray(playerIds) || playerIds.length === 0) {
       return new Response(JSON.stringify({ error: 'playerIds array is required' }), {
@@ -197,34 +260,39 @@ export default async (req, context) => {
 
     const totalPlayers = playerIds.length;
 
-    // NEW DYNAMIC VALIDATION
-    if (totalPlayers % 2 !== 0) {
-      return new Response(
-        JSON.stringify({
-          error: `You selected ${totalPlayers} players. Please select an even number for balanced teams.`,
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (squadCount === 3) {
+      if (totalPlayers < 21 || totalPlayers > 24) {
+        return new Response(
+          JSON.stringify({
+            error: `For 3 squads, select between 21 and 24 players. You selected ${totalPlayers}.`,
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      if (totalPlayers % 2 !== 0) {
+        return new Response(
+          JSON.stringify({
+            error: `You selected ${totalPlayers} players. Please select an even number for balanced teams.`,
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      if (totalPlayers < 14 || totalPlayers > 20) {
+        return new Response(
+          JSON.stringify({
+            error: `Invalid number of players. Support is for 14 to 20 players, you provided ${totalPlayers}.`,
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
     }
-
-    if (totalPlayers < 14 || totalPlayers > 20) {
-      return new Response(
-        JSON.stringify({
-          error: `Invalid number of players. Support is for 14 to 20 players, you provided ${totalPlayers}.`,
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Dynamic team size calculation
-    const teamSize = totalPlayers / 2;
 
     // Fetch player details
     const players = await sql`
       SELECT id, name, position, skill
       FROM players
       WHERE id = ANY(${playerIds})
-
     `;
 
     if (players.length !== playerIds.length) {
@@ -234,10 +302,82 @@ export default async (req, context) => {
       });
     }
 
-    // Generate optimal squads
-    // Generate optimal squads
     const startTime = Date.now();
 
+    // ── 3-SQUAD PATH ──────────────────────────────────────────────────────────
+    if (squadCount === 3) {
+      const base = Math.floor(totalPlayers / 3);
+      const extra = totalPlayers % 3;
+      const teamSizes = [
+        base + (extra > 0 ? 1 : 0),
+        base + (extra > 1 ? 1 : 0),
+        base,
+      ];
+
+      const result = generateOptimalSquads3(players, teamSizes, 1000);
+      const generationTime = Date.now() - startTime;
+
+      if (!result) {
+        return new Response(
+          JSON.stringify({ error: 'Could not generate balanced squads. Try different players.' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { teamA, teamB, teamC } = result;
+      const teamASkill = calculateTotalSkill(teamA);
+      const teamBSkill = calculateTotalSkill(teamB);
+      const teamCSkill = calculateTotalSkill(teamC);
+      const maxDiff = Math.max(
+        Math.abs(teamASkill - teamBSkill),
+        Math.abs(teamBSkill - teamCSkill),
+        Math.abs(teamASkill - teamCSkill)
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          squadCount: 3,
+          teamA: {
+            players: teamA,
+            totalSkill: teamASkill,
+            fwSkill: calculateFWSkill(teamA),
+            positions: getPositionBreakdown(teamA),
+            gkCount: getGKCount(teamA),
+          },
+          teamB: {
+            players: teamB,
+            totalSkill: teamBSkill,
+            fwSkill: calculateFWSkill(teamB),
+            positions: getPositionBreakdown(teamB),
+            gkCount: getGKCount(teamB),
+          },
+          teamC: {
+            players: teamC,
+            totalSkill: teamCSkill,
+            fwSkill: calculateFWSkill(teamC),
+            positions: getPositionBreakdown(teamC),
+            gkCount: getGKCount(teamC),
+          },
+          metadata: {
+            totalPlayers,
+            teamSizes,
+            maxSkillDifference: maxDiff,
+            generationTime,
+            algorithm: 'iterative-optimized-3squad',
+            iterations: 1000,
+            balanced: maxDiff <= 3,
+          },
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        }
+      );
+    }
+
+    // ── 2-SQUAD PATH ──────────────────────────────────────────────────────────
+    const teamSize = totalPlayers / 2;
     const result = generateOptimalSquads(players, teamSize, 1000);
     const generationTime = Date.now() - startTime;
 
@@ -266,6 +406,7 @@ export default async (req, context) => {
     return new Response(
       JSON.stringify({
         success: true,
+        squadCount: 2,
         teamA: {
           players: teamA,
           totalSkill: teamASkill,
