@@ -17,6 +17,7 @@ interface PlayerSelectorProps {
   isLoading: boolean;
   onGenerate: () => void;
   isAdmin: boolean;
+  squadMode: '2squad' | '3squad';
 }
 
 export function PlayerSelector({
@@ -26,10 +27,15 @@ export function PlayerSelector({
   isLoading,
   onGenerate,
   isAdmin,
+  squadMode,
 }: PlayerSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const selectedCount = selectedPlayerIds.length;
-  const isComplete = selectedCount >= 14 && selectedCount <= 20 && selectedCount % 2 === 0;
+  const is2Squad = squadMode === '2squad';
+  const isComplete = is2Squad
+    ? selectedCount >= 14 && selectedCount <= 20 && selectedCount % 2 === 0
+    : selectedCount >= 21 && selectedCount <= 24;
+  const maxPlayers = is2Squad ? 20 : 24;
 
   // Filter players based on search
   const filteredPlayers = useMemo(() => {
@@ -75,23 +81,31 @@ export function PlayerSelector({
               isComplete ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
             }`}
           >
-            {selectedCount}/14-20
+            {selectedCount}/{is2Squad ? '14-20' : '21-24'}
           </div>
         </div>
         <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${Math.min((selectedCount / 20) * 100, 100)}%` }}
+            animate={{ width: `${Math.min((selectedCount / maxPlayers) * 100, 100)}%` }}
             className={`h-full ${isComplete ? 'bg-green-500' : 'bg-yellow-500'}`}
             transition={{ duration: 0.3 }}
           />
         </div>
         <p className="text-xs text-gray-400 mt-2">
-          {selectedCount < 14
-            ? `Select ${14 - selectedCount} more for 7v7`
-            : selectedCount % 2 !== 0
-              ? 'Select 1 more player to balance the teams'
-              : `Ready for ${selectedCount / 2}v${selectedCount / 2}! (Add more for larger squads)`}
+          {is2Squad
+            ? selectedCount < 14
+              ? `Select ${14 - selectedCount} more for 7v7`
+              : selectedCount % 2 !== 0
+                ? 'Select 1 more player to balance the teams'
+                : isComplete
+                  ? `Ready for ${selectedCount / 2}v${selectedCount / 2}!`
+                  : `${selectedCount} selected — max 20`
+            : selectedCount < 21
+              ? `Select ${21 - selectedCount} more (min 21 for 3 squads)`
+              : isComplete
+                ? `Ready — ${selectedCount} players across 3 squads`
+                : `${selectedCount} selected — max 24`}
         </p>
       </div>
 
@@ -116,7 +130,7 @@ export function PlayerSelector({
         ) : (
           filteredPlayers.map((player, index) => {
             const isSelected = selectedPlayerIds.includes(player.id);
-            const isDisabled = !isSelected && selectedPlayerIds.length >= 20;
+            const isDisabled = !isSelected && selectedPlayerIds.length >= maxPlayers;
 
             return (
               <motion.button
@@ -194,7 +208,9 @@ export function PlayerSelector({
 
       {/* Info Text */}
       <p className="text-xs text-gray-500 text-center mt-3">
-        The algorithm will generate perfectly balanced teams based on skills and positions
+        {is2Squad
+          ? 'Algorithm generates balanced teams based on skills and positions'
+          : 'Algorithm generates 3 balanced squads — round-robin matches auto-created'}
       </p>
     </motion.div>
   );

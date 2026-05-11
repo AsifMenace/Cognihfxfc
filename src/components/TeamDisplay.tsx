@@ -20,6 +20,7 @@ interface TeamDisplayProps {
   isSaving: boolean;
   isSaved: boolean;
   hideAction?: boolean;
+  editOnly?: boolean;
   isAdmin: boolean;
 }
 
@@ -34,6 +35,7 @@ export function TeamDisplay({
   isSaving,
   isSaved,
   hideAction = false,
+  editOnly = false,
   isAdmin,
 }: TeamDisplayProps) {
   // Calculate total skill
@@ -211,8 +213,21 @@ export function TeamDisplay({
         })}
       </div>
 
+      {/* Edit-only button (3-squad mode) */}
+      {editOnly && (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onEdit}
+          className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+        >
+          <FaEdit className="text-lg" />
+          Edit Squad
+        </motion.button>
+      )}
+
       {/* Action Buttons */}
-      {!hideAction && (
+      {!hideAction && !editOnly && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

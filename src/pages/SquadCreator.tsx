@@ -5,8 +5,9 @@ import { PlayerSelector } from '../components/PlayerSelector';
 import { TeamDisplay } from '../components/TeamDisplay';
 import { EditTeamsModal } from '../components/EditTeamsModal';
 import { MatchLinkingModal } from '../components/MatchLinkingModal';
-import { FaStar, FaFire, FaCheck } from 'react-icons/fa';
 import { SquadHistory } from '../components/SquadHistory';
+import { getAdminHeaders } from '../utils/auth';
+import { FaStar, FaFire, FaCheck, FaUsers } from 'react-icons/fa';
 
 interface SquadCreatorProps {
   isAdmin: boolean;
@@ -20,161 +21,169 @@ interface Player {
   photo?: string;
 }
 
-interface Squad {
-  players: Player[];
-  totalSkill: number;
-  fwSkill: number;
-  positions: {
-    GK: number;
-    DEF: number;
-    MID: number;
-    FW: number;
-  };
-  gkCount: number;
+interface Team {
+  id: number;
+  name: string;
+  color: string | null;
 }
 
-interface GenerationState {
-  loading: boolean;
-  error: string | null;
-  success: boolean;
+interface Booking {
+  booking_date: string;
+  start_time: string;
+  session?: string;
+  field_number?: string;
 }
+
+type SquadMode = '2squad' | '3squad';
 
 export function SquadCreator({ isAdmin }: SquadCreatorProps) {
-  // State Management
+  const [squadMode, setSquadMode] = useState<SquadMode>('2squad');
+
+  // Player state
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<number[]>([]);
+
+  // Squad state
   const [teamA, setTeamA] = useState<Player[]>([]);
   const [teamB, setTeamB] = useState<Player[]>([]);
-  const [generation, setGeneration] = useState<GenerationState>({
-    loading: false,
-    error: null,
-    success: false,
-  });
+  const [teamC, setTeamC] = useState<Player[]>([]);
+
+  // UI state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [savedSquadId, setSavedSquadId] = useState<number | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [editingTeamIndex, setEditingTeamIndex] = useState(0);
   const [showSquadHistory, setShowSquadHistory] = useState(false);
 
-  // Load squad from history
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleLoadSquad = (loadedSquad: any) => {
-    setTeamA(loadedSquad.teamA);
-    setTeamB(loadedSquad.teamB);
-    setSavedSquadId(loadedSquad.id);
-    setShowSquadHistory(false);
-    setGeneration({ loading: false, error: null, success: false });
-  };
+  // Team assignment for create-match flow (both modes)
+  const [registeredTeams, setRegisteredTeams] = useState<Team[]>([]);
+  const [assignedTeamA, setAssignedTeamA] = useState<number | null>(null);
+  const [assignedTeamB, setAssignedTeamB] = useState<number | null>(null);
+  const [assignedTeamC, setAssignedTeamC] = useState<number | null>(null);
+  const [nextBooking, setNextBooking] = useState<Booking | null>(null);
+  const [creatingMatch, setCreatingMatch] = useState(false);
+  const [matchCreated, setMatchCreated] = useState<{
+    pairings: string[];
+    matchDate: string;
+    matchTime: string;
+  } | null>(null);
 
-  // Fetch all players on mount
+  const squadsGenerated = teamA.length > 0 && teamB.length > 0;
+
+  // ── Fetch players ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchPlayers = async () => {
-      try {
-        const response = await fetch('/.netlify/functions/getPlayersForSquadCreator');
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Response status:', response.status);
-          console.error('Response text:', errorText);
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-
-        const data = await response.json();
-        setAllPlayers(data.players);
-      } catch (error) {
-        console.error('Error fetching players:', error);
-        setGeneration({
-          loading: false,
-          error: `Failed to load players: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          success: false,
-        });
-      }
-    };
-
-    fetchPlayers();
+    fetch('/.netlify/functions/getPlayersForSquadCreator')
+      .then((r) => r.json())
+      .then((data) => setAllPlayers(data.players))
+      .catch(() => setError('Failed to load players'));
   }, []);
 
-  // Handle player selection
-  const handlePlayerToggle = (playerId: number) => {
-    setSelectedPlayerIds((prev) => {
-      if (prev.includes(playerId)) {
-        return prev.filter((id) => id !== playerId);
-      } else {
-        // Raised cap from 16 to 20
-        if (prev.length >= 20) {
-          return prev;
-        }
-        return [...prev, playerId];
+  // ── Fetch registered teams + next booking when squads are generated ────────
+  useEffect(() => {
+    if (!squadsGenerated) return;
+    Promise.all([
+      fetch('/.netlify/functions/getTeams').then((r) => r.json()),
+      fetch('/.netlify/functions/getUpcomingBookings').then((r) => r.json()),
+    ]).then(([teams, bookings]) => {
+      setRegisteredTeams(Array.isArray(teams) ? teams : []);
+      if (Array.isArray(bookings) && bookings.length > 0) {
+        setNextBooking(bookings[0]);
       }
+    }).catch(() => {});
+  }, [squadsGenerated]);
+
+  // ── Player toggle ──────────────────────────────────────────────────────────
+  const handlePlayerToggle = (playerId: number) => {
+    const max = squadMode === '3squad' ? 24 : 20;
+    setSelectedPlayerIds((prev) => {
+      if (prev.includes(playerId)) return prev.filter((id) => id !== playerId);
+      if (prev.length >= max) return prev;
+      return [...prev, playerId];
     });
   };
 
-  // Generate balanced squads
+  // ── Reset everything ───────────────────────────────────────────────────────
+  const resetSquads = () => {
+    setTeamA([]);
+    setTeamB([]);
+    setTeamC([]);
+    setSavedSquadId(null);
+    setAssignedTeamA(null);
+    setAssignedTeamB(null);
+    setAssignedTeamC(null);
+    setMatchCreated(null);
+    setError(null);
+  };
+
+  // ── Switch mode resets everything ─────────────────────────────────────────
+  const handleModeSwitch = (mode: SquadMode) => {
+    setSquadMode(mode);
+    setSelectedPlayerIds([]);
+    resetSquads();
+    setShowSquadHistory(false);
+  };
+
+  // ── Generate squads ────────────────────────────────────────────────────────
   const handleGenerateSquads = async () => {
     const count = selectedPlayerIds.length;
 
-    // Validation for even numbers between 14 and 20[cite: 2]
-    if (count < 14 || count > 20 || count % 2 !== 0) {
-      let errorMessage = `Select an even number of players between 14 and 20.`;
-      if (count % 2 !== 0)
-        errorMessage = `You have an odd number (${count}) of players selected. Please select one more or one less.`;
-
-      setGeneration({
-        loading: false,
-        error: errorMessage,
-        success: false,
-      });
-      return;
+    if (squadMode === '2squad') {
+      if (count < 14 || count > 20 || count % 2 !== 0) {
+        setError(
+          count % 2 !== 0
+            ? `Odd number selected (${count}). Select one more or one less.`
+            : 'Select an even number of players between 14 and 20.'
+        );
+        return;
+      }
+    } else {
+      if (count < 21 || count > 24) {
+        setError(`Select between 21 and 24 players for 3 squads. You have ${count}.`);
+        return;
+      }
     }
 
-    setGeneration({ loading: true, error: null, success: false });
+    setLoading(true);
+    setError(null);
 
     try {
       const response = await fetch('/.netlify/functions/generateBalancedSquads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerIds: selectedPlayerIds }),
+        body: JSON.stringify({
+          playerIds: selectedPlayerIds,
+          squadCount: squadMode === '3squad' ? 3 : 2,
+        }),
       });
 
       const data = await response.json();
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to generate squads');
-      }
+      if (!data.success) throw new Error(data.error || 'Failed to generate squads');
 
       setTeamA(data.teamA.players);
       setTeamB(data.teamB.players);
-      setGeneration({ loading: false, error: null, success: true });
+      if (squadMode === '3squad') setTeamC(data.teamC.players);
 
-      // Scroll to teams on mobile
-      setTimeout(() => {
-        window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
-      }, 100);
-    } catch (error) {
-      setGeneration({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Failed to generate squads',
-        success: false,
-      });
+      setTimeout(() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' }), 100);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate squads');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Save squad to database
-  const handleSaveSquad = async () => {
-    if (teamA.length === 0 || teamB.length === 0) return;
+  // ── Save squad ─────────────────────────────────────────────────────────────
+  const handleSaveSquad = async (): Promise<number | null> => {
+    if (teamA.length === 0 || teamB.length === 0) return null;
 
-    setGeneration({ loading: true, error: null, success: false });
+    setLoading(true);
+    const calcSkill = (t: Player[]) => t.reduce((s, p) => s + (p.skill || 0), 0);
+    const calcFW = (t: Player[]) =>
+      t.filter((p) => p.position?.toUpperCase() === 'FORWARD').reduce((s, p) => s + (p.skill || 0), 0);
 
     try {
-      const teamASkill = teamA.reduce((sum, p) => sum + (p.skill || 0), 0);
-      const teamBSkill = teamB.reduce((sum, p) => sum + (p.skill || 0), 0);
-      const teamAFW = teamA
-        .filter((p) => p.position?.toUpperCase() === 'FORWARD')
-        .reduce((sum, p) => sum + (p.skill || 0), 0);
-      const teamBFW = teamB
-        .filter((p) => p.position?.toUpperCase() === 'FORWARD')
-        .reduce((sum, p) => sum + (p.skill || 0), 0);
-
       const response = await fetch('/.netlify/functions/saveSquadGeneration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,58 +191,128 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
           generationDate: new Date().toISOString().split('T')[0],
           teamA,
           teamB,
-          teamATotalSkill: teamASkill,
-          teamBTotalSkill: teamBSkill,
-          teamAFWSkill: teamAFW,
-          teamBFWSkill: teamBFW,
+          teamC: squadMode === '3squad' ? teamC : null,
+          teamATotalSkill: calcSkill(teamA),
+          teamBTotalSkill: calcSkill(teamB),
+          teamCTotalSkill: squadMode === '3squad' ? calcSkill(teamC) : null,
+          teamAFWSkill: calcFW(teamA),
+          teamBFWSkill: calcFW(teamB),
+          teamCFWSkill: squadMode === '3squad' ? calcFW(teamC) : null,
         }),
       });
 
       const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to save squad');
-      }
+      if (!data.success) throw new Error(data.error || 'Failed to save squad');
 
       setSavedSquadId(data.squad.id);
-      // Also save to localStorage for history
-      const squadForHistory = {
-        id: data.squad.id,
-        generationDate: new Date().toISOString().split('T')[0],
-        teamA,
-        teamB,
-        teamATotalSkill: teamASkill,
-        teamBTotalSkill: teamBSkill,
-        teamAFWSkill: teamAFW,
-        teamBFWSkill: teamBFW,
-        status: 'created',
-      };
-
-      const storedSquads = localStorage.getItem('squadHistory');
-      const squads = storedSquads ? JSON.parse(storedSquads) : [];
-      squads.push(squadForHistory);
-      localStorage.setItem('squadHistory', JSON.stringify(squads));
-      setGeneration({ loading: false, error: null, success: true });
-    } catch (error) {
-      setGeneration({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Failed to save squad',
-        success: false,
-      });
+      return data.squad.id;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save squad');
+      return null;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Check if squads are generated
-  const squadsGenerated = teamA.length > 0 && teamB.length > 0;
+  // ── Create match (both modes) ──────────────────────────────────────────────
+  const handleCreateMatch = async () => {
+    if (squadMode === '2squad' && (!assignedTeamA || !assignedTeamB)) {
+      setError('Assign both squads to a team before creating the match.');
+      return;
+    }
+    if (squadMode === '3squad' && (!assignedTeamA || !assignedTeamB || !assignedTeamC)) {
+      setError('Assign all three squads to a team before creating matches.');
+      return;
+    }
+    if (squadMode === '2squad' && assignedTeamA === assignedTeamB) {
+      setError('Both squads cannot be assigned to the same team.');
+      return;
+    }
+    if (
+      squadMode === '3squad' &&
+      (assignedTeamA === assignedTeamB || assignedTeamB === assignedTeamC || assignedTeamA === assignedTeamC)
+    ) {
+      setError('Each squad must be assigned to a different team.');
+      return;
+    }
+
+    setCreatingMatch(true);
+    setError(null);
+
+    // Save first if not already saved
+    let squadId = savedSquadId;
+    if (!squadId) {
+      squadId = await handleSaveSquad();
+      if (!squadId) { setCreatingMatch(false); return; }
+    }
+
+    try {
+      const response = await fetch('/.netlify/functions/createMatchFromSquad', {
+        method: 'POST',
+        headers: { ...getAdminHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          squadId,
+          squadCount: squadMode === '3squad' ? 3 : 2,
+          teamAId: assignedTeamA,
+          teamBId: assignedTeamB,
+          teamCId: squadMode === '3squad' ? assignedTeamC : undefined,
+          teamAPlayers: teamA,
+          teamBPlayers: teamB,
+          teamCPlayers: squadMode === '3squad' ? teamC : undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to create match');
+
+      setMatchCreated({
+        pairings: data.pairings,
+        matchDate: data.matchDate,
+        matchTime: data.matchTime,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create match');
+    } finally {
+      setCreatingMatch(false);
+    }
+  };
+
+  // ── Load from history ──────────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleLoadSquad = (loadedSquad: any) => {
+    setTeamA(loadedSquad.teamA);
+    setTeamB(loadedSquad.teamB);
+    if (loadedSquad.teamC) {
+      setTeamC(loadedSquad.teamC);
+      setSquadMode('3squad');
+    } else {
+      setTeamC([]);
+      setSquadMode('2squad');
+    }
+    setSavedSquadId(loadedSquad.id);
+    setShowSquadHistory(false);
+    setError(null);
+    setMatchCreated(null);
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    });
+  };
+
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':');
+    const hour = parseInt(h);
+    return `${hour % 12 || 12}:${m} ${hour < 12 ? 'AM' : 'PM'}`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 pb-6 pt-4 px-4">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6 text-center"
-      >
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-center">
         <h1 className="text-2xl sm:text-3xl font-black text-yellow-400 mb-2 flex items-center justify-center gap-2">
           <FaFire className="text-orange-500" />
           SQUAD CREATOR
@@ -242,127 +321,383 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
         <p className="text-sm text-gray-400">Create balanced teams for friendly matches</p>
       </motion.div>
 
-      {/* Error Message */}
+      {/* Mode Toggle */}
+      {!squadsGenerated && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2 mb-6 max-w-sm mx-auto">
+          <button
+            onClick={() => handleModeSwitch('2squad')}
+            className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+              squadMode === '2squad'
+                ? 'bg-yellow-500 text-slate-900'
+                : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+            }`}
+          >
+            <FaUsers /> 2 Squads
+          </button>
+          <button
+            onClick={() => handleModeSwitch('3squad')}
+            className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+              squadMode === '3squad'
+                ? 'bg-yellow-500 text-slate-900'
+                : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+            }`}
+          >
+            <FaUsers /> 3 Squads
+          </button>
+        </motion.div>
+      )}
+
+      {/* Error */}
       <AnimatePresence>
-        {generation.error && (
+        {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mb-4 bg-red-500/20 border border-red-500 rounded-xl p-4"
+            className="mb-4 bg-red-500/20 border border-red-500 rounded-xl p-4 max-w-2xl mx-auto"
           >
-            <p className="text-red-300 text-sm font-medium">{generation.error}</p>
+            <p className="text-red-300 text-sm font-medium">{error}</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Success Message */}
+      {/* Squad saved banner */}
       <AnimatePresence>
-        {savedSquadId && squadsGenerated && (
+        {savedSquadId && squadsGenerated && !matchCreated && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mb-4 bg-green-500/20 border border-green-500 rounded-xl p-4 flex items-center gap-2"
+            exit={{ opacity: 0 }}
+            className="mb-4 bg-green-500/20 border border-green-500 rounded-xl p-4 max-w-2xl mx-auto flex items-center gap-2"
           >
             <FaCheck className="text-green-400" />
-            <p className="text-green-300 text-sm font-medium">Squad saved successfully!</p>
+            <p className="text-green-300 text-sm font-medium">Squad saved!</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
-      <div className="max-w-2xl mx-auto">
-        {!squadsGenerated && (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowSquadHistory(!showSquadHistory)}
-            className="w-full py-3 bg-slate-700/50 hover:bg-slate-700 text-gray-300 font-bold rounded-xl transition-colors mb-4"
+      {/* Match created success */}
+      <AnimatePresence>
+        {matchCreated && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-4 bg-green-500/20 border border-green-500 rounded-xl p-4 max-w-2xl mx-auto"
           >
-            📋 View Squad History
-          </motion.button>
-        )}
-
-        {/* Squad History Panel */}
-        <AnimatePresence>
-          {showSquadHistory && !squadsGenerated && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-4"
-            >
-              <SquadHistory isAdmin={isAdmin} onLoadSquad={handleLoadSquad} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* Player Selector Section */}
-        {!squadsGenerated && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
-            <PlayerSelector
-              allPlayers={allPlayers}
-              selectedPlayerIds={selectedPlayerIds}
-              onPlayerToggle={handlePlayerToggle}
-              isLoading={generation.loading}
-              onGenerate={handleGenerateSquads}
-              isAdmin={isAdmin}
-            />
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">✅</span>
+              <p className="text-green-300 font-bold">
+                {squadMode === '3squad' ? '3 Matches created!' : 'Match created!'}
+              </p>
+            </div>
+            <div className="space-y-1 text-sm text-green-200">
+              {matchCreated.pairings.map((p, i) => (
+                <p key={i}>⚽ {p}</p>
+              ))}
+              <p className="text-gray-400 mt-2">
+                📅 {formatDate(matchCreated.matchDate)} · ⏰ {formatTime(matchCreated.matchTime)}
+              </p>
+            </div>
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Teams Display Section */}
+      <div className="max-w-2xl mx-auto">
+        {/* Pre-generation: history + player selector */}
+        {!squadsGenerated && (
+          <>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowSquadHistory(!showSquadHistory)}
+              className="w-full py-3 bg-slate-700/50 hover:bg-slate-700 text-gray-300 font-bold rounded-xl transition-colors mb-4"
+            >
+              📋 View Squad History
+            </motion.button>
+
+            <AnimatePresence>
+              {showSquadHistory && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-4"
+                >
+                  <SquadHistory isAdmin={isAdmin} onLoadSquad={handleLoadSquad} squadMode={squadMode} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+              <PlayerSelector
+                allPlayers={allPlayers}
+                selectedPlayerIds={selectedPlayerIds}
+                onPlayerToggle={handlePlayerToggle}
+                isLoading={loading}
+                onGenerate={handleGenerateSquads}
+                isAdmin={isAdmin}
+                squadMode={squadMode}
+              />
+            </motion.div>
+          </>
+        )}
+
+        {/* Post-generation: squad cards */}
         {squadsGenerated && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             className="space-y-4"
           >
-            {/* Team A */}
-            <TeamDisplay
-              team={teamA}
-              teamName="TEAM A"
-              teamColor="bg-blue-600"
-              teamIcon="🔵"
-              onEdit={() => {
-                setEditingTeamIndex(0);
-                setShowEditModal(true);
-              }}
-              onSave={handleSaveSquad}
-              onLink={() => setShowMatchModal(true)}
-              isSaving={generation.loading}
-              isSaved={!!savedSquadId}
-              isAdmin={isAdmin}
-            />
+            {/* ── 2-SQUAD layout ─────────────────────────────────────────── */}
+            {squadMode === '2squad' && (
+              <>
+                <TeamDisplay
+                  team={teamA}
+                  teamName="TEAM A"
+                  teamColor="bg-blue-600"
+                  teamIcon="🔵"
+                  onEdit={() => { setEditingTeamIndex(0); setShowEditModal(true); }}
+                  onSave={handleSaveSquad}
+                  onLink={() => setShowMatchModal(true)}
+                  isSaving={loading}
+                  isSaved={!!savedSquadId}
+                  isAdmin={isAdmin}
+                />
+                <TeamDisplay
+                  team={teamB}
+                  teamName="TEAM B"
+                  teamColor="bg-red-600"
+                  teamIcon="🔴"
+                  onEdit={() => { setEditingTeamIndex(1); setShowEditModal(true); }}
+                  onSave={handleSaveSquad}
+                  onLink={() => setShowMatchModal(true)}
+                  isSaving={loading}
+                  isSaved={!!savedSquadId}
+                  hideAction
+                  isAdmin={isAdmin}
+                />
 
-            {/* Team B */}
-            <TeamDisplay
-              team={teamB}
-              teamName="TEAM B"
-              teamColor="bg-red-600"
-              teamIcon="🔴"
-              onEdit={() => {
-                setEditingTeamIndex(1);
-                setShowEditModal(true);
-              }}
-              onSave={handleSaveSquad}
-              onLink={() => setShowMatchModal(true)}
-              isSaving={generation.loading}
-              isSaved={!!savedSquadId}
-              hideAction
-              isAdmin={isAdmin}
-            />
+                {/* Create Match section for 2-squad */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-slate-800/50 border border-yellow-500/20 rounded-2xl p-5 space-y-4"
+                >
+                  <h3 className="font-black text-yellow-400 text-lg">Create Match</h3>
 
-            {/* Back to selector button */}
+                  {nextBooking ? (
+                    <div className="text-sm text-gray-400 bg-slate-700/50 rounded-lg p-3">
+                      📅 Next session: <span className="text-white font-semibold">
+                        {formatDate(nextBooking.booking_date)} · {formatTime(nextBooking.start_time)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-sm bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-300">
+                      ⚠️ No upcoming booking found. Add a field booking before creating a match.
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Squad A plays as</label>
+                      <select
+                        value={assignedTeamA ?? ''}
+                        onChange={(e) => setAssignedTeamA(Number(e.target.value) || null)}
+                        className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
+                      >
+                        <option value="">— pick team —</option>
+                        {registeredTeams
+                          .filter((t) => t.id !== assignedTeamB)
+                          .map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Squad B plays as</label>
+                      <select
+                        value={assignedTeamB ?? ''}
+                        onChange={(e) => setAssignedTeamB(Number(e.target.value) || null)}
+                        className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
+                      >
+                        <option value="">— pick team —</option>
+                        {registeredTeams
+                          .filter((t) => t.id !== assignedTeamA)
+                          .map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: nextBooking && assignedTeamA && assignedTeamB ? 1.02 : 1 }}
+                    whileTap={{ scale: nextBooking && assignedTeamA && assignedTeamB ? 0.98 : 1 }}
+                    onClick={handleCreateMatch}
+                    disabled={creatingMatch || !assignedTeamA || !assignedTeamB || !nextBooking}
+                    className={`w-full py-3 font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                      nextBooking && assignedTeamA && assignedTeamB && !creatingMatch
+                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white'
+                        : 'bg-slate-700 text-gray-400 cursor-not-allowed opacity-50'
+                    }`}
+                  >
+                    {creatingMatch ? (
+                      <>
+                        <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+                        Creating...
+                      </>
+                    ) : (
+                      '⚡ Create Match'
+                    )}
+                  </motion.button>
+
+                </motion.div>
+              </>
+            )}
+
+            {/* ── 3-SQUAD layout ─────────────────────────────────────────── */}
+            {squadMode === '3squad' && (
+              <>
+                <TeamDisplay
+                  team={teamA}
+                  teamName="SQUAD A"
+                  teamColor="bg-blue-600"
+                  teamIcon="🔵"
+                  onEdit={() => { setEditingTeamIndex(0); setShowEditModal(true); }}
+                  onSave={handleSaveSquad}
+                  onLink={() => {}}
+                  isSaving={loading}
+                  isSaved={!!savedSquadId}
+                  editOnly
+                  isAdmin={isAdmin}
+                />
+                <TeamDisplay
+                  team={teamB}
+                  teamName="SQUAD B"
+                  teamColor="bg-red-600"
+                  teamIcon="🔴"
+                  onEdit={() => { setEditingTeamIndex(1); setShowEditModal(true); }}
+                  onSave={handleSaveSquad}
+                  onLink={() => {}}
+                  isSaving={loading}
+                  isSaved={!!savedSquadId}
+                  editOnly
+                  isAdmin={isAdmin}
+                />
+                <TeamDisplay
+                  team={teamC}
+                  teamName="SQUAD C"
+                  teamColor="bg-green-600"
+                  teamIcon="🟢"
+                  onEdit={() => { setEditingTeamIndex(2); setShowEditModal(true); }}
+                  onSave={handleSaveSquad}
+                  onLink={() => {}}
+                  isSaving={loading}
+                  isSaved={!!savedSquadId}
+                  editOnly
+                  isAdmin={isAdmin}
+                />
+
+                {/* Assign Teams + Create Matches section */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-slate-800/50 border border-yellow-500/20 rounded-2xl p-5 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-black text-yellow-400 text-lg">Assign Squads & Create Matches</h3>
+                    {/* Standalone save for 3-squad */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleSaveSquad}
+                      disabled={loading}
+                      className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                        savedSquadId
+                          ? 'bg-green-600/40 text-green-300'
+                          : 'bg-green-600 hover:bg-green-700 text-white'
+                      }`}
+                    >
+                      {loading ? (
+                        <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                      ) : savedSquadId ? (
+                        '✓ Saved'
+                      ) : (
+                        '💾 Save'
+                      )}
+                    </motion.button>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Round-robin: A vs B · B vs C · C vs A
+                  </p>
+
+                  {nextBooking ? (
+                    <div className="text-sm text-gray-400 bg-slate-700/50 rounded-lg p-3">
+                      📅 Next session: <span className="text-white font-semibold">
+                        {formatDate(nextBooking.booking_date)} · {formatTime(nextBooking.start_time)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-sm bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-300">
+                      ⚠️ No upcoming booking found. Add a field booking before creating matches.
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Squad A 🔵', value: assignedTeamA, setter: setAssignedTeamA, others: [assignedTeamB, assignedTeamC] },
+                      { label: 'Squad B 🔴', value: assignedTeamB, setter: setAssignedTeamB, others: [assignedTeamA, assignedTeamC] },
+                      { label: 'Squad C 🟢', value: assignedTeamC, setter: setAssignedTeamC, others: [assignedTeamA, assignedTeamB] },
+                    ].map(({ label, value, setter, others }) => (
+                      <div key={label} className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-white w-24 flex-shrink-0">{label}</span>
+                        <select
+                          value={value ?? ''}
+                          onChange={(e) => setter(Number(e.target.value) || null)}
+                          className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
+                        >
+                          <option value="">— pick team —</option>
+                          {registeredTeams
+                            .filter((t) => !others.includes(t.id))
+                            .map((t) => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: nextBooking && assignedTeamA && assignedTeamB && assignedTeamC ? 1.02 : 1 }}
+                    whileTap={{ scale: nextBooking && assignedTeamA && assignedTeamB && assignedTeamC ? 0.98 : 1 }}
+                    onClick={handleCreateMatch}
+                    disabled={creatingMatch || !assignedTeamA || !assignedTeamB || !assignedTeamC || !nextBooking}
+                    className={`w-full py-3 font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                      nextBooking && assignedTeamA && assignedTeamB && assignedTeamC && !creatingMatch
+                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white'
+                        : 'bg-slate-700 text-gray-400 cursor-not-allowed opacity-50'
+                    }`}
+                  >
+                    {creatingMatch ? (
+                      <>
+                        <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+                        Creating matches...
+                      </>
+                    ) : (
+                      '⚡ Save & Create Matches'
+                    )}
+                  </motion.button>
+                </motion.div>
+              </>
+            )}
+
+            {/* Back button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                setTeamA([]);
-                setTeamB([]);
-                setSavedSquadId(null);
-              }}
+              onClick={resetSquads}
               className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-gray-300 font-semibold rounded-xl transition-colors"
             >
               ← Generate New Squads
@@ -371,25 +706,28 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
         )}
       </div>
 
-      {/* Edit Teams Modal */}
+      {/* Edit Modal */}
       <AnimatePresence>
         {showEditModal && (
           <EditTeamsModal
             teamA={teamA}
             teamB={teamB}
+            teamC={squadMode === '3squad' ? teamC : undefined}
             editingTeamIndex={editingTeamIndex}
             onClose={() => setShowEditModal(false)}
-            onSave={(newTeamA, newTeamB) => {
-              setTeamA(newTeamA);
-              setTeamB(newTeamB);
+            onSave={(newA, newB, newC) => {
+              setTeamA(newA);
+              setTeamB(newB);
+              if (newC) setTeamC(newC);
               setShowEditModal(false);
+              setSavedSquadId(null); // mark as unsaved after edit
             }}
             isAdmin={isAdmin}
           />
         )}
       </AnimatePresence>
 
-      {/* Match Linking Modal */}
+      {/* Link to match modal (2-squad only) */}
       <AnimatePresence>
         {showMatchModal && (
           <MatchLinkingModal
@@ -397,10 +735,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
             teamA={teamA}
             teamB={teamB}
             onClose={() => setShowMatchModal(false)}
-            onSuccess={() => {
-              setShowMatchModal(false);
-              // Show success message
-            }}
+            onSuccess={() => setShowMatchModal(false)}
           />
         )}
       </AnimatePresence>
