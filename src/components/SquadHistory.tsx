@@ -1,7 +1,8 @@
 // src/components/squad-creator/SquadHistory.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaHistory, FaTrash, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaHistory, FaTrash, FaEye, FaChevronDown, FaChevronUp, FaShareAlt } from 'react-icons/fa';
+import { toPng } from 'html-to-image';
 
 interface Player {
   id: number;
@@ -38,6 +39,8 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
   const [error, setError] = useState<string | null>(null);
   const [expandedSquadId, setExpandedSquadId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [sharing, setSharing] = useState<number | null>(null);
+  const shareRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Fetch squad history from database (last 4 days) abc
   useEffect(() => {
@@ -87,6 +90,31 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
       alert('Failed to delete squad');
     } finally {
       setDeleting(null);
+    }
+  };
+
+  // Share squad as image
+  const handleShareSquad = async (squad: Squad) => {
+    const el = shareRefs.current[squad.id];
+    if (!el) return;
+    setSharing(squad.id);
+    try {
+      const dataUrl = await toPng(el, { backgroundColor: '#0f172a', pixelRatio: 2 });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `squad-${squad.id}.png`, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Squad' });
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `squad-${squad.id}.png`;
+        a.click();
+      }
+    } catch (err) {
+      console.error('Share failed', err);
+    } finally {
+      setSharing(null);
     }
   };
 
@@ -308,66 +336,101 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="border-t border-slate-600/50 bg-slate-700/30 p-4 space-y-4"
+                    className="border-t border-slate-600/50 bg-slate-700/30 p-4 space-y-3"
                   >
-                    {squad.teamC ? (
-                      /* 3-squad: stacked on mobile, 3 columns on sm+ */
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {[
-                          { label: '🔵 Squad A', players: squad.teamA, color: 'text-blue-300' },
-                          { label: '🔴 Squad B', players: squad.teamB, color: 'text-red-300' },
-                          { label: '🟢 Squad C', players: squad.teamC, color: 'text-green-300' },
-                        ].map(({ label, players, color }) => (
-                          <div key={label}>
-                            <h4 className={`font-bold ${color} mb-2 text-sm`}>{label}</h4>
-                            <div className="space-y-1">
-                              {sortPlayersByPosition(players).map((player) => (
-                                <div
-                                  key={player.id}
-                                  className="flex items-center justify-between p-1.5 bg-slate-600/30 rounded text-xs"
-                                >
-                                  <div className="flex items-center gap-1 min-w-0">
-                                    <span>{getPositionEmoji(player.position)}</span>
-                                    <span className="text-gray-300 truncate">{player.name}</span>
-                                  </div>
-                                  {isAdmin && player.skill && (
-                                    <span className="text-yellow-400 font-bold flex-shrink-0 ml-1">{player.skill}</span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                    {/* Card captured for sharing — ref attached here */}
+                    <div
+                      ref={(el) => { shareRefs.current[squad.id] = el; }}
+                      className="bg-slate-900 rounded-xl p-4 space-y-3"
+                    >
+                      {/* Card header */}
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-700">
+                        <span className="text-yellow-400 font-black text-sm tracking-wide">⚽ SQUAD</span>
+                        <span className="text-gray-400 text-xs">
+                          {new Date(squad.generationDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
                       </div>
-                    ) : (
-                      /* 2-squad: side by side */
-                      <div className="grid grid-cols-2 gap-3">
-                        {[
-                          { label: '🔵 Team A', players: squad.teamA, color: 'text-blue-300' },
-                          { label: '🔴 Team B', players: squad.teamB, color: 'text-red-300' },
-                        ].map(({ label, players, color }) => (
-                          <div key={label}>
-                            <h4 className={`font-bold ${color} mb-2 text-sm`}>{label}</h4>
-                            <div className="space-y-1">
-                              {sortPlayersByPosition(players).map((player) => (
-                                <div
-                                  key={player.id}
-                                  className="flex items-center justify-between p-1.5 bg-slate-600/30 rounded text-xs"
-                                >
-                                  <div className="flex items-center gap-1 min-w-0">
-                                    <span>{getPositionEmoji(player.position)}</span>
-                                    <span className="text-gray-300 truncate">{player.name}</span>
+
+                      {squad.teamC ? (
+                        /* 3-squad: stacked on mobile, 3 columns on sm+ */
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {[
+                            { label: '🔵 Squad A', players: squad.teamA, color: 'text-blue-300' },
+                            { label: '🔴 Squad B', players: squad.teamB, color: 'text-red-300' },
+                            { label: '🟢 Squad C', players: squad.teamC, color: 'text-green-300' },
+                          ].map(({ label, players, color }) => (
+                            <div key={label}>
+                              <h4 className={`font-bold ${color} mb-2 text-sm`}>{label}</h4>
+                              <div className="space-y-1">
+                                {sortPlayersByPosition(players).map((player) => (
+                                  <div
+                                    key={player.id}
+                                    className="flex items-center justify-between p-1.5 bg-slate-800 rounded text-xs"
+                                  >
+                                    <div className="flex items-center gap-1 min-w-0">
+                                      <span>{getPositionEmoji(player.position)}</span>
+                                      <span className="text-gray-300 truncate">{player.name}</span>
+                                    </div>
+                                    {isAdmin && player.skill && (
+                                      <span className="text-yellow-400 font-bold flex-shrink-0 ml-1">{player.skill}</span>
+                                    )}
                                   </div>
-                                  {isAdmin && player.skill && (
-                                    <span className="text-yellow-400 font-bold flex-shrink-0 ml-1">{player.skill}</span>
-                                  )}
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      ) : (
+                        /* 2-squad: side by side */
+                        <div className="grid grid-cols-2 gap-3">
+                          {[
+                            { label: '🔵 Team A', players: squad.teamA, color: 'text-blue-300' },
+                            { label: '🔴 Team B', players: squad.teamB, color: 'text-red-300' },
+                          ].map(({ label, players, color }) => (
+                            <div key={label}>
+                              <h4 className={`font-bold ${color} mb-2 text-sm`}>{label}</h4>
+                              <div className="space-y-1">
+                                {sortPlayersByPosition(players).map((player) => (
+                                  <div
+                                    key={player.id}
+                                    className="flex items-center justify-between p-1.5 bg-slate-800 rounded text-xs"
+                                  >
+                                    <div className="flex items-center gap-1 min-w-0">
+                                      <span>{getPositionEmoji(player.position)}</span>
+                                      <span className="text-gray-300 truncate">{player.name}</span>
+                                    </div>
+                                    {isAdmin && player.skill && (
+                                      <span className="text-yellow-400 font-bold flex-shrink-0 ml-1">{player.skill}</span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Share button — outside the capture div */}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleShareSquad(squad)}
+                      disabled={sharing === squad.id}
+                      className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
+                      {sharing === squad.id ? (
+                        <>
+                          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                          Preparing...
+                        </>
+                      ) : (
+                        <>
+                          <FaShareAlt />
+                          Share Squads
+                        </>
+                      )}
+                    </motion.button>
                   </motion.div>
                 )}
               </AnimatePresence>

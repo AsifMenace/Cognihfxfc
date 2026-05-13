@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { getAdminHeaders } from "../utils/auth";
-import { Calendar, MapPin, Clock } from "lucide-react";
-import CountdownTimer from "../components/CountdownTimer";
-import { parseMatchDateTime } from "../components/dateUtils";
-import Select, { MultiValue } from "react-select";
-import MatchVideoEmbed from "../components/MatchVideoEmbed";
-import { SectionHeader } from "../components/SectionHeader";
-import { SetPlayerOfTheMatch } from "../components/SetPlayerOfTheMatch";
-import { PlayerOfTheMatch } from "./PlayerOfTheMatch";
-import ThemeProvider from "../components/ThemeProvider";
-import { TeamBadge } from "../components/TeamBadge";
-import Card from "../components/Card";
-import Title from "../components/Title";
-import { MatchStats } from "../components/MatchStats";
+import React, { useEffect, useState, useRef } from 'react';
+import { toPng } from 'html-to-image';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getAdminHeaders } from '../utils/auth';
+import { Calendar, MapPin, Clock } from 'lucide-react';
+import CountdownTimer from '../components/CountdownTimer';
+import { parseMatchDateTime } from '../components/dateUtils';
+import Select, { MultiValue } from 'react-select';
+import MatchVideoEmbed from '../components/MatchVideoEmbed';
+import { SectionHeader } from '../components/SectionHeader';
+import { SetPlayerOfTheMatch } from '../components/SetPlayerOfTheMatch';
+import { PlayerOfTheMatch } from './PlayerOfTheMatch';
+import ThemeProvider from '../components/ThemeProvider';
+import { TeamBadge } from '../components/TeamBadge';
+import Card from '../components/Card';
+import Title from '../components/Title';
+import { MatchStats } from '../components/MatchStats';
 
 type MatchCentreProps = {
   isAdmin: boolean;
@@ -77,29 +78,29 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [selectedTeamId, setSelectedTeamId] = useState<number | "">("");
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [selectedTeamId, setSelectedTeamId] = useState<number | ''>('');
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [matchStats, setMatchStats] = useState<MatchStat[]>([]);
+  const [sharingLineup, setSharingLineup] = useState(false);
+  const lineupShareRef = useRef<HTMLDivElement>(null);
 
   type PlayerOption = {
     value: number;
     label: string;
   };
 
-  const [selectedPlayers, setSelectedPlayers] = useState<
-    MultiValue<PlayerOption>
-  >([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<MultiValue<PlayerOption>>([]);
 
-  const API_BASE = "/.netlify/functions";
+  const API_BASE = '/.netlify/functions';
 
   // Fetch all players
   useEffect(() => {
     async function fetchPlayers() {
       try {
         const res = await fetch(`${API_BASE}/getPlayers`);
-        if (!res.ok) throw new Error("Failed to fetch players");
+        if (!res.ok) throw new Error('Failed to fetch players');
         const data = await res.json();
         setAllPlayers(data);
       } catch (err) {
@@ -117,14 +118,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           fetch(`/.netlify/functions/getMatch?id=${id}`),
           fetch(`${API_BASE}/getLineup?match_id=${id}`),
         ]);
-        if (!matchRes.ok) throw new Error("Failed to fetch match details");
-        if (!lineupRes.ok) throw new Error("Failed to fetch lineup");
+        if (!matchRes.ok) throw new Error('Failed to fetch match details');
+        if (!lineupRes.ok) throw new Error('Failed to fetch lineup');
         const matchData = await matchRes.json();
         const lineupData = await lineupRes.json();
         setMatch(matchData.match || null);
         setLineups(lineupData || []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -145,28 +146,24 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   async function fetchScorers() {
     if (!match) return;
     try {
-      const res = await fetch(
-        `/.netlify/functions/getMatchGoals?matchId=${match.id}`,
-      );
-      if (!res.ok) throw new Error("Failed to fetch goal scorers");
+      const res = await fetch(`/.netlify/functions/getMatchGoals?matchId=${match.id}`);
+      if (!res.ok) throw new Error('Failed to fetch goal scorers');
       const data: Scorer[] = await res.json();
       setScorers(data);
     } catch (e) {
-      console.error("Failed to load scorers", e);
+      console.error('Failed to load scorers', e);
     }
   }
 
   async function fetchMatchStats() {
     if (!match?.id) return;
     try {
-      const res = await fetch(
-        `/.netlify/functions/getMatchStats?matchId=${match.id}`,
-      );
-      if (!res.ok) throw new Error("Failed to fetch match stats");
+      const res = await fetch(`/.netlify/functions/getMatchStats?matchId=${match.id}`);
+      if (!res.ok) throw new Error('Failed to fetch match stats');
       const data = await res.json();
       setMatchStats(data);
     } catch (e) {
-      console.error("Match stats error:", e);
+      console.error('Match stats error:', e);
     }
   }
 
@@ -181,22 +178,21 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   }, [match]);
 
   // ✅ All state
-  const [selectedStatsPlayerId, setSelectedStatsPlayerId] =
-    useState<string>("");
-  const [assistsCount, setAssistsCount] = useState<string>("");
-  const [savesCount, setSavesCount] = useState<string>("");
+  const [selectedStatsPlayerId, setSelectedStatsPlayerId] = useState<string>('');
+  const [assistsCount, setAssistsCount] = useState<string>('');
+  const [savesCount, setSavesCount] = useState<string>('');
   const [loadingStats, setLoadingStats] = useState<boolean>(false);
-  const [statsError, setStatsError] = useState<string>("");
-  const [statsSuccess, setStatsSuccess] = useState<string>("");
+  const [statsError, setStatsError] = useState<string>('');
+  const [statsSuccess, setStatsSuccess] = useState<string>('');
 
   // ✅ Goalkeeper check
   const isGoalkeeper = (playerId: string): boolean => {
     const player = allPlayers.find((p: Player) => p.id === parseInt(playerId));
     return (
       !!player &&
-      (player.position === "Goalkeeper" ||
-        player.position.toLowerCase().includes("keeper") ||
-        player.position.toLowerCase().includes("goal"))
+      (player.position === 'Goalkeeper' ||
+        player.position.toLowerCase().includes('keeper') ||
+        player.position.toLowerCase().includes('goal'))
     );
   };
 
@@ -204,44 +200,44 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const handleAddMatchStats = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedStatsPlayerId || !match?.id) {
-      setStatsError("Please select a player");
+      setStatsError('Please select a player');
       return;
     }
 
     setLoadingStats(true);
-    setStatsError("");
-    setStatsSuccess("");
+    setStatsError('');
+    setStatsSuccess('');
 
     try {
-      const response = await fetch("/.netlify/functions/addPlayerMatchStats", {
-        method: "POST",
+      const response = await fetch('/.netlify/functions/addPlayerMatchStats', {
+        method: 'POST',
         headers: getAdminHeaders(),
         body: JSON.stringify({
           playerId: parseInt(selectedStatsPlayerId),
           matchId: match.id,
-          saves: parseInt(savesCount || "0"),
-          assists: parseInt(assistsCount || "0"),
+          saves: parseInt(savesCount || '0'),
+          assists: parseInt(assistsCount || '0'),
         }),
       });
 
       if (response.ok) {
-        setStatsSuccess("✅ Match stats added successfully!");
-        setSelectedStatsPlayerId("");
-        setAssistsCount("");
-        setSavesCount("");
+        setStatsSuccess('✅ Match stats added successfully!');
+        setSelectedStatsPlayerId('');
+        setAssistsCount('');
+        setSavesCount('');
 
         await fetchMatchStats();
 
         // Refresh players
-        const playerRes = await fetch("/.netlify/functions/getPlayers");
+        const playerRes = await fetch('/.netlify/functions/getPlayers');
         const updatedPlayers: Player[] = await playerRes.json();
         setAllPlayers(updatedPlayers);
       } else {
         const errorData = await response.json();
-        setStatsError(errorData.error || "Failed to add stats");
+        setStatsError(errorData.error || 'Failed to add stats');
       }
     } catch (error) {
-      setStatsError("Network error. Please try again.");
+      setStatsError('Network error. Please try again.');
     } finally {
       setLoadingStats(false);
     }
@@ -249,22 +245,17 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
   // Remove player handler
   async function handleRemovePlayer(playerId: number) {
-    if (
-      !window.confirm(
-        "Are you sure you want to remove this player from the match?",
-      )
-    )
-      return;
+    if (!window.confirm('Are you sure you want to remove this player from the match?')) return;
     try {
-      const res = await fetch("/.netlify/functions/removePlayerFromMatch", {
-        method: "DELETE",
+      const res = await fetch('/.netlify/functions/removePlayerFromMatch', {
+        method: 'DELETE',
         headers: getAdminHeaders(),
         body: JSON.stringify({ match_id: match?.id, player_id: playerId }),
       });
       if (res.ok) {
         const data = await res.json();
         setLineups(data.lineup);
-        alert(data.message || "Player removed successfully");
+        alert(data.message || 'Player removed successfully');
       } else {
         const data = await res.json();
         alert(`Failed to remove player: ${data.error || res.statusText}`);
@@ -278,24 +269,22 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedPlayers || selectedPlayers.length === 0) {
-      alert("Please select at least one valid player.");
+      alert('Please select at least one valid player.');
       return;
     }
-    if (selectedTeamId === "") {
-      alert("Please select a team.");
+    if (selectedTeamId === '') {
+      alert('Please select a team.');
       return;
     }
-    const alreadyAdded = selectedPlayers.some((p) =>
-      lineups.some((lp) => lp.id === p.value),
-    );
+    const alreadyAdded = selectedPlayers.some((p) => lineups.some((lp) => lp.id === p.value));
     if (alreadyAdded) {
-      alert("One or more selected players are already added to the match.");
+      alert('One or more selected players are already added to the match.');
       return;
     }
     try {
       const playerIds = selectedPlayers.map((p) => p.value);
-      const response = await fetch("/.netlify/functions/addPlayerToMatch", {
-        method: "POST",
+      const response = await fetch('/.netlify/functions/addPlayerToMatch', {
+        method: 'POST',
         headers: getAdminHeaders(),
         body: JSON.stringify({
           match_id: match?.id,
@@ -304,19 +293,17 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         }),
       });
       if (response.ok) {
-        const lineupRes = await fetch(
-          `${API_BASE}/getLineup?match_id=${match?.id}`,
-        );
+        const lineupRes = await fetch(`${API_BASE}/getLineup?match_id=${match?.id}`);
         if (lineupRes.ok) {
           const lineupData = await lineupRes.json();
           setLineups(lineupData || []);
         }
-        alert("Players successfully added to the match!");
+        alert('Players successfully added to the match!');
         setSelectedPlayers([]);
-        setSelectedTeamId("");
+        setSelectedTeamId('');
       } else {
         const errData = await response.json();
-        alert(`Failed to add players: ${errData.error || "Unknown error"}`);
+        alert(`Failed to add players: ${errData.error || 'Unknown error'}`);
       }
     } catch (err) {
       alert(`Error adding players: ${(err as Error).message}`);
@@ -327,9 +314,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     return (
       <ThemeProvider>
         <div className="flex items-center justify-center py-32">
-          <div className="text-3xl font-bold text-yellow-400 animate-pulse">
-            LOADING MATCH...
-          </div>
+          <div className="text-3xl font-bold text-yellow-400 animate-pulse">LOADING MATCH...</div>
         </div>
       </ThemeProvider>
     );
@@ -356,25 +341,24 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   }
 
   const kickoffDate = parseMatchDateTime(match);
-  const playingTeamIds: number[] = [
-    match?.home_team_id,
-    match?.away_team_id,
-  ].filter((id): id is number => typeof id === "number");
+  const playingTeamIds: number[] = [match?.home_team_id, match?.away_team_id].filter(
+    (id): id is number => typeof id === 'number'
+  );
 
   const teamMap: { [id: number]: { name: string; colorClass: string } } = {};
   playingTeamIds.forEach((teamId: number) => {
-    let teamName = "";
-    let teamColor = "";
+    let teamName = '';
+    let teamColor = '';
     if (teamId === match?.home_team_id) {
-      teamName = match.home_team_name || "";
-      teamColor = match.home_team_color || "";
+      teamName = match.home_team_name || '';
+      teamColor = match.home_team_color || '';
     } else if (teamId === match?.away_team_id) {
-      teamName = match.away_team_name || "";
-      teamColor = match.away_team_color || "";
+      teamName = match.away_team_name || '';
+      teamColor = match.away_team_color || '';
     }
     teamMap[teamId] = {
       name: teamName,
-      colorClass: teamColor || "white",
+      colorClass: teamColor || 'white',
     };
   });
 
@@ -389,16 +373,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   });
 
-  const homeScorers = scorers.filter(
-    (s) => s.team_name === match?.home_team_name,
-  );
-  const awayScorers = scorers.filter(
-    (s) => s.team_name === match?.away_team_name,
-  );
-  const opponentScorers = scorers.filter(
-    (s) => s.team_name === match?.opponent_name,
-  );
-
+  const homeScorers = scorers.filter((s) => s.team_name === match?.home_team_name);
+  const awayScorers = scorers.filter((s) => s.team_name === match?.away_team_name);
+  const opponentScorers = scorers.filter((s) => s.team_name === match?.opponent_name);
 
   async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -407,8 +384,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetch("/.netlify/functions/addMatchGoal", {
-        method: "POST",
+      const res = await fetch('/.netlify/functions/addMatchGoal', {
+        method: 'POST',
         headers: getAdminHeaders(),
         body: JSON.stringify({
           match_id: match.id,
@@ -418,30 +395,30 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to add goal scorer");
+        throw new Error(errData.error || 'Failed to add goal scorer');
       }
-      setSuccess("Goal scorer added successfully!");
+      setSuccess('Goal scorer added successfully!');
       await fetchScorers();
-      setSelectedPlayerId("");
-      setSelectedTeamId("");
+      setSelectedPlayerId('');
+      setSelectedTeamId('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoadingAdd(false);
     }
   }
 
   async function handleRemoveGoal(goalId: number, playerId: number) {
-    if (!window.confirm("Are you sure you want to remove this goal?")) return;
+    if (!window.confirm('Are you sure you want to remove this goal?')) return;
     try {
-      const res = await fetch("/.netlify/functions/removeMatchGoal", {
-        method: "POST",
+      const res = await fetch('/.netlify/functions/removeMatchGoal', {
+        method: 'POST',
         headers: getAdminHeaders(),
         body: JSON.stringify({ goal_id: goalId, player_id: playerId }),
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to remove goal");
+        throw new Error(errData.error || 'Failed to remove goal');
       }
       await fetchScorers();
     } catch (error) {
@@ -453,14 +430,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     if (!match) return;
     setDeleting(true);
     try {
-      const res = await fetch("/.netlify/functions/deleteMatch", {
-        method: "DELETE",
-        headers: { ...getAdminHeaders(), "Content-Type": "application/json" },
+      const res = await fetch('/.netlify/functions/deleteMatch', {
+        method: 'DELETE',
+        headers: { ...getAdminHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ matchId: match.id }),
       });
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || "Failed to delete match");
-      navigate("/games");
+      if (!data.success) throw new Error(data.error || 'Failed to delete match');
+      navigate('/games');
     } catch (err) {
       alert(`Error: ${(err as Error).message}`);
       setDeleting(false);
@@ -468,11 +445,44 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   }
 
+  const handleShareLineup = async () => {
+    const el = lineupShareRef.current;
+    if (!el) return;
+    setSharingLineup(true);
+    try {
+      const dataUrl = await toPng(el, {
+        backgroundColor: '#0f172a',
+        pixelRatio: 2,
+        filter: (node) => {
+          const n = node as HTMLElement;
+          if (n.tagName === 'IMG') return false;
+          if (n.dataset?.noCapture === 'true') return false;
+          return true;
+        },
+      });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `lineup-${match?.id}.png`, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Match Lineup' });
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `lineup-${match?.id}.png`;
+        a.click();
+      }
+    } catch (err) {
+      console.error('Share failed', err);
+    } finally {
+      setSharingLineup(false);
+    }
+  };
+
   const renderTeamLineup = (
     teamId: number,
     teamName: string,
     colorClass: string,
-    teamPlayers: Player[],
+    teamPlayers: Player[]
   ) => (
     <div key={teamId}>
       <h3 className="flex items-center gap-2 text-xs sm:text-sm md:text-lg font-black mb-2 px-2 text-white">
@@ -481,9 +491,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       </h3>
 
       {teamPlayers.length === 0 ? (
-        <p className="text-gray-500 text-center text-xs sm:text-sm">
-          No players assigned.
-        </p>
+        <p className="text-gray-500 text-center text-xs sm:text-sm">No players assigned.</p>
       ) : (
         <div className="space-y-0.5 sm:space-y-1">
           {teamPlayers.map((player) => (
@@ -503,27 +511,26 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 </div>
                 <div className="text-xs text-gray-400 flex items-center gap-0.5">
                   <span>
-                    {player.position.toLowerCase().includes("keeper") ||
-                    player.position.toLowerCase() === "gk"
-                      ? "🧤"
-                      : player.position.toLowerCase().includes("defender") ||
-                          player.position.toLowerCase() === "def"
-                        ? "🛡️"
-                        : player.position
-                              .toLowerCase()
-                              .includes("midfielder") ||
-                            player.position.toLowerCase() === "mid"
-                          ? "🎯"
-                          : player.position.toLowerCase().includes("forward") ||
-                              player.position.toLowerCase() === "fw"
-                            ? "⚡"
-                            : "⚽"}
+                    {player.position.toLowerCase().includes('keeper') ||
+                    player.position.toLowerCase() === 'gk'
+                      ? '🧤'
+                      : player.position.toLowerCase().includes('defender') ||
+                          player.position.toLowerCase() === 'def'
+                        ? '💪'
+                        : player.position.toLowerCase().includes('midfielder') ||
+                            player.position.toLowerCase() === 'mid'
+                          ? '⚙️'
+                          : player.position.toLowerCase().includes('forward') ||
+                              player.position.toLowerCase() === 'fw'
+                            ? '🚀'
+                            : '⚽'}
                   </span>
-                  {player.position} #{player.jerseyNumber}
+                  {player.position}
                 </div>
               </div>
               {isAdmin && (
                 <button
+                  data-no-capture="true"
                   onClick={(e) => {
                     e.preventDefault();
                     handleRemovePlayer(player.id);
@@ -568,7 +575,6 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         {/* Match Header */}
         <Card className="border-yellow-500/30 overflow-hidden">
           <div className="p-6 md:p-8">
-
             {/* Competition + status row */}
             <div className="flex items-center justify-center gap-3 mb-6">
               {match.competition && (
@@ -586,36 +592,38 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 </span>
               )}
               {!match.home_team_name && (
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${match.isHome ? "bg-green-600/20 text-green-400 border border-green-500/30" : "bg-orange-600/20 text-orange-400 border border-orange-500/30"}`}>
-                  {match.isHome ? "HOME" : "AWAY"}
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold ${match.isHome ? 'bg-green-600/20 text-green-400 border border-green-500/30' : 'bg-orange-600/20 text-orange-400 border border-orange-500/30'}`}
+                >
+                  {match.isHome ? 'HOME' : 'AWAY'}
                 </span>
               )}
             </div>
 
             {/* Scoreboard */}
             {(() => {
-              const scores = match.result ? match.result.split("-").map(Number) : null;
+              const scores = match.result ? match.result.split('-').map(Number) : null;
               const homeScore = scores?.[0] ?? null;
               const awayScore = scores?.[1] ?? null;
               const isDraw = homeScore !== null && homeScore === awayScore;
               const homeWon = homeScore !== null && awayScore !== null && homeScore > awayScore;
               const awayWon = homeScore !== null && awayScore !== null && awayScore > homeScore;
 
-              const homeTeamName = match.home_team_name || match.cogni_name || "";
-              const awayTeamName = match.away_team_name || match.opponent_name || "";
-              const homeColor = match.home_team_color || match.cogni_color || "#e5e7eb";
-              const awayColor = match.away_team_color || match.opponent_color || "#e5e7eb";
+              const homeTeamName = match.home_team_name || match.cogni_name || '';
+              const awayTeamName = match.away_team_name || match.opponent_name || '';
+              const homeColor = match.home_team_color || match.cogni_color || '#e5e7eb';
+              const awayColor = match.away_team_color || match.opponent_color || '#e5e7eb';
 
               const homeScoreColor = isDraw
-                ? "text-yellow-400"
+                ? 'text-yellow-400'
                 : homeWon
-                ? "text-green-400"
-                : "text-red-400";
+                  ? 'text-green-400'
+                  : 'text-red-400';
               const awayScoreColor = isDraw
-                ? "text-yellow-400"
+                ? 'text-yellow-400'
                 : awayWon
-                ? "text-green-400"
-                : "text-red-400";
+                  ? 'text-green-400'
+                  : 'text-red-400';
 
               return (
                 <div>
@@ -632,16 +640,24 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
                       {homeScore !== null ? (
                         <>
-                          <span className={`text-4xl sm:text-5xl md:text-7xl font-black tabular-nums ${homeScoreColor}`}>
+                          <span
+                            className={`text-4xl sm:text-5xl md:text-7xl font-black tabular-nums ${homeScoreColor}`}
+                          >
                             {homeScore}
                           </span>
-                          <span className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-600">—</span>
-                          <span className={`text-4xl sm:text-5xl md:text-7xl font-black tabular-nums ${awayScoreColor}`}>
+                          <span className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-600">
+                            —
+                          </span>
+                          <span
+                            className={`text-4xl sm:text-5xl md:text-7xl font-black tabular-nums ${awayScoreColor}`}
+                          >
                             {awayScore}
                           </span>
                         </>
                       ) : (
-                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-500">VS</span>
+                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-500">
+                          VS
+                        </span>
                       )}
                     </div>
 
@@ -668,11 +684,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             <div className="flex flex-wrap justify-center gap-3 text-sm text-gray-400 mt-6 pt-6 border-t border-slate-700/50">
               <span className="flex items-center gap-1">
                 <Calendar size={14} className="text-yellow-400" />
-                {kickoffDate.toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
+                {kickoffDate.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
                 })}
               </span>
               <span className="flex items-center gap-1">
@@ -703,9 +719,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           {/* Header */}
           <div className="text-center mb-8 pb-6 border-b border-yellow-500/20">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="text-5xl sm:text-6xl lg:text-7xl drop-shadow-2xl">
-                ⚽
-              </span>
+              <span className="text-5xl sm:text-6xl lg:text-7xl drop-shadow-2xl">⚽</span>
               <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500 bg-clip-text text-transparent tracking-tight">
                 GOAL SCORERS
               </h3>
@@ -713,11 +727,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
             <div className="flex justify-center gap-4">
               <div className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-300 font-bold text-sm sm:text-base">
-                {homeScorers.length} Goal{homeScorers.length !== 1 ? "s" : ""}
+                {homeScorers.length} Goal{homeScorers.length !== 1 ? 's' : ''}
               </div>
               <div className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 font-bold text-sm sm:text-base">
                 {awayScorers.length + opponentScorers.length} Goal
-                {awayScorers.length + opponentScorers.length !== 1 ? "s" : ""}
+                {awayScorers.length + opponentScorers.length !== 1 ? 's' : ''}
               </div>
             </div>
           </div>
@@ -729,7 +743,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 border-b border-gray-700/50 group-hover:border-blue-500/50 transition-all duration-300">
                 <TeamBadge
                   color={match?.home_team_color || match?.cogni_color}
-                  name={match?.home_team_name || match?.cogni_name || ""}
+                  name={match?.home_team_name || match?.cogni_name || ''}
                   size={36}
                 />
                 <div className="min-w-0 flex-1">
@@ -738,7 +752,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   </h4>
                   <p className="text-blue-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
                     {homeScorers.length} Goal
-                    {homeScorers.length !== 1 ? "s" : ""}
+                    {homeScorers.length !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
@@ -788,14 +802,12 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   </h4>
                   <p className="text-purple-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
                     {awayScorers.length + opponentScorers.length} Goal
-                    {awayScorers.length + opponentScorers.length !== 1
-                      ? "s"
-                      : ""}
+                    {awayScorers.length + opponentScorers.length !== 1 ? 's' : ''}
                   </p>
                 </div>
                 <TeamBadge
                   color={match?.away_team_color || match?.opponent_color}
-                  name={match?.away_team_name || match?.opponent_name || ""}
+                  name={match?.away_team_name || match?.opponent_name || ''}
                   size={36}
                 />
               </div>
@@ -857,15 +869,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         {/* Admin: Add Goal */}
         {isAdmin && (
           <Card className="border-blue-500/30">
-            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
-              ADD GOAL SCORER
-            </h2>
+            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">ADD GOAL SCORER</h2>
             <form onSubmit={handleAddGoal} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-300 mb-1">
-                    PLAYER
-                  </label>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">PLAYER</label>
                   <select
                     value={selectedPlayerId}
                     onChange={(e) => setSelectedPlayerId(e.target.value)}
@@ -883,16 +891,12 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-300 mb-1">
-                    TEAM
-                  </label>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">TEAM</label>
                   {/* In Add Goal form */}
                   <select
                     value={selectedTeamId}
                     onChange={(e) =>
-                      setSelectedTeamId(
-                        e.target.value === "" ? "" : Number(e.target.value),
-                      )
+                      setSelectedTeamId(e.target.value === '' ? '' : Number(e.target.value))
                     }
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
                     required
@@ -901,22 +905,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       Select team
                     </option>
                     {match?.home_team_id && (
-                      <option value={match.home_team_id}>
-                        {match.home_team_name}
-                      </option>
+                      <option value={match.home_team_id}>{match.home_team_name}</option>
                     )}
                     {match?.away_team_id && (
-                      <option value={match.away_team_id}>
-                        {match.away_team_name}
-                      </option>
+                      <option value={match.away_team_id}>{match.away_team_name}</option>
                     )}
-                    {match?.cogni_id && (
-                      <option value={match.cogni_id}>{match.cogni_name}</option>
-                    )}
+                    {match?.cogni_id && <option value={match.cogni_id}>{match.cogni_name}</option>}
                     {match?.opponent_id && (
-                      <option value={match.opponent_id}>
-                        {match.opponent_name}
-                      </option>
+                      <option value={match.opponent_id}>{match.opponent_name}</option>
                     )}
                   </select>
                 </div>
@@ -926,28 +922,22 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 disabled={loadingAdd}
                 className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-lg hover:scale-105 transition-all disabled:opacity-50"
               >
-                {loadingAdd ? "ADDING..." : "ADD GOAL"}
+                {loadingAdd ? 'ADDING...' : 'ADD GOAL'}
               </button>
               {error && <p className="text-red-400 text-center">{error}</p>}
-              {success && (
-                <p className="text-green-400 text-center">{success}</p>
-              )}
+              {success && <p className="text-green-400 text-center">{success}</p>}
             </form>
           </Card>
         )}
 
         {isAdmin && match && allPlayers.length > 0 && (
           <Card className="border-green-500/30">
-            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
-              ADD MATCH STATS
-            </h2>
+            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">ADD MATCH STATS</h2>
             <form onSubmit={handleAddMatchStats} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Player - DIFFERENT STATE */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-300 mb-1">
-                    PLAYER
-                  </label>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">PLAYER</label>
                   <select
                     value={selectedStatsPlayerId} // ✅ Different state
                     onChange={(e) => {
@@ -957,18 +947,18 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       // 🆕 AUTO-FILL using YOUR data structure
                       if (playerId && matchStats.length > 0) {
                         const existingStat = matchStats.find(
-                          (stat) => stat.id === parseInt(playerId),
+                          (stat) => stat.id === parseInt(playerId)
                         );
                         if (existingStat) {
                           setAssistsCount(existingStat.assists.toString());
                           setSavesCount(existingStat.saves.toString());
                         } else {
-                          setAssistsCount("0");
-                          setSavesCount("0");
+                          setAssistsCount('0');
+                          setSavesCount('0');
                         }
                       } else {
-                        setAssistsCount("0");
-                        setSavesCount("0");
+                        setAssistsCount('0');
+                        setSavesCount('0');
                       }
                     }}
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
@@ -987,9 +977,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
                 {/* Assists */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-300 mb-1">
-                    ASSISTS
-                  </label>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">ASSISTS</label>
                   <input
                     type="number"
                     min="0"
@@ -1002,32 +990,23 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
                 {/* Saves */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-300 mb-1">
-                    SAVES
-                  </label>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">SAVES</label>
                   <input
                     type="number"
                     min="0"
                     value={savesCount}
                     onChange={(e) => setSavesCount(e.target.value)}
                     placeholder="0"
-                    disabled={
-                      !selectedStatsPlayerId ||
-                      !isGoalkeeper(selectedStatsPlayerId)
-                    }
+                    disabled={!selectedStatsPlayerId || !isGoalkeeper(selectedStatsPlayerId)}
                     className={`w-full px-4 py-2 rounded-lg border focus:border-yellow-500 focus:outline-none transition-all ${
-                      selectedStatsPlayerId &&
-                      !isGoalkeeper(selectedStatsPlayerId)
-                        ? "bg-slate-800 text-gray-500 border-slate-600 cursor-not-allowed"
-                        : "bg-slate-700 text-white border-slate-600"
+                      selectedStatsPlayerId && !isGoalkeeper(selectedStatsPlayerId)
+                        ? 'bg-slate-800 text-gray-500 border-slate-600 cursor-not-allowed'
+                        : 'bg-slate-700 text-white border-slate-600'
                     }`}
                   />
-                  {selectedStatsPlayerId &&
-                    !isGoalkeeper(selectedStatsPlayerId) && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Saves only for goalkeepers
-                      </p>
-                    )}
+                  {selectedStatsPlayerId && !isGoalkeeper(selectedStatsPlayerId) && (
+                    <p className="text-xs text-gray-500 mt-1">Saves only for goalkeepers</p>
+                  )}
                 </div>
               </div>
 
@@ -1036,15 +1015,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 disabled={loadingStats}
                 className="w-full py-3 bg-gradient-to-r from-green-500 to-green-400 text-black font-bold rounded-lg hover:scale-105 transition-all disabled:opacity-50 shadow-lg"
               >
-                {loadingStats ? "ADDING STATS..." : "ADD MATCH STATS"}
+                {loadingStats ? 'ADDING STATS...' : 'ADD MATCH STATS'}
               </button>
 
-              {statsError && (
-                <p className="text-red-400 text-center">{statsError}</p>
-              )}
-              {statsSuccess && (
-                <p className="text-green-400 text-center">{statsSuccess}</p>
-              )}
+              {statsError && <p className="text-red-400 text-center">{statsError}</p>}
+              {statsSuccess && <p className="text-green-400 text-center">{statsSuccess}</p>}
             </form>
           </Card>
         )}
@@ -1052,23 +1027,21 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         {/* Admin: Update Result */}
         {isAdmin && (
           <Card className="border-green-500/30">
-            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">
-              UPDATE RESULT
-            </h2>
+            <h2 className="text-xl font-black text-yellow-400 mb-4 text-center">UPDATE RESULT</h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
-                const resultValue = formData.get("result");
-                if (typeof resultValue !== "string") return;
+                const resultValue = formData.get('result');
+                if (typeof resultValue !== 'string') return;
                 const resp = await fetch(`${API_BASE}/updateMatchResult`, {
-                  method: "POST",
+                  method: 'POST',
                   headers: getAdminHeaders(),
                   body: JSON.stringify({ id: match.id, result: resultValue }),
                 });
                 if (resp.ok) {
                   setMatch({ ...match, result: resultValue });
-                  setSuccessMessage("Result updated!");
+                  setSuccessMessage('Result updated!');
                   setTimeout(() => setSuccessMessage(null), 3000);
                 }
               }}
@@ -1076,7 +1049,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             >
               <input
                 name="result"
-                defaultValue={match.result || ""}
+                defaultValue={match.result || ''}
                 placeholder="e.g. 2-1"
                 className="w-full max-w-xs px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 text-center text-xl font-bold focus:border-green-500 focus:outline-none"
               />
@@ -1087,9 +1060,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 SAVE RESULT
               </button>
               {successMessage && (
-                <p className="text-green-400 font-bold animate-pulse">
-                  {successMessage}
-                </p>
+                <p className="text-green-400 font-bold animate-pulse">{successMessage}</p>
               )}
             </form>
           </Card>
@@ -1106,70 +1077,100 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
         {/* Lineups */}
         <Card className="border-yellow-500/30">
-          <h2 className="text-2xl font-black text-yellow-400 text-center mb-6">
-            LINEUPS
-          </h2>
-
-          {/* INTERNAL TEAMS: home & away - side by side */}
-          {playingTeamIds.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 md:gap-8 mb-8">
-              {playingTeamIds.map((teamId) => {
-                const { name: teamName, colorClass } = teamMap[teamId];
-                const teamPlayers = sortPlayersByPosition(
-                  groupedLineups[teamName] || [],
-                );
-                return renderTeamLineup(
-                  teamId,
-                  teamName,
-                  colorClass,
-                  teamPlayers,
-                );
-              })}
-            </div>
-          )}
-
-          {/* EXTERNAL TEAMS: cogni & opponent - stacked below */}
-          {(match?.cogni_id ||
-            (match?.opponent_id &&
-              !playingTeamIds.includes(match.opponent_id!))) && (
-            <div className="space-y-6 border-t border-slate-600 pt-6">
-              {match?.cogni_id &&
-                match?.cogni_name &&
-                !playingTeamIds.includes(match.cogni_id) && (
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-black text-yellow-400">LINEUPS</h2>
+            {lineups.length > 0 && (
+              <button
+                onClick={handleShareLineup}
+                disabled={sharingLineup}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors text-sm"
+              >
+                {sharingLineup ? (
                   <>
-                    {(() => {
-                      const cogniPlayers = sortPlayersByPosition(
-                        lineups.filter((p) => p.team_id === match.cogni_id),
-                      );
-                      return renderTeamLineup(
-                        match.cogni_id!,
-                        match.cogni_name!,
-                        match.cogni_color || "#e5e7eb",
-                        cogniPlayers,
-                      );
-                    })()}
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                    Preparing...
                   </>
+                ) : (
+                  '↗ Share'
                 )}
+              </button>
+            )}
+          </div>
 
-              {match?.opponent_id &&
-                match?.opponent_name &&
-                !playingTeamIds.includes(match.opponent_id) && (
-                  <>
-                    {(() => {
-                      const opponentPlayers = sortPlayersByPosition(
-                        lineups.filter((p) => p.team_id === match.opponent_id),
-                      );
-                      return renderTeamLineup(
-                        match.opponent_id!,
-                        match.opponent_name!,
-                        match.opponent_color || "#e5e7eb",
-                        opponentPlayers,
-                      );
-                    })()}
-                  </>
+          {/* Capture wrapper — ref lives here, Share button is outside */}
+          <div ref={lineupShareRef} className="bg-slate-900 rounded-xl p-3">
+            {/* Match header shown in the shared image */}
+            <div className="text-center mb-4 pb-3 border-b border-slate-700">
+              <div className="text-yellow-400 font-black text-sm mb-1">⚽ LINEUPS</div>
+              <div className="text-white font-bold text-xs">
+                {match.home_team_name || match.cogni_name} vs{' '}
+                {match.away_team_name || match.opponent_name}
+                {match.result && (
+                  <span className="text-gray-400 font-normal ml-2">({match.result})</span>
                 )}
+              </div>
+              <div className="text-gray-500 text-xs mt-1">
+                {new Date(match.date).toLocaleDateString(undefined, {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </div>
             </div>
-          )}
+
+            {/* INTERNAL TEAMS: home & away - side by side */}
+            {playingTeamIds.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 md:gap-8 mb-8">
+                {playingTeamIds.map((teamId) => {
+                  const { name: teamName, colorClass } = teamMap[teamId];
+                  const teamPlayers = sortPlayersByPosition(groupedLineups[teamName] || []);
+                  return renderTeamLineup(teamId, teamName, colorClass, teamPlayers);
+                })}
+              </div>
+            )}
+
+            {/* EXTERNAL TEAMS: cogni & opponent - stacked below */}
+            {(match?.cogni_id ||
+              (match?.opponent_id && !playingTeamIds.includes(match.opponent_id!))) && (
+              <div className="space-y-6 border-t border-slate-600 pt-6">
+                {match?.cogni_id &&
+                  match?.cogni_name &&
+                  !playingTeamIds.includes(match.cogni_id) && (
+                    <>
+                      {(() => {
+                        const cogniPlayers = sortPlayersByPosition(
+                          lineups.filter((p) => p.team_id === match.cogni_id)
+                        );
+                        return renderTeamLineup(
+                          match.cogni_id!,
+                          match.cogni_name!,
+                          match.cogni_color || '#e5e7eb',
+                          cogniPlayers
+                        );
+                      })()}
+                    </>
+                  )}
+
+                {match?.opponent_id &&
+                  match?.opponent_name &&
+                  !playingTeamIds.includes(match.opponent_id) && (
+                    <>
+                      {(() => {
+                        const opponentPlayers = sortPlayersByPosition(
+                          lineups.filter((p) => p.team_id === match.opponent_id)
+                        );
+                        return renderTeamLineup(
+                          match.opponent_id!,
+                          match.opponent_name!,
+                          match.opponent_color || '#e5e7eb',
+                          opponentPlayers
+                        );
+                      })()}
+                    </>
+                  )}
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Admin: Add Players */}
@@ -1183,9 +1184,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* === PLAYERS SELECT === */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-300 mb-1">
-                    PLAYERS
-                  </label>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">PLAYERS</label>
 
                   {/* React Select - Always Open Input */}
                   <Select<PlayerOption, true>
@@ -1208,39 +1207,39 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       // Input stays visible
                       input: (base) => ({
                         ...base,
-                        color: "white",
-                        minWidth: "120px",
+                        color: 'white',
+                        minWidth: '120px',
                       }),
                       placeholder: (base) => ({
                         ...base,
-                        color: "#94a3b8",
+                        color: '#94a3b8',
                       }),
                       control: (base, state) => ({
                         ...base,
-                        backgroundColor: "#1e293b",
-                        borderColor: state.isFocused ? "#8b5cf6" : "#1e293b",
-                        boxShadow: "none",
-                        minHeight: "52px",
-                        padding: "4px 8px",
-                        cursor: "text",
-                        borderRadius: "0.5rem",
+                        backgroundColor: '#1e293b',
+                        borderColor: state.isFocused ? '#8b5cf6' : '#1e293b',
+                        boxShadow: 'none',
+                        minHeight: '52px',
+                        padding: '4px 8px',
+                        cursor: 'text',
+                        borderRadius: '0.5rem',
                       }),
                       menu: (base) => ({
                         ...base,
-                        backgroundColor: "#1e293b",
-                        marginTop: "4px",
-                        borderRadius: "0.5rem",
-                        overflow: "hidden",
+                        backgroundColor: '#1e293b',
+                        marginTop: '4px',
+                        borderRadius: '0.5rem',
+                        overflow: 'hidden',
                       }),
                       option: (base, state) => ({
                         ...base,
                         backgroundColor: state.isSelected
-                          ? "#334155"
+                          ? '#334155'
                           : state.isFocused
-                            ? "#334155"
-                            : "#1e293b",
-                        color: "white",
-                        padding: "10px 12px",
+                            ? '#334155'
+                            : '#1e293b',
+                        color: 'white',
+                        padding: '10px 12px',
                       }),
                     }}
                     // Hide default pills
@@ -1262,9 +1261,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                             type="button"
                             onClick={() =>
                               setSelectedPlayers(
-                                selectedPlayers.filter(
-                                  (p) => p.value !== player.value,
-                                ),
+                                selectedPlayers.filter((p) => p.value !== player.value)
                               )
                             }
                             className="ml-1 text-amber-300 hover:text-red-400 transition-colors"
@@ -1279,15 +1276,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
                 {/* === TEAM SELECT === */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-300 mb-1">
-                    TEAM
-                  </label>
+                  <label className="block text-sm font-bold text-gray-300 mb-1">TEAM</label>
                   <select
                     value={selectedTeamId}
                     onChange={(e) =>
-                      setSelectedTeamId(
-                        e.target.value === "" ? "" : Number(e.target.value),
-                      )
+                      setSelectedTeamId(e.target.value === '' ? '' : Number(e.target.value))
                     }
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
                     required
@@ -1306,16 +1299,12 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     {match?.cogni_id &&
                       match.cogni_name &&
                       !playingTeamIds.includes(match.cogni_id) && (
-                        <option value={match.cogni_id}>
-                          {match.cogni_name}
-                        </option>
+                        <option value={match.cogni_id}>{match.cogni_name}</option>
                       )}
                     {match?.opponent_id &&
                       match.opponent_name &&
                       !playingTeamIds.includes(match.opponent_id) && (
-                        <option value={match.opponent_id}>
-                          {match.opponent_name}
-                        </option>
+                        <option value={match.opponent_id}>{match.opponent_name}</option>
                       )}
                   </select>
                 </div>
@@ -1379,7 +1368,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                       Deleting...
                     </>
                   ) : (
-                    "Delete"
+                    'Delete'
                   )}
                 </button>
               </div>
