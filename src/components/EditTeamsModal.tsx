@@ -33,11 +33,26 @@ function getPositionColor(position: string) {
 
 function getPositionEmoji(position: string) {
   const pos = position.toUpperCase();
-  if (pos === "GOALKEEPER" || pos === "GK") return "⚽";
-  if (pos === "DEFENDER" || pos === "DEF") return "🛡️";
-  if (pos === "MIDFIELDER" || pos === "MID") return "🔄";
-  if (pos === "FORWARD" || pos === "FW") return "⚡";
+  if (pos === "GOALKEEPER" || pos === "GK") return "🧤";
+  if (pos === "DEFENDER" || pos === "DEF") return "💪";
+  if (pos === "MIDFIELDER" || pos === "MID") return "⚙️";
+  if (pos === "FORWARD" || pos === "FW") return "🚀";
   return "👤";
+}
+
+const POSITION_ORDER: Record<string, number> = {
+  goalkeeper: 0, gk: 0,
+  defender: 1, def: 1,
+  midfielder: 2, mid: 2,
+  forward: 3, fw: 3,
+};
+
+function sortByPosition(players: Player[]) {
+  return [...players].sort((a, b) => {
+    const pa = POSITION_ORDER[a.position.toLowerCase()] ?? 99;
+    const pb = POSITION_ORDER[b.position.toLowerCase()] ?? 99;
+    return pa - pb;
+  });
 }
 
 function totalSkill(players: Player[]) {
@@ -97,7 +112,7 @@ function TeamColumn({
               No players
             </div>
           ) : (
-            players.map((player, index) => {
+            sortByPosition(players).map((player, index) => {
               const isSelected =
                 selectedPlayer?.player.id === player.id &&
                 selectedPlayer?.fromIndex === teamIndex;
