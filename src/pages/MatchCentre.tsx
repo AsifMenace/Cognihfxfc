@@ -1110,7 +1110,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 )}
               </div>
               <div className="text-gray-500 text-xs mt-1">
-                {new Date(match.date).toLocaleDateString(undefined, {
+                {kickoffDate.toLocaleDateString(undefined, {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
