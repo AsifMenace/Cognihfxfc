@@ -59,10 +59,10 @@ export function PlayerSelector({
   // Get position emoji
   const getPositionEmoji = (position: string) => {
     const pos = position.toUpperCase();
-    if (pos === 'GOALKEEPER' || pos === 'GK') return '⚽';
-    if (pos === 'DEFENDER' || pos === 'DEF') return '🛡️';
-    if (pos === 'MIDFIELDER' || pos === 'MID') return '🔄';
-    if (pos === 'FORWARD' || pos === 'FW') return '⚡';
+    if (pos === 'GOALKEEPER' || pos === 'GK') return '🧤';
+    if (pos === 'DEFENDER' || pos === 'DEF') return '💪';
+    if (pos === 'MIDFIELDER' || pos === 'MID') return '⚙️';
+    if (pos === 'FORWARD' || pos === 'FW') return '🚀';
     return '👤';
   };
 

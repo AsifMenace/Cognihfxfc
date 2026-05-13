@@ -99,10 +99,10 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
 
   const getPositionEmoji = (position: string) => {
     const pos = position.toUpperCase();
-    if (pos === 'GOALKEEPER' || pos === 'GK') return '⚽';
-    if (pos === 'DEFENDER' || pos === 'DEF') return '🛡️';
-    if (pos === 'MIDFIELDER' || pos === 'MID') return '🔄';
-    if (pos === 'FORWARD' || pos === 'FW') return '⚡';
+    if (pos === 'GOALKEEPER' || pos === 'GK') return '🧤';
+    if (pos === 'DEFENDER' || pos === 'DEF') return '💪';
+    if (pos === 'MIDFIELDER' || pos === 'MID') return '⚙️';
+    if (pos === 'FORWARD' || pos === 'FW') return '🚀';
     return '👤';
   };
 
@@ -310,74 +310,62 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
                     transition={{ duration: 0.2 }}
                     className="border-t border-slate-600/50 bg-slate-700/30 p-4 space-y-4"
                   >
-                    {/* Team A */}
-                    <div>
-                      <h4 className="font-bold text-blue-300 mb-2">🔵 {squad.teamC ? 'Squad A' : 'Team A'}</h4>
-                      <div className="space-y-1 text-sm">
-                        {sortPlayersByPosition(squad.teamA).map((player) => (
-                          <div
-                            key={player.id}
-                            className="flex items-center justify-between p-2 bg-slate-600/30 rounded"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span>{getPositionEmoji(player.position)}</span>
-                              <span className="text-gray-300">{player.name}</span>
+                    {squad.teamC ? (
+                      /* 3-squad: stacked on mobile, 3 columns on sm+ */
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[
+                          { label: '🔵 Squad A', players: squad.teamA, color: 'text-blue-300' },
+                          { label: '🔴 Squad B', players: squad.teamB, color: 'text-red-300' },
+                          { label: '🟢 Squad C', players: squad.teamC, color: 'text-green-300' },
+                        ].map(({ label, players, color }) => (
+                          <div key={label}>
+                            <h4 className={`font-bold ${color} mb-2 text-sm`}>{label}</h4>
+                            <div className="space-y-1">
+                              {sortPlayersByPosition(players).map((player) => (
+                                <div
+                                  key={player.id}
+                                  className="flex items-center justify-between p-1.5 bg-slate-600/30 rounded text-xs"
+                                >
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <span>{getPositionEmoji(player.position)}</span>
+                                    <span className="text-gray-300 truncate">{player.name}</span>
+                                  </div>
+                                  {isAdmin && player.skill && (
+                                    <span className="text-yellow-400 font-bold flex-shrink-0 ml-1">{player.skill}</span>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                            {isAdmin && player.skill && (
-                              <span className="text-yellow-400 text-xs font-bold">
-                                {player.skill}/10
-                              </span>
-                            )}
                           </div>
                         ))}
                       </div>
-                    </div>
-
-                    {/* Team B */}
-                    <div>
-                      <h4 className="font-bold text-red-300 mb-2">🔴 {squad.teamC ? 'Squad B' : 'Team B'}</h4>
-                      <div className="space-y-1 text-sm">
-                        {sortPlayersByPosition(squad.teamB).map((player) => (
-                          <div
-                            key={player.id}
-                            className="flex items-center justify-between p-2 bg-slate-600/30 rounded"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span>{getPositionEmoji(player.position)}</span>
-                              <span className="text-gray-300">{player.name}</span>
+                    ) : (
+                      /* 2-squad: side by side */
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: '🔵 Team A', players: squad.teamA, color: 'text-blue-300' },
+                          { label: '🔴 Team B', players: squad.teamB, color: 'text-red-300' },
+                        ].map(({ label, players, color }) => (
+                          <div key={label}>
+                            <h4 className={`font-bold ${color} mb-2 text-sm`}>{label}</h4>
+                            <div className="space-y-1">
+                              {sortPlayersByPosition(players).map((player) => (
+                                <div
+                                  key={player.id}
+                                  className="flex items-center justify-between p-1.5 bg-slate-600/30 rounded text-xs"
+                                >
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <span>{getPositionEmoji(player.position)}</span>
+                                    <span className="text-gray-300 truncate">{player.name}</span>
+                                  </div>
+                                  {isAdmin && player.skill && (
+                                    <span className="text-yellow-400 font-bold flex-shrink-0 ml-1">{player.skill}</span>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                            {isAdmin && player.skill && (
-                              <span className="text-yellow-400 text-xs font-bold">
-                                {player.skill}/10
-                              </span>
-                            )}
                           </div>
                         ))}
-                      </div>
-                    </div>
-
-                    {/* Team C (3-squad only) */}
-                    {squad.teamC && squad.teamC.length > 0 && (
-                      <div>
-                        <h4 className="font-bold text-green-300 mb-2">🟢 Squad C</h4>
-                        <div className="space-y-1 text-sm">
-                          {sortPlayersByPosition(squad.teamC).map((player) => (
-                            <div
-                              key={player.id}
-                              className="flex items-center justify-between p-2 bg-slate-600/30 rounded"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span>{getPositionEmoji(player.position)}</span>
-                                <span className="text-gray-300">{player.name}</span>
-                              </div>
-                              {isAdmin && player.skill && (
-                                <span className="text-yellow-400 text-xs font-bold">
-                                  {player.skill}/10
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
                       </div>
                     )}
                   </motion.div>
