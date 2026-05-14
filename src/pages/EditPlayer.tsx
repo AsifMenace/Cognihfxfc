@@ -21,6 +21,7 @@ interface Player {
   address: string;
   hasCar: boolean;
   contact: string;
+  runner: boolean;
 }
 
 const EditPlayer: React.FC = () => {
@@ -49,6 +50,7 @@ const EditPlayer: React.FC = () => {
           address: data.address ?? '',
           hasCar: data.hasCar ?? false,
           contact: data.contact ?? '',
+          runner: data.runner ?? false,
         });
       } catch (err: unknown) {
         if (err instanceof Error) setError(err.message);
@@ -247,6 +249,11 @@ const EditPlayer: React.FC = () => {
               <label className="flex items-center gap-3 cursor-pointer py-1">
                 <input type="checkbox" name="hasCar" checked={form.hasCar} onChange={handleChange} className="w-4 h-4 accent-yellow-400" />
                 <span className="text-gray-300 font-medium">Has a car</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer py-1">
+                <input type="checkbox" name="runner" checked={form.runner} onChange={handleChange} className="w-4 h-4 accent-yellow-400" />
+                <span className="text-gray-300 font-medium">🏃 Runner</span>
+                <span className="text-xs text-gray-500">(used to balance runners across squads)</span>
               </label>
             </div>
           </div>

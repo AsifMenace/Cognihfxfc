@@ -8,6 +8,7 @@ interface Player {
   name: string;
   position: string;
   skill?: number;
+  runner?: boolean;
 }
 
 interface PlayerSelectorProps {
@@ -36,6 +37,10 @@ export function PlayerSelector({
     ? selectedCount >= 14 && selectedCount <= 20 && selectedCount % 2 === 0
     : selectedCount >= 21 && selectedCount <= 24;
   const maxPlayers = is2Squad ? 20 : 24;
+
+  const selectedRunnerCount = allPlayers.filter(
+    (p) => p.runner && selectedPlayerIds.includes(p.id)
+  ).length;
 
   // Filter players based on search
   const filteredPlayers = useMemo(() => {
@@ -107,6 +112,11 @@ export function PlayerSelector({
                 ? `Ready — ${selectedCount} players across 3 squads`
                 : `${selectedCount} selected — max 24`}
         </p>
+        {selectedRunnerCount > 0 && (
+          <p className="text-xs text-orange-400 mt-1">
+            🏃 {selectedRunnerCount} runner{selectedRunnerCount !== 1 ? 's' : ''} selected — will be balanced across teams
+          </p>
+        )}
       </div>
 
       {/* Search Bar */}
@@ -161,7 +171,10 @@ export function PlayerSelector({
 
                 {/* Player Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white truncate">{player.name}</p>
+                  <div className="flex items-center gap-1">
+                    <p className="font-semibold text-white truncate">{player.name}</p>
+                    {player.runner && <span className="text-sm flex-shrink-0">🏃</span>}
+                  </div>
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-gray-400">{getPositionEmoji(player.position)}</span>
                     <span className={getPositionColor(player.position)}>{player.position}</span>

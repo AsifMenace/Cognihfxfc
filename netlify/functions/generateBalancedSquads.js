@@ -42,6 +42,10 @@ function getPositionBreakdown(players) {
   return breakdown;
 }
 
+function countRunners(players) {
+  return players.filter((p) => p.runner).length;
+}
+
 function calculateScore(teamA, teamB) {
   const skillDiff = Math.abs(calculateTotalSkill(teamA) - calculateTotalSkill(teamB));
   const fwSkillDiff = Math.abs(calculateFWSkill(teamA) - calculateFWSkill(teamB));
@@ -55,7 +59,9 @@ function calculateScore(teamA, teamB) {
     positionBalance += diff;
   });
 
-  const score = skillDiff * 5 + fwSkillDiff * 3 + positionBalance * 2;
+  const runnerImbalance = Math.abs(countRunners(teamA) - countRunners(teamB));
+
+  const score = skillDiff * 5 + fwSkillDiff * 3 + positionBalance * 2 + runnerImbalance * 4;
   return score;
 }
 
@@ -156,7 +162,10 @@ function generateOptimalSquads(players, teamSize, iterations = 1000) {
 // ============================================================================
 
 function calculateScore3(teamA, teamB, teamC) {
-  return calculateScore(teamA, teamB) + calculateScore(teamB, teamC) + calculateScore(teamA, teamC);
+  const pairScore = calculateScore(teamA, teamB) + calculateScore(teamB, teamC) + calculateScore(teamA, teamC);
+  const rc = [countRunners(teamA), countRunners(teamB), countRunners(teamC)];
+  const runnerImbalance = Math.max(...rc) - Math.min(...rc);
+  return pairScore + runnerImbalance * 4;
 }
 
 function generateRandomCombination3(players, teamSizes) {
@@ -290,7 +299,7 @@ export default async (req, context) => {
 
     // Fetch player details
     const players = await sql`
-      SELECT id, name, position, skill
+      SELECT id, name, position, skill, runner
       FROM players
       WHERE id = ANY(${playerIds})
     `;
@@ -344,6 +353,7 @@ export default async (req, context) => {
             fwSkill: calculateFWSkill(teamA),
             positions: getPositionBreakdown(teamA),
             gkCount: getGKCount(teamA),
+            runnerCount: countRunners(teamA),
           },
           teamB: {
             players: teamB,
@@ -351,6 +361,7 @@ export default async (req, context) => {
             fwSkill: calculateFWSkill(teamB),
             positions: getPositionBreakdown(teamB),
             gkCount: getGKCount(teamB),
+            runnerCount: countRunners(teamB),
           },
           teamC: {
             players: teamC,
@@ -358,6 +369,7 @@ export default async (req, context) => {
             fwSkill: calculateFWSkill(teamC),
             positions: getPositionBreakdown(teamC),
             gkCount: getGKCount(teamC),
+            runnerCount: countRunners(teamC),
           },
           metadata: {
             totalPlayers,
@@ -413,6 +425,7 @@ export default async (req, context) => {
           fwSkill: teamAFWSkill,
           positions: getPositionBreakdown(teamA),
           gkCount: getGKCount(teamA),
+          runnerCount: countRunners(teamA),
         },
         teamB: {
           players: teamB,
@@ -420,6 +433,7 @@ export default async (req, context) => {
           fwSkill: teamBFWSkill,
           positions: getPositionBreakdown(teamB),
           gkCount: getGKCount(teamB),
+          runnerCount: countRunners(teamB),
         },
         metadata: {
           totalPlayers,

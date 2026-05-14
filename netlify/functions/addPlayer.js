@@ -68,6 +68,7 @@ export const handler = async (event) => {
       address,
       hasCar,
       contact,
+      runner,
     } = data;
 
     if (!name || !position || !age || !nationality || !jerseyNumber) {
@@ -103,9 +104,9 @@ export const handler = async (event) => {
 
     await sql`
       INSERT INTO players
-        (name, position, age, nationality, jersey_number, height, weight, goals, assists, appearances, skill, photo, bio, address, has_car, contact, lat, lng)
+        (name, position, age, nationality, jersey_number, height, weight, goals, assists, appearances, skill, photo, bio, address, has_car, contact, lat, lng, runner)
       VALUES
-        (${name}, ${position}, ${age}, ${nationality}, ${jerseyNumber}, ${height}, ${weight}, ${goals || 0}, ${assists || 0}, ${appearances || 0}, ${skill || null}, ${playerPhoto}, ${bio || ''}, ${address || null}, ${hasCar ?? false}, ${contact || null}, ${lat}, ${lng});
+        (${name}, ${position}, ${age}, ${nationality}, ${jerseyNumber}, ${height}, ${weight}, ${goals || 0}, ${assists || 0}, ${appearances || 0}, ${skill || null}, ${playerPhoto}, ${bio || ''}, ${address || null}, ${hasCar ?? false}, ${contact || null}, ${lat}, ${lng}, ${runner ?? false});
     `;
 
     return {

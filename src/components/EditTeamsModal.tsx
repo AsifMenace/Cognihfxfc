@@ -8,6 +8,7 @@ interface Player {
   name: string;
   position: string;
   skill?: number;
+  runner?: boolean;
 }
 
 type Pair = "AB" | "BC" | "AC";
@@ -133,6 +134,7 @@ function TeamColumn({
                     <div className="flex items-center gap-1 min-w-0">
                       <span className="text-xs">{getPositionEmoji(player.position)}</span>
                       <span className="font-semibold text-white truncate">{player.name}</span>
+                      {player.runner && <span className="text-xs flex-shrink-0">🏃</span>}
                     </div>
                     {isAdmin && player.skill && (
                       <span className="text-yellow-400 font-bold text-xs flex-shrink-0">
