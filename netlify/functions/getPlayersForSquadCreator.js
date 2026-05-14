@@ -32,6 +32,7 @@ export default async (req, context) => {
         name,
         position,
         skill,
+        runner,
         photo
       FROM players
 

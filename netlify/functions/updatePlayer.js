@@ -70,6 +70,7 @@ export const handler = async (event) => {
       address,
       hasCar,
       contact,
+      runner,
     } = data;
 
     if (!id) {
@@ -130,7 +131,8 @@ export const handler = async (event) => {
           has_car = ${hasCar ?? false},
           contact = ${contact},
           lat = ${lat},
-          lng = ${lng}
+          lng = ${lng},
+          runner = ${runner ?? false}
         WHERE id = ${id};
       `;
     } else {
@@ -154,7 +156,8 @@ export const handler = async (event) => {
           skill = ${skill},
           address = ${address},
           has_car = ${hasCar ?? false},
-          contact = ${contact}
+          contact = ${contact},
+          runner = ${runner ?? false}
         WHERE id = ${id};
       `;
     }

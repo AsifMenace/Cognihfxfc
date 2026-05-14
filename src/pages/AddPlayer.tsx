@@ -20,6 +20,7 @@ const AddPlayer: React.FC = () => {
     address: '',
     hasCar: false,
     contact: '',
+    runner: false,
   });
 
   const [loading, setLoading] = useState(false);
@@ -100,7 +101,7 @@ const AddPlayer: React.FC = () => {
       setForm({
         name: '', position: '', age: '', nationality: '', jerseyNumber: '',
         height: '', weight: '', goals: '', assists: '', appearances: '',
-        skill: '', photo: '', bio: '', address: '', hasCar: false, contact: '',
+        skill: '', photo: '', bio: '', address: '', hasCar: false, contact: '', runner: false,
       });
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
@@ -204,6 +205,11 @@ const AddPlayer: React.FC = () => {
               <label className="flex items-center gap-3 cursor-pointer py-1">
                 <input type="checkbox" name="hasCar" checked={form.hasCar} onChange={handleChange} className="w-4 h-4 accent-yellow-400" />
                 <span className="text-gray-300 font-medium">Has a car</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer py-1">
+                <input type="checkbox" name="runner" checked={form.runner} onChange={handleChange} className="w-4 h-4 accent-yellow-400" />
+                <span className="text-gray-300 font-medium">🏃 Runner</span>
+                <span className="text-xs text-gray-500">(used to balance runners across squads)</span>
               </label>
             </div>
           </div>

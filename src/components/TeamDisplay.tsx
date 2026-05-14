@@ -7,6 +7,7 @@ interface Player {
   name: string;
   position: string;
   skill?: number;
+  runner?: boolean;
 }
 
 interface TeamDisplayProps {
@@ -188,9 +189,12 @@ export function TeamDisplay({
                     className={`p-3 rounded-lg border ${getPositionBgColor(pos)} flex items-center justify-between`}
                   >
                     <div className="flex-1">
-                      <p className="font-semibold text-white text-sm sm:text-base">
-                        {player.name}
-                      </p>
+                      <div className="flex items-center gap-1">
+                        <p className="font-semibold text-white text-sm sm:text-base">
+                          {player.name}
+                        </p>
+                        {player.runner && <span className="text-sm flex-shrink-0">🏃</span>}
+                      </div>
                     </div>
                     {isAdmin && player.skill && (
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
