@@ -1,5 +1,7 @@
 // src/pages/Balances.tsx - MOBILE-FIRST ✅
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { toPng } from 'html-to-image';
+import { FaShareAlt } from 'react-icons/fa';
 
 interface Player {
   player: string;
@@ -47,6 +49,9 @@ export default function Balances() {
   });
   const [loading, setLoading] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/.netlify/functions/getBalances')
@@ -91,6 +96,43 @@ export default function Balances() {
     };
   });
 
+  const handleShare = async () => {
+    setSharing(true);
+    setCapturing(true);
+    // wait one frame for React to render the overlay
+    await new Promise((r) => setTimeout(r, 150));
+
+    const el = shareCardRef.current;
+    if (!el) {
+      setCapturing(false);
+      setSharing(false);
+      return;
+    }
+
+    try {
+      const dataUrl = await toPng(el, { backgroundColor: '#111827', pixelRatio: 2 });
+      setCapturing(false);
+
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], 'balances.png', { type: 'image/png' });
+
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Player Balances' });
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'balances.png';
+        a.click();
+      }
+    } catch (err) {
+      console.error('Share failed', err);
+      setCapturing(false);
+    } finally {
+      setSharing(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-black min-h-screen">
       {/* Dark Yellow Header */}
@@ -100,11 +142,25 @@ export default function Balances() {
 
       {/* Dark Table Container */}
       <div className="bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/50 overflow-hidden border border-gray-700/50">
-        <div className="p-6 bg-gradient-to-r from-gray-700/30 to-gray-800/50 border-b border-yellow-500/20">
-          <h2 className="text-xl font-black text-white mb-1 tracking-wide">Account Details 💰</h2>
-          <p className="text-sm text-gray-400 font-medium">
-            Swipe horizontally to view all columns
-          </p>
+        <div className="p-6 bg-gradient-to-r from-gray-700/30 to-gray-800/50 border-b border-yellow-500/20 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-black text-white mb-1 tracking-wide">Account Details 💰</h2>
+            <p className="text-sm text-gray-400 font-medium">
+              Swipe horizontally to view all columns
+            </p>
+          </div>
+          <button
+            onClick={handleShare}
+            disabled={sharing}
+            className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-400 font-bold rounded-xl transition-all text-sm disabled:opacity-50"
+          >
+            {sharing ? (
+              <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <FaShareAlt />
+            )}
+            {sharing ? 'Sharing...' : 'Share'}
+          </button>
         </div>
 
         <div className="overflow-x-auto pb-4 -mx-1 sm:-mx-2">
@@ -266,6 +322,116 @@ export default function Balances() {
           <p className="text-2xl font-black text-gray-400 mb-2">No Players Found</p>
           <p className="text-gray-500">Check back later for balance updates</p>
         </div>
+      )}
+
+      {/* Share card — rendered at fixed position during capture; html-to-image reads full 760px width regardless of viewport */}
+      {capturing && (
+      <div
+        ref={shareCardRef}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '760px',
+          zIndex: 9999,
+          backgroundColor: '#111827',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          fontFamily: 'system-ui, sans-serif',
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #374151' }}>
+          <div style={{ fontSize: '22px', fontWeight: 900, color: '#fbbf24', letterSpacing: '1px' }}>
+            💰 PLAYER BALANCES
+          </div>
+          <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
+            {new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+        </div>
+
+        {/* Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#1f2937' }}>
+              {['Player', 'Status', 'Deposited', 'Games', 'Total Dep.', 'Consumed', 'Balance'].map((h) => (
+                <th key={h} style={{ padding: '10px 14px', fontSize: '11px', fontWeight: 800, color: '#d1d5db', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: h === 'Player' || h === 'Status' ? 'left' : 'right', borderBottom: '1px solid #374151' }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayPlayers.map((player, i) => {
+              const balanceBg =
+                player.balanceStatus === 'owed' ? '#ef4444' :
+                player.balanceStatus === 'almost-finished' ? '#ea580c' :
+                player.balanceStatus === 'low' ? '#d97706' :
+                '#10b981';
+
+              return (
+                <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#111827' : '#1a2332', borderBottom: '1px solid #1f2937' }}>
+                  <td style={{ padding: '12px 14px', fontWeight: 800, fontSize: '14px', color: '#ffffff' }}>
+                    {player.player}
+                  </td>
+                  <td style={{ padding: '12px 14px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '3px 10px',
+                      borderRadius: '999px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      backgroundColor: player.coreStatus.includes('Core') ? '#065f46' : '#374151',
+                      color: player.coreStatus.includes('Core') ? '#6ee7b7' : '#d1d5db',
+                    }}>
+                      {player.coreStatus}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right', fontSize: '13px', fontWeight: 600, color: '#d1d5db' }}>
+                    ${player.startingBalance.toFixed(2)}
+                  </td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right', fontSize: '14px', fontWeight: 800, color: '#fbbf24' }}>
+                    {player.gamesAttended}
+                  </td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right', fontSize: '13px', fontWeight: 600, color: '#86efac' }}>
+                    ${(player.startingBalance + player.deposit2).toFixed(2)}
+                  </td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right', fontSize: '13px', fontWeight: 600, color: '#fca5a5' }}>
+                    ${player.totalAmountConsumed.toFixed(2)}
+                  </td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '4px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: balanceBg,
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: '14px',
+                    }}>
+                      {player.balanceStatus === 'owed' ? '-' : ''}${Math.abs(player.runningBalance).toFixed(2)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Footer */}
+        <div style={{ padding: '12px 24px', borderTop: '1px solid #374151', display: 'flex', gap: '24px' }}>
+          {[
+            { label: '🟢 Good', desc: '> $15 left' },
+            { label: '🟡 Low', desc: '$8–$15 left' },
+            { label: '🟠 Critical', desc: '< $8 left' },
+            { label: '🔴 Owes', desc: 'In debt' },
+          ].map(({ label, desc }) => (
+            <div key={label} style={{ fontSize: '11px', color: '#9ca3af' }}>
+              <span style={{ fontWeight: 700 }}>{label}</span> — {desc}
+            </div>
+          ))}
+        </div>
+      </div>
       )}
     </div>
   );
