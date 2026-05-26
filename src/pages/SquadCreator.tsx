@@ -297,7 +297,9 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
-    const [y, mo, d] = dateStr.split('-').map(Number);
+    const match = String(dateStr).match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return '';
+    const [y, mo, d] = [Number(match[1]), Number(match[2]), Number(match[3])];
     return new Date(y, mo - 1, d).toLocaleDateString(undefined, {
       weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
     });
