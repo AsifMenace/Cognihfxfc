@@ -28,6 +28,7 @@
         "npm:globals@^15.9.0",
         "npm:google-auth-library@^10.5.0",
         "npm:google-spreadsheet@^4.1.5",
+        "npm:html-to-image@^1.11.13",
         "npm:leaflet@^1.9.4",
         "npm:lucide-react@0.344",
         "npm:node-fetch@^3.3.2",

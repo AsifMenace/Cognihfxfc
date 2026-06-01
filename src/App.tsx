@@ -22,6 +22,7 @@ import AddNews from './pages/AddNews';
 import ScrollToTop from './components/ScrollToTop';
 import Balances from './pages/Balances';
 import { SquadCreator } from './pages/SquadCreator';
+import BookingsPage from './pages/BookingsPage';
 import PlayerMap from './pages/PlayerMap';
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
           <Route path="/player-map" element={<PlayerMap />} />
           <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
           <Route path="/squad-creator" element={<SquadCreator isAdmin={isAdmin} />} />
+          <Route path="/bookings" element={<BookingsPage />} />
           <Route path="/player/:id" element={<PlayerDetail />} />
           <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
 
