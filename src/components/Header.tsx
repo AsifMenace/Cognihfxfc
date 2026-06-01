@@ -20,6 +20,7 @@ import {
   Search,
   DollarSign,
   MapPin,
+  CalendarCheck,
 } from 'lucide-react';
 
 // Define Player type
@@ -105,6 +106,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin }) => {
     { to: '/gallery', label: 'Gallery', icon: Camera },
     { to: '/balances', label: 'Balances', icon: DollarSign },
     { to: '/player-map', label: 'Player Map', icon: MapPin },
+    { to: '/bookings', label: 'Bookings', icon: CalendarCheck },
   ];
 
   const adminLinks = [

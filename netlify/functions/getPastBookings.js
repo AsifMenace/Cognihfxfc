@@ -1,0 +1,25 @@
+import { neon } from "@netlify/neon";
+
+const sql = neon();
+
+export const handler = async () => {
+  try {
+    const bookings = await sql`
+      SELECT id, booking_date, start_time, end_time, session, field_number
+      FROM field_bookings
+      WHERE booking_date < CURRENT_DATE
+      ORDER BY booking_date DESC, start_time DESC
+      LIMIT 20
+    `;
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(bookings),
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message }),
+    };
+  }
+};
