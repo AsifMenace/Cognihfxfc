@@ -206,7 +206,11 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
             <Link
               key={player.id}
               to={`/player/${player.id}`}
-                className="flex items-center gap-2 sm:gap-2 bg-slate-700/50 hover:bg-slate-700/70 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 text-left border border-slate-600 hover:border-slate-500 transition-all group relative"
+              className="flex items-center gap-2 sm:gap-2 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 text-left border-l-4 transition-all group relative"
+              style={{
+                backgroundColor: `${colorClass}18`,
+                borderLeftColor: colorClass,
+              }}
             >
               <img
                 src={player.photo}
@@ -224,18 +228,16 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                       ? "🧤"
                       : player.position.toLowerCase().includes("defender") ||
                           player.position.toLowerCase() === "def"
-                        ? "🛡️"
-                        : player.position
-                              .toLowerCase()
-                              .includes("midfielder") ||
+                        ? "💪"
+                        : player.position.toLowerCase().includes("midfielder") ||
                             player.position.toLowerCase() === "mid"
-                          ? "🎯"
+                          ? "⚙️"
                           : player.position.toLowerCase().includes("forward") ||
                               player.position.toLowerCase() === "fw"
-                            ? "⚡"
+                            ? "🚀"
                             : "⚽"}
                   </span>
-                  {player.position} #{player.jerseyNumber}
+                  {player.position}
                 </div>
               </div>
             </Link>
