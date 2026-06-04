@@ -5,7 +5,7 @@ export default function AddBooking() {
   const [bookingDate, setBookingDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [session, setSession] = useState<"morning" | "night">("morning");
+  const session: "morning" | "night" = startTime && parseInt(startTime.split(":")[0]) >= 18 ? "night" : "morning";
   const [fieldNumber, setFieldNumber] = useState<number | "">("");
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,6 @@ export default function AddBooking() {
         setBookingDate("");
         setStartTime("");
         setEndTime("");
-        setSession("morning");
         setFieldNumber("");
       } else {
         const error = await res.json();
@@ -101,18 +100,6 @@ export default function AddBooking() {
                 className={inputCls}
               />
             </div>
-          </div>
-
-          <div>
-            <label className={labelCls}>Session</label>
-            <select
-              value={session}
-              onChange={(e) => setSession(e.target.value as "morning" | "night")}
-              className={inputCls}
-            >
-              <option value="morning">Morning</option>
-              <option value="night">Night</option>
-            </select>
           </div>
 
           <div>
