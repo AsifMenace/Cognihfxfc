@@ -27,20 +27,33 @@ import PlayerMap from './pages/PlayerMap';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('adminToken') !== null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+    localStorage.getItem('sidebarCollapsed') === 'true'
+  );
 
   const handleSetIsAdmin = (value: boolean) => {
     setIsAdmin(value);
-    if (!value) {
-      localStorage.removeItem('adminToken');
-    }
+    if (!value) localStorage.removeItem('adminToken');
   };
+
+  const handleSidebarCollapsed = (value: boolean) => {
+    setSidebarCollapsed(value);
+    localStorage.setItem('sidebarCollapsed', String(value));
+  };
+
   const { updateAvailable, handleRefresh } = useServiceWorkerUpdate();
   return (
     <Router>
       <ScrollToTop />
       <div className="min-h-screen bg-slate-50">
         <UpdatePrompt show={updateAvailable} onRefresh={handleRefresh} />
-        <Header isAdmin={isAdmin} setIsAdmin={handleSetIsAdmin} />
+        <Header
+          isAdmin={isAdmin}
+          setIsAdmin={handleSetIsAdmin}
+          sidebarCollapsed={sidebarCollapsed}
+          setSidebarCollapsed={handleSidebarCollapsed}
+        />
+        <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
         <Routes>
           <Route path="/" element={<Home isAdmin={isAdmin} />} />
           <Route path="/games" element={<Games />} />
@@ -105,6 +118,7 @@ function App() {
             element={isAdmin ? <AdminNotification /> : <Navigate to="/admin-login" replace />}
           />
         </Routes>
+        </div>
       </div>
     </Router>
   );
