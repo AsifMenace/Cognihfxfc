@@ -104,11 +104,15 @@ const MATCH_LOCATION: [number, number] = [44.65727487683051, -63.6602592188191];
 // approx for 210 Thomas Raddall Dr (you can refine later)
 
 const POSITION_COLORS: Record<string, string> = {
-  Goalkeeper: '#f59e0b',
-  Defender: '#3b82f6',
-  Midfielder: '#8b5cf6',
-  Forward: '#ef4444',
+  goalkeeper: '#f59e0b', gk: '#f59e0b',
+  defender: '#3b82f6',   def: '#3b82f6',
+  midfielder: '#8b5cf6', mid: '#8b5cf6',
+  forward: '#ef4444',    fw: '#ef4444',
 };
+
+function positionColor(pos: string) {
+  return POSITION_COLORS[pos.toLowerCase()] ?? '#94a3b8';
+}
 
 function createGroundIcon(): L.DivIcon {
   return L.divIcon({
@@ -153,13 +157,21 @@ function createGroundIcon(): L.DivIcon {
 
 function FlyToPlayer({ player }: { player: Player | null }) {
   const map = useMap();
-
   useEffect(() => {
     if (player?.lat && player?.lng) {
       map.flyTo([player.lat, player.lng], 14, { duration: 0.6 });
     }
   }, [player, map]);
+  return null;
+}
 
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map]);
   return null;
 }
 
@@ -313,6 +325,7 @@ const PlayerMap: React.FC = () => {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+                <MapResizer />
                 <FitBounds players={filtered} selectedPlayer={selectedPlayer} />
                 <FlyToPlayer player={selectedPlayer} />
                 <Marker position={MATCH_LOCATION} icon={createGroundIcon()}>
@@ -400,7 +413,7 @@ const PlayerMap: React.FC = () => {
                                 fontSize: 11,
                                 fontWeight: 600,
                                 marginTop: 2,
-                                color: POSITION_COLORS[player.position] ?? '#64748b',
+                                color: positionColor(player.position),
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
                               }}
@@ -529,7 +542,7 @@ const PlayerMap: React.FC = () => {
                     <div className="flex items-center gap-2 mt-0.5">
                       <span
                         className="text-xs font-medium"
-                        style={{ color: POSITION_COLORS[player.position] ?? '#94a3b8' }}
+                        style={{ color: positionColor(player.position) }}
                       >
                         {player.position}
                       </span>
