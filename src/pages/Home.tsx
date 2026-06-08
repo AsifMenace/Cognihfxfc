@@ -347,7 +347,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
               to="/predict"
               className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white font-black text-lg md:text-xl rounded-full hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-green-500/50 animate-pulse hover:animate-none"
             >
-              ⚡ WORLD CUP PREDICTOR
+              🌎 WORLD CUP PREDICTOR
             </Link>
           </div>
         </motion.div>
