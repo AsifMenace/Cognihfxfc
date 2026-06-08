@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Zap, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
 import {
   Home,
   Calendar,
@@ -46,6 +46,7 @@ const mainNavLinks = [
   { to: '/standings', label: 'Standings', icon: Trophy },
   { to: '/gallery', label: 'Gallery', icon: Camera },
   { to: '/balances', label: 'Balances', icon: DollarSign },
+  { to: '/predict', label: 'Predictor', icon: Globe },
   { to: '/player-map', label: 'Player Map', icon: MapPin },
   { to: '/bookings', label: 'Bookings', icon: CalendarCheck },
 ];
@@ -55,11 +56,17 @@ const adminLinks = [
   { to: '/add-match', label: 'Add Match', icon: CalendarPlus },
   { to: '/add-team', label: 'Add Team', icon: ShieldPlus },
   { to: '/add-booking', label: 'Add Booking', icon: Clock },
+  { to: '/wc-admin', label: 'WC Admin', icon: Trophy },
   { to: '/add-notification', label: 'Add Notification', icon: BellIcon },
   { to: '/add-news', label: 'Add News', icon: Newspaper },
 ];
 
-const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, setSidebarCollapsed }) => {
+const Header: React.FC<HeaderProps> = ({
+  isAdmin,
+  setIsAdmin,
+  sidebarCollapsed,
+  setSidebarCollapsed,
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -75,7 +82,10 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (query.length < 2) { setSearchResults([]); return; }
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
     setIsSearching(true);
     try {
       const response = await fetch('/.netlify/functions/getPlayers');
@@ -83,8 +93,11 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
       setSearchResults(
         players.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
       );
-    } catch { /* ignore */ }
-    finally { setIsSearching(false); }
+    } catch {
+      /* ignore */
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -96,7 +109,15 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
   };
 
   // ── Sidebar nav link ────────────────────────────────────────────────────────
-  const SidebarLink = ({ to, label, icon: Icon }: { to: string; label: string; icon: React.ElementType }) => (
+  const SidebarLink = ({
+    to,
+    label,
+    icon: Icon,
+  }: {
+    to: string;
+    label: string;
+    icon: React.ElementType;
+  }) => (
     <div className="relative group/tip">
       <Link
         to={to}
@@ -128,7 +149,9 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
         }`}
       >
         {/* Logo + toggle */}
-        <div className={`flex items-center border-b border-slate-700/50 h-16 flex-shrink-0 ${sidebarCollapsed ? 'justify-center px-0' : 'justify-between px-4'}`}>
+        <div
+          className={`flex items-center border-b border-slate-700/50 h-16 flex-shrink-0 ${sidebarCollapsed ? 'justify-center px-0' : 'justify-between px-4'}`}
+        >
           {!sidebarCollapsed && (
             <Link to="/" className="flex items-center gap-2 min-w-0">
               <img
@@ -162,7 +185,9 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
         {/* Nav links */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
           {!sidebarCollapsed && (
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest px-3 pb-2">Navigation</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest px-3 pb-2">
+              Navigation
+            </p>
           )}
           {mainNavLinks.map((link) => (
             <SidebarLink key={link.to} {...link} />
@@ -171,10 +196,13 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
           {isAdmin && (
             <>
               <div className={`pt-4 pb-2 ${sidebarCollapsed ? 'px-1' : 'px-3'}`}>
-                {!sidebarCollapsed
-                  ? <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Admin</p>
-                  : <div className="h-px bg-slate-700" />
-                }
+                {!sidebarCollapsed ? (
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    Admin
+                  </p>
+                ) : (
+                  <div className="h-px bg-slate-700" />
+                )}
               </div>
               {adminLinks.map((link) => (
                 <SidebarLink key={link.to} {...link} />
@@ -195,17 +223,29 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
                 onChange={(e) => handleSearch(e.target.value)}
                 className="w-full pl-8 pr-3 py-2 text-sm rounded-lg bg-slate-800 text-white placeholder-slate-500 border border-slate-700 focus:outline-none focus:border-blue-500 transition-colors"
               />
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search
+                size={14}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500"
+              />
               {searchResults.length > 0 && (
                 <div className="absolute bottom-full mb-2 w-full bg-white rounded-lg shadow-2xl max-h-64 overflow-y-auto z-50">
                   {searchResults.map((player) => (
                     <Link
                       key={player.id}
                       to={`/player/${player.id}`}
-                      onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSearchResults([]);
+                      }}
                       className="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 transition-colors"
                     >
-                      {player.photo && <img src={player.photo} alt={player.name} className="w-8 h-8 rounded-full object-cover" />}
+                      {player.photo && (
+                        <img
+                          src={player.photo}
+                          alt={player.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      )}
                       <div>
                         <p className="text-sm font-semibold text-gray-900">{player.name}</p>
                         <p className="text-xs text-gray-500">{player.position}</p>
@@ -286,7 +326,10 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-slate-800">
             <span className="text-white font-bold text-lg">Menu</span>
-            <button onClick={() => setIsMobileMenuOpen(false)} className="text-white p-2 hover:bg-slate-800 rounded-lg">
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-white p-2 hover:bg-slate-800 rounded-lg"
+            >
               <X size={20} />
             </button>
           </div>
@@ -301,7 +344,10 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
                 onChange={(e) => handleSearch(e.target.value)}
                 className="w-full px-4 py-2 pl-10 rounded-lg bg-slate-800 text-white placeholder-slate-400 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
             </div>
             {searchResults.length > 0 && (
               <div className="mt-2 bg-slate-800 rounded-lg max-h-60 overflow-y-auto">
@@ -310,9 +356,19 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
                     key={player.id}
                     to={`/player/${player.id}`}
                     className="flex items-center gap-3 px-3 py-3 hover:bg-slate-700 border-b border-slate-700 last:border-0 transition-colors"
-                    onClick={() => { setSearchQuery(''); setSearchResults([]); setIsMobileMenuOpen(false); }}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                      setIsMobileMenuOpen(false);
+                    }}
                   >
-                    {player.photo && <img src={player.photo} alt={player.name} className="w-10 h-10 rounded-full object-cover" />}
+                    {player.photo && (
+                      <img
+                        src={player.photo}
+                        alt={player.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    )}
                     <div>
                       <p className="text-white text-sm font-medium">{player.name}</p>
                       <p className="text-slate-400 text-xs">{player.position}</p>
@@ -330,7 +386,9 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
                 key={to}
                 to={to}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive(to) ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  isActive(to)
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 <Icon size={20} />
@@ -341,14 +399,18 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, setIsAdmin, sidebarCollapsed, 
             {isAdmin && (
               <>
                 <div className="pt-4 pb-2 px-4">
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Admin Actions</h3>
+                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Admin Actions
+                  </h3>
                 </div>
                 {adminLinks.map(({ to, label, icon: Icon }) => (
                   <Link
                     key={to}
                     to={to}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive(to) ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      isActive(to)
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     }`}
                   >
                     <Icon size={20} />

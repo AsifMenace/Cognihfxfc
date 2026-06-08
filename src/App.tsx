@@ -24,11 +24,13 @@ import Balances from './pages/Balances';
 import { SquadCreator } from './pages/SquadCreator';
 import BookingsPage from './pages/BookingsPage';
 import PlayerMap from './pages/PlayerMap';
+import WcPredict from './pages/WcPredict';
+import WcAdmin from './pages/WcAdmin';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('adminToken') !== null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
-    localStorage.getItem('sidebarCollapsed') === 'true'
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('sidebarCollapsed') === 'true'
   );
 
   const handleSetIsAdmin = (value: boolean) => {
@@ -53,71 +55,80 @@ function App() {
           sidebarCollapsed={sidebarCollapsed}
           setSidebarCollapsed={handleSidebarCollapsed}
         />
-        <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
-        <Routes>
-          <Route path="/" element={<Home isAdmin={isAdmin} />} />
-          <Route path="/games" element={<Games />} />
-          <Route path="/standings" element={<LeagueStandings />} />
-          <Route path="/player-map" element={<PlayerMap />} />
-          <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
-          <Route path="/squad-creator" element={<SquadCreator isAdmin={isAdmin} />} />
-          <Route path="/bookings" element={<BookingsPage />} />
-          <Route path="/player/:id" element={<PlayerDetail />} />
-          <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
+        <div
+          className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}
+        >
+          <Routes>
+            <Route path="/" element={<Home isAdmin={isAdmin} />} />
+            <Route path="/games" element={<Games />} />
+            <Route path="/standings" element={<LeagueStandings />} />
+            <Route path="/predict" element={<WcPredict />} />
+            <Route path="/player-map" element={<PlayerMap />} />
+            <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
+            <Route path="/squad-creator" element={<SquadCreator isAdmin={isAdmin} />} />
+            <Route path="/bookings" element={<BookingsPage />} />
+            <Route path="/player/:id" element={<PlayerDetail />} />
+            <Route path="/gallery" element={<Gallery isAdmin={isAdmin} />} />
 
-          <Route path="/match/:id" element={<MatchCentre isAdmin={isAdmin} />} />
-          {/* Admin login route */}
-          <Route path="/admin-login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
+            <Route path="/match/:id" element={<MatchCentre isAdmin={isAdmin} />} />
+            {/* Admin login route */}
+            <Route path="/admin-login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
 
-          <Route
-            path="/balances"
-            element={
-              isAdmin ? (
-                <Balances />
-              ) : (
-                <Navigate
-                  to="/admin-login"
-                  replace
-                  state={{ intended: '/balances' }} // 👈 ADD THIS LINE
-                />
-              )
-            }
-          />
+            <Route
+              path="/balances"
+              element={
+                isAdmin ? (
+                  <Balances />
+                ) : (
+                  <Navigate
+                    to="/admin-login"
+                    replace
+                    state={{ intended: '/balances' }} // 👈 ADD THIS LINE
+                  />
+                )
+              }
+            />
 
-          {/* Protected admin routes */}
-          <Route
-            path="/add-player"
-            element={isAdmin ? <AddPlayer /> : <Navigate to="/admin-login" replace />}
-          />
-          <Route
-            path="/edit-player/:id"
-            element={isAdmin ? <EditPlayer /> : <Navigate to="/admin-login" replace />}
-          />
-          <Route
-            path="/add-match"
-            element={isAdmin ? <AddMatch /> : <Navigate to="/admin-login" replace />}
-          />
-          <Route
-            path="/match/edit/:id"
-            element={isAdmin ? <AddMatch /> : <Navigate to="/admin-login" replace />}
-          />
-          <Route
-            path="/add-team"
-            element={isAdmin ? <AddTeam /> : <Navigate to="/admin-login" replace />}
-          />
-          <Route
-            path="/add-booking"
-            element={isAdmin ? <AddBooking /> : <Navigate to="/admin-login" replace />}
-          />
-          <Route
-            path="/add-news"
-            element={isAdmin ? <AddNews /> : <Navigate to="/admin-login" replace />}
-          />
-          <Route
-            path="/add-notification"
-            element={isAdmin ? <AdminNotification /> : <Navigate to="/admin-login" replace />}
-          />
-        </Routes>
+            {/* Protected admin routes */}
+            <Route
+              path="/add-player"
+              element={isAdmin ? <AddPlayer /> : <Navigate to="/admin-login" replace />}
+            />
+            <Route
+              path="/edit-player/:id"
+              element={isAdmin ? <EditPlayer /> : <Navigate to="/admin-login" replace />}
+            />
+            <Route
+              path="/add-match"
+              element={isAdmin ? <AddMatch /> : <Navigate to="/admin-login" replace />}
+            />
+            <Route
+              path="/match/edit/:id"
+              element={isAdmin ? <AddMatch /> : <Navigate to="/admin-login" replace />}
+            />
+            <Route
+              path="/add-team"
+              element={isAdmin ? <AddTeam /> : <Navigate to="/admin-login" replace />}
+            />
+            <Route
+              path="/add-booking"
+              element={isAdmin ? <AddBooking /> : <Navigate to="/admin-login" replace />}
+            />
+            <Route
+              path="/add-news"
+              element={isAdmin ? <AddNews /> : <Navigate to="/admin-login" replace />}
+            />
+            <Route
+              path="/add-notification"
+              element={isAdmin ? <AdminNotification /> : <Navigate to="/admin-login" replace />}
+            />
+            <Route
+              path="/wc-admin"
+              element={
+                isAdmin ? <WcAdmin isAdmin={isAdmin} /> : <Navigate to="/admin-login" replace />
+              }
+            />
+          </Routes>
         </div>
       </div>
     </Router>

@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Calendar, Users, Trophy, Target, ChevronRight } from "lucide-react";
-import { parseMatchDateTime } from "../components/dateUtils";
-import CountdownTimer from "../components/CountdownTimer";
-import { TeamBadge } from "../components/TeamBadge";
-import { motion } from "framer-motion";
-import LatestNews from "./LatestNews";
-import UpcomingBookings from "./UpcomingBookings";
-import BookingVotingWidget from "../components/BookingVotingWidget";
-import PushSubscribeButton from "../components/PushSubscribeButton";
-import RecentMatchVideo from "../components/RecentMatchVideo";
-import { PlayerOfTheMatch } from "./PlayerOfTheMatch";
-import { GetRecentMatch } from "../components/GetRecentMatch";
-import ThemeProvider from "../components/ThemeProvider";
-import Card from "../components/Card";
-import Title from "../components/Title";
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Calendar, Users, Trophy, Target, ChevronRight } from 'lucide-react';
+import { parseMatchDateTime } from '../components/dateUtils';
+import CountdownTimer from '../components/CountdownTimer';
+import { TeamBadge } from '../components/TeamBadge';
+import { motion } from 'framer-motion';
+import LatestNews from './LatestNews';
+import UpcomingBookings from './UpcomingBookings';
+import BookingVotingWidget from '../components/BookingVotingWidget';
+import PushSubscribeButton from '../components/PushSubscribeButton';
+import RecentMatchVideo from '../components/RecentMatchVideo';
+import { PlayerOfTheMatch } from './PlayerOfTheMatch';
+import { GetRecentMatch } from '../components/GetRecentMatch';
+import ThemeProvider from '../components/ThemeProvider';
+import Card from '../components/Card';
+import Title from '../components/Title';
 
 interface TopScorer {
   id: number;
@@ -77,11 +77,9 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
   const [lineups, setLineups] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(
-    undefined,
-  );
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
 
-  const BASE_URL = "/.netlify/functions";
+  const BASE_URL = '/.netlify/functions';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,9 +90,9 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           fetch(`${BASE_URL}/getMatches`),
         ]);
 
-        if (!playersRes.ok) throw new Error("Failed to fetch players");
-        if (!scorersRes.ok) throw new Error("Failed to fetch top scorers");
-        if (!matchesRes.ok) throw new Error("Failed to fetch matches");
+        if (!playersRes.ok) throw new Error('Failed to fetch players');
+        if (!scorersRes.ok) throw new Error('Failed to fetch top scorers');
+        if (!matchesRes.ok) throw new Error('Failed to fetch matches');
 
         const playersData: Player[] = await playersRes.json();
         const scorersData: TopScorer[] = await scorersRes.json();
@@ -108,37 +106,29 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
 
         const upcoming = matchesData
           .filter((m) => parseMatchDateTime(m) >= now)
-          .sort(
-            (a, b) =>
-              parseMatchDateTime(a).getTime() - parseMatchDateTime(b).getTime(),
-          );
+          .sort((a, b) => parseMatchDateTime(a).getTime() - parseMatchDateTime(b).getTime());
 
         setNextGame(upcoming[0] || null);
 
         // Fetch lineups for next match
         if (upcoming[0]) {
           try {
-            const lineupsRes = await fetch(
-              `${BASE_URL}/getLineup?match_id=${upcoming[0].id}`,
-            );
+            const lineupsRes = await fetch(`${BASE_URL}/getLineup?match_id=${upcoming[0].id}`);
             if (lineupsRes.ok) {
               const lineupsData: Player[] = await lineupsRes.json();
-              console.log("Lineups fetched:", lineupsData);
+              console.log('Lineups fetched:', lineupsData);
               setLineups(lineupsData);
             } else {
-              console.warn(
-                "Failed to fetch lineups, status:",
-                lineupsRes.status,
-              );
+              console.warn('Failed to fetch lineups, status:', lineupsRes.status);
             }
           } catch (err) {
-            console.warn("Failed to fetch lineups:", err);
+            console.warn('Failed to fetch lineups:', err);
           }
         }
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
-        } else setError("An unexpected error occurred.");
+        } else setError('An unexpected error occurred.');
       } finally {
         setLoading(false);
       }
@@ -151,14 +141,14 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
   const totalWins = 15;
   const upcomingMatches = matches.filter((match) => {
     const now = new Date();
-    const [year, month, day] = match.date.split("-");
-    const [hour = "0", minute = "0"] = (match.time || "00:00").split(":");
+    const [year, month, day] = match.date.split('-');
+    const [hour = '0', minute = '0'] = (match.time || '00:00').split(':');
     const matchDateTime = new Date(
       Number(year),
       Number(month) - 1,
       Number(day),
       Number(hour),
-      Number(minute),
+      Number(minute)
     );
     return matchDateTime >= now;
   }).length;
@@ -188,7 +178,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
     teamId: number,
     teamName: string,
     colorClass: string,
-    teamPlayers: Player[],
+    teamPlayers: Player[]
   ) => (
     <div key={teamId}>
       <h3 className="flex items-center gap-2 text-xs sm:text-sm md:text-lg font-black mb-2 px-2 text-white">
@@ -197,9 +187,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
       </h3>
 
       {teamPlayers.length === 0 ? (
-        <p className="text-gray-500 text-center text-xs sm:text-sm">
-          No players assigned.
-        </p>
+        <p className="text-gray-500 text-center text-xs sm:text-sm">No players assigned.</p>
       ) : (
         <div className="space-y-0.5 sm:space-y-1">
           {teamPlayers.map((player) => (
@@ -223,19 +211,19 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                 </div>
                 <div className="text-xs text-gray-400 flex items-center gap-0.5">
                   <span>
-                    {player.position.toLowerCase().includes("keeper") ||
-                    player.position.toLowerCase() === "gk"
-                      ? "🧤"
-                      : player.position.toLowerCase().includes("defender") ||
-                          player.position.toLowerCase() === "def"
-                        ? "💪"
-                        : player.position.toLowerCase().includes("midfielder") ||
-                            player.position.toLowerCase() === "mid"
-                          ? "⚙️"
-                          : player.position.toLowerCase().includes("forward") ||
-                              player.position.toLowerCase() === "fw"
-                            ? "🚀"
-                            : "⚽"}
+                    {player.position.toLowerCase().includes('keeper') ||
+                    player.position.toLowerCase() === 'gk'
+                      ? '🧤'
+                      : player.position.toLowerCase().includes('defender') ||
+                          player.position.toLowerCase() === 'def'
+                        ? '💪'
+                        : player.position.toLowerCase().includes('midfielder') ||
+                            player.position.toLowerCase() === 'mid'
+                          ? '⚙️'
+                          : player.position.toLowerCase().includes('forward') ||
+                              player.position.toLowerCase() === 'fw'
+                            ? '🚀'
+                            : '⚽'}
                   </span>
                   {player.position}
                 </div>
@@ -311,9 +299,9 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                 transition={{ delay: 0.9, duration: 0.5 }}
               >
                 {[
-                  { to: "/games", label: "View Fixtures", icon: Calendar },
-                  { to: "/squad", label: "Meet the Squad", icon: Users },
-                  { to: "/standings", label: "League Standings", icon: Trophy },
+                  { to: '/games', label: 'View Fixtures', icon: Calendar },
+                  { to: '/squad', label: 'Meet the Squad', icon: Users },
+                  { to: '/standings', label: 'League Standings', icon: Trophy },
                 ].map((btn, index) => (
                   <Link
                     key={index}
@@ -348,20 +336,24 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.1, duration: 0.6 }}
         >
-          <div className="text-center">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-6 text-center">
             <Link
               to="/squad-creator"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white font-black text-lg md:text-xl rounded-full hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 animate-pulse hover:animate-none"
+              className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white font-black text-lg md:text-xl rounded-full hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 animate-pulse hover:animate-none"
             >
               ⚡ TRY SQUAD CREATOR
+            </Link>
+            <Link
+              to="/predict"
+              className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white font-black text-lg md:text-xl rounded-full hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-green-500/50 animate-pulse hover:animate-none"
+            >
+              🌎 WORLD CUP PREDICTOR
             </Link>
           </div>
         </motion.div>
 
         <div className="mt-6 text-center">
-          <p className="mb-2 text-lg text-white">
-            Get notified about new bookings & Polls
-          </p>
+          <p className="mb-2 text-lg text-white">Get notified about new bookings & Polls</p>
           <PushSubscribeButton />
         </div>
 
@@ -384,17 +376,17 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                     <div className="flex items-center space-x-3">
                       <Calendar className="text-yellow-400" size={24} />
                       <span className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-wider">
-                        {nextGame.competition || "friendly"}
+                        {nextGame.competition || 'friendly'}
                       </span>
                     </div>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-bold ${
                         nextGame.isHome
-                          ? "bg-green-600/20 text-green-400 border border-green-600/40"
-                          : "bg-orange-600/20 text-orange-400 border border-orange-600/40"
+                          ? 'bg-green-600/20 text-green-400 border border-green-600/40'
+                          : 'bg-orange-600/20 text-orange-400 border border-orange-600/40'
                       }`}
                     >
-                      {nextGame.isHome ? "Home" : "Away"}
+                      {nextGame.isHome ? 'Home' : 'Away'}
                     </span>
                   </div>
                   <div className="text-center mb-6">
@@ -402,67 +394,65 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                       {nextGame.home_team_name && nextGame.away_team_name ? (
                         <div className="flex justify-center items-end gap-3">
                           <div className="flex flex-col items-center gap-1 flex-1">
-                            <TeamBadge color={nextGame.home_team_color} name={nextGame.home_team_name || ""} size={32} />
-                            <span className="text-white text-sm font-bold truncate max-w-full">{nextGame.home_team_name}</span>
+                            <TeamBadge
+                              color={nextGame.home_team_color}
+                              name={nextGame.home_team_name || ''}
+                              size={32}
+                            />
+                            <span className="text-white text-sm font-bold truncate max-w-full">
+                              {nextGame.home_team_name}
+                            </span>
                           </div>
                           <span className="text-gray-500 text-base mb-1 flex-shrink-0">vs</span>
                           <div className="flex flex-col items-center gap-1 flex-1">
-                            <TeamBadge color={nextGame.away_team_color} name={nextGame.away_team_name || ""} size={32} />
-                            <span className="text-white text-sm font-bold truncate max-w-full">{nextGame.away_team_name}</span>
+                            <TeamBadge
+                              color={nextGame.away_team_color}
+                              name={nextGame.away_team_name || ''}
+                              size={32}
+                            />
+                            <span className="text-white text-sm font-bold truncate max-w-full">
+                              {nextGame.away_team_name}
+                            </span>
                           </div>
                         </div>
                       ) : (
                         <>
-                          <span className="text-yellow-400 font-black">
-                            Cogni Hfx FC
-                          </span>
+                          <span className="text-yellow-400 font-black">Cogni Hfx FC</span>
                           <span className="text-gray-500 mx-2">vs</span>
-                          <span className="text-white">
-                            {nextGame.opponent}
-                          </span>
+                          <span className="text-white">{nextGame.opponent}</span>
                         </>
                       )}
                     </div>
                     {nextGame && (
                       <>
-                        <CountdownTimer
-                          kickOff={parseMatchDateTime(nextGame)}
-                        />
+                        <CountdownTimer kickOff={parseMatchDateTime(nextGame)} />
                         <div className="text-sm md:text-base text-gray-400 mt-4">
-                          <Calendar
-                            size={16}
-                            className="inline mr-1 text-yellow-400"
-                          />
-                          {parseMatchDateTime(nextGame).toLocaleDateString(
-                            "en-US",
-                            {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            },
-                          )}{" "}
+                          <Calendar size={16} className="inline mr-1 text-yellow-400" />
+                          {parseMatchDateTime(nextGame).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}{' '}
                           at {nextGame.time}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          {nextGame.venue}
-                        </div>
+                        <div className="text-sm text-gray-500 mt-1">{nextGame.venue}</div>
                       </>
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8 w-full max-w-2xl mx-auto px-4">
                     {[
                       {
-                        to: "/games",
-                        label: "View All Fixtures",
+                        to: '/games',
+                        label: 'View All Fixtures',
                         icon: Calendar,
-                        accentColor: "blue", // subtle variation
+                        accentColor: 'blue', // subtle variation
                       },
                       {
                         to: `/match/${nextGame?.id}`,
-                        label: "Match Centre",
+                        label: 'Match Centre',
                         icon: Trophy,
-                        accentColor: "yellow",
+                        accentColor: 'yellow',
                         isPrimary: true,
                       },
                     ].map((btn, index) => (
@@ -477,18 +467,14 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                         {/* 1. Static Gradient Glow (Always slightly visible to prevent mixing) */}
                         <div
                           className={`absolute inset-0 bg-gradient-to-br ${
-                            btn.isPrimary
-                              ? "from-yellow-500/5"
-                              : "from-blue-500/5"
+                            btn.isPrimary ? 'from-yellow-500/5' : 'from-blue-500/5'
                           } to-transparent`}
                         />
 
                         {/* 2. Hover Spotlight - More intense to make it pop */}
                         <div
                           className={`absolute inset-0 bg-gradient-to-tr ${
-                            btn.isPrimary
-                              ? "from-yellow-500/20"
-                              : "from-blue-500/20"
+                            btn.isPrimary ? 'from-yellow-500/20' : 'from-blue-500/20'
                           } to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                         />
 
@@ -501,8 +487,8 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                         <btn.icon
                           className={`relative z-10 w-5 h-5 transition-colors duration-300 ${
                             btn.isPrimary
-                              ? "text-yellow-500"
-                              : "text-slate-400 group-hover:text-blue-400"
+                              ? 'text-yellow-500'
+                              : 'text-slate-400 group-hover:text-blue-400'
                           }`}
                           strokeWidth={2.5}
                         />
@@ -522,9 +508,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                   </div>
                 </Card>
               ) : (
-                <p className="text-center text-gray-400">
-                  No upcoming match scheduled.
-                </p>
+                <p className="text-center text-gray-400">No upcoming match scheduled.</p>
               )}
             </div>
           </motion.div>
@@ -550,15 +534,13 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                     <div>
                       {(() => {
                         const homeTeamPlayers = sortPlayersByPosition(
-                          lineups.filter(
-                            (p) => p.team_id === nextGame.home_team_id,
-                          ),
+                          lineups.filter((p) => p.team_id === nextGame.home_team_id)
                         );
                         return renderTeamLineup(
                           nextGame.home_team_id!,
-                          nextGame.home_team_name || "Home Team",
-                          nextGame.home_team_color || "#3b82f6",
-                          homeTeamPlayers,
+                          nextGame.home_team_name || 'Home Team',
+                          nextGame.home_team_color || '#3b82f6',
+                          homeTeamPlayers
                         );
                       })()}
                     </div>
@@ -567,15 +549,13 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                     <div>
                       {(() => {
                         const awayTeamPlayers = sortPlayersByPosition(
-                          lineups.filter(
-                            (p) => p.team_id === nextGame.away_team_id,
-                          ),
+                          lineups.filter((p) => p.team_id === nextGame.away_team_id)
                         );
                         return renderTeamLineup(
                           nextGame.away_team_id!,
-                          nextGame.away_team_name || "Away Team",
-                          nextGame.away_team_color || "#8b5cf6",
-                          awayTeamPlayers,
+                          nextGame.away_team_name || 'Away Team',
+                          nextGame.away_team_color || '#8b5cf6',
+                          awayTeamPlayers
                         );
                       })()}
                     </div>
@@ -642,7 +622,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                         <div className="mb-3">
                           <div
                             className="relative mx-auto rounded-lg overflow-hidden bg-slate-700"
-                            style={{ width: "100px", aspectRatio: "3/4" }}
+                            style={{ width: '100px', aspectRatio: '3/4' }}
                           >
                             <img
                               src={player.photo}
@@ -659,20 +639,14 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                         <h3 className="font-black text-sm md:text-base truncate text-white">
                           {player.name}
                         </h3>
-                        <p className="text-gray-400 text-xs mb-2 truncate">
-                          {player.position}
-                        </p>
+                        <p className="text-gray-400 text-xs mb-2 truncate">{player.position}</p>
                         <div className="flex items-center justify-center space-x-3 text-sm">
                           <div className="flex items-center space-x-1">
                             <Target className="text-blue-400" size={16} />
-                            <span className="font-bold text-white">
-                              {player.goals}
-                            </span>
+                            <span className="font-bold text-white">{player.goals}</span>
                           </div>
                           <div className="text-gray-500">|</div>
-                          <div className="text-gray-400 text-xs">
-                            {player.appearances} apps
-                          </div>
+                          <div className="text-gray-400 text-xs">{player.appearances} apps</div>
                         </div>
                       </Link>
                     </motion.div>
@@ -686,9 +660,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
         {/* Quick Stats */}
         <section className="py-8 md:py-16 bg-black text-white">
           <div className="container mx-auto px-4">
-            {loading && (
-              <p className="text-center text-gray-400">Loading stats...</p>
-            )}
+            {loading && <p className="text-center text-gray-400">Loading stats...</p>}
             {error && <p className="text-center text-red-400">{error}</p>}
             {!loading && !error && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 max-w-4xl mx-auto">
@@ -699,17 +671,13 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                   <div className="text-2xl md:text-3xl font-black mb-1 text-white">
                     {squadCount}
                   </div>
-                  <div className="text-xs md:text-base text-gray-400">
-                    Squad Players
-                  </div>
+                  <div className="text-xs md:text-base text-gray-400">Squad Players</div>
                 </div>
                 <div className="text-center">
                   <div className="w-12 md:w-16 h-12 md:h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
                     <Trophy size={20} className="md:w-6 md:h-6 text-white" />
                   </div>
-                  <div className="text-2xl md:text-3xl font-black mb-1 text-white">
-                    {totalWins}
-                  </div>
+                  <div className="text-2xl md:text-3xl font-black mb-1 text-white">{totalWins}</div>
                   <div className="text-xs md:text-base text-gray-400">Wins</div>
                 </div>
                 <div className="text-center">
@@ -719,9 +687,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                   <div className="text-2xl md:text-3xl font-black mb-1 text-white">
                     {totalGoals}
                   </div>
-                  <div className="text-xs md:text-base text-gray-400">
-                    Goals Scored
-                  </div>
+                  <div className="text-xs md:text-base text-gray-400">Goals Scored</div>
                 </div>
                 <div className="text-center">
                   <div className="w-12 md:w-16 h-12 md:h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
@@ -730,9 +696,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                   <div className="text-2xl md:text-3xl font-black mb-1 text-white">
                     {upcomingMatches}
                   </div>
-                  <div className="text-xs md:text-base text-gray-400">
-                    Upcoming
-                  </div>
+                  <div className="text-xs md:text-base text-gray-400">Upcoming</div>
                 </div>
               </div>
             )}

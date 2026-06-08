@@ -1,0 +1,175 @@
+import { neon } from '@netlify/neon';
+
+const sql = neon();
+
+// Get flag URL from country code
+const getFlagUrl = (code) => {
+  if (!code || code.trim() === '') return 'https://flagcdn.com/w80/white.png';
+  return `https://flagcdn.com/w80/${code}.png`;
+};
+
+// Map country names to flag codes
+const getCountryCode = (teamName) => {
+  const countryMap = {
+    'South Korea': 'kr',
+    Czechia: 'cz',
+    'Czech Republic': 'cz',
+    Mexico: 'mx',
+    'South Africa': 'za',
+    Argentina: 'ar',
+    Australia: 'au',
+    Belgium: 'be',
+    Brazil: 'br',
+    Cameroon: 'cm',
+    Canada: 'ca',
+    Chile: 'cl',
+    China: 'cn',
+    Colombia: 'co',
+    'Costa Rica': 'cr',
+    "Côte d'Ivoire": 'ci',
+    Croatia: 'hr',
+    Denmark: 'dk',
+    Ecuador: 'ec',
+    Egypt: 'eg',
+    England: 'gb-eng',
+    France: 'fr',
+    Germany: 'de',
+    Ghana: 'gh',
+    Greece: 'gr',
+    Guatemala: 'gt',
+    Honduras: 'hn',
+    Iran: 'ir',
+    Japan: 'jp',
+    'Saudi Arabia': 'sa',
+    Morocco: 'ma',
+    Netherlands: 'nl',
+    Nigeria: 'ng',
+    'New Zealand': 'nz',
+    Norway: 'no',
+    Panama: 'pa',
+    Paraguay: 'py',
+    Peru: 'pe',
+    Poland: 'pl',
+    Portugal: 'pt',
+    Qatar: 'qa',
+    Romania: 'ro',
+    Senegal: 'sn',
+    Serbia: 'rs',
+    Slovakia: 'sk',
+    Spain: 'es',
+    Switzerland: 'ch',
+    Tunisia: 'tn',
+    Turkey: 'tr',
+    'United Arab Emirates': 'ae',
+    Uruguay: 'uy',
+    'United States': 'us',
+    USA: 'us',
+    Wales: 'gb-wls',
+    Scotland: 'gb-sct',
+    Venezuela: 've',
+    Bolivia: 'bo',
+    Albania: 'al',
+    Austria: 'at',
+    Azerbaijan: 'az',
+    'Bosnia and Herzegovina': 'ba',
+    Finland: 'fi',
+    Georgia: 'ge',
+    Hungary: 'hu',
+    Iceland: 'is',
+    Ireland: 'ie',
+    Israel: 'il',
+    Italy: 'it',
+    Kazakhstan: 'kz',
+    Kosovo: 'xk',
+    Luxembourg: 'lu',
+    Montenegro: 'me',
+    'North Macedonia': 'mk',
+    Malta: 'mt',
+    Moldova: 'md',
+    Russia: 'ru',
+    'San Marino': 'sm',
+    Slovenia: 'si',
+    Sweden: 'se',
+    Ukraine: 'ua',
+  };
+  return countryMap[teamName] || 'white';
+};
+
+export const handler = async (event) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders, body: '' };
+  }
+
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Method Not Allowed' }),
+    };
+  }
+
+  try {
+    const {
+      fixture_id,
+      home_team,
+      away_team,
+      home_code,
+      away_code,
+      home_flag,
+      away_flag,
+      kickoff_time,
+    } = JSON.parse(event.body);
+
+    if (!fixture_id || !home_team || !away_team || !kickoff_time) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Missing required fields' }),
+      };
+    }
+
+    // Ensure flags are valid URLs (never null/empty stored in DB)
+    // Priority: 1) provided flag URL, 2) country code, 3) team name lookup, 4) white flag
+    let storedHomeFlag = home_flag && home_flag.trim() ? home_flag : null;
+    let storedAwayFlag = away_flag && away_flag.trim() ? away_flag : null;
+
+    // If no flag URL provided, construct from country code
+    if (!storedHomeFlag) {
+      const homeCodeForFlag = home_code || getCountryCode(home_team);
+      storedHomeFlag = getFlagUrl(homeCodeForFlag);
+    }
+    if (!storedAwayFlag) {
+      const awayCodeForFlag = away_code || getCountryCode(away_team);
+      storedAwayFlag = getFlagUrl(awayCodeForFlag);
+    }
+
+    await sql`
+      INSERT INTO wc_matches (fixture_id, home_team, away_team, home_code, away_code, home_flag, away_flag, kickoff_time, status, activated_at)
+      VALUES (${fixture_id}, ${home_team}, ${away_team}, ${home_code}, ${away_code}, ${storedHomeFlag}, ${storedAwayFlag}, ${kickoff_time}, 'active', NOW())
+      ON CONFLICT (fixture_id)
+      DO UPDATE SET
+        status = 'active',
+        home_flag = ${storedHomeFlag},
+        away_flag = ${storedAwayFlag},
+        activated_at = NOW()
+    `;
+
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ message: 'Match activated successfully' }),
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: error.message }),
+    };
+  }
+};
