@@ -128,7 +128,7 @@ function shareSessionText(b: Booking): string {
     `📅 ${dayStr}\n` +
     `⏰ ${formatTime(b.start_time)} – ${formatTime(b.end_time)}\n` +
     `📍 Field ${b.field_number} · ${session} Session\n\n` +
-    `Are you in? 🙋`
+    `Let’s go ‼️🤘🏻`
   );
 }
 
