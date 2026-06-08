@@ -52,6 +52,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [loadingActive, setLoadingActive] = useState(true);
   const [activating, setActivating] = useState<number | null>(null);
   const [fetchingResult, setFetchingResult] = useState<number | null>(null);
+  const [deactivating, setDeactivating] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
 
@@ -147,6 +148,26 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
       showMessage('error', err instanceof Error ? err.message : 'Failed to fetch result');
     } finally {
       setFetchingResult(null);
+    }
+  };
+
+  const deactivateMatch = async (matchId: number) => {
+    setDeactivating(matchId);
+    setMessage(null);
+    try {
+      const res = await fetch('/.netlify/functions/deactivateWcMatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match_id: matchId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to deactivate match');
+      showMessage('success', data.message);
+      fetchActiveMatches();
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to deactivate match');
+    } finally {
+      setDeactivating(null);
     }
   };
 
@@ -260,23 +281,35 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                     )}
                   </div>
 
-                  {(m.status === 'locked' || m.status === 'completed') && (
-                    <button
-                      onClick={() => fetchResult(m.id)}
-                      disabled={fetchingResult === m.id || m.status === 'completed'}
-                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
-                    >
-                      <RefreshCw
-                        size={14}
-                        className={fetchingResult === m.id ? 'animate-spin' : ''}
-                      />
-                      {m.status === 'completed'
-                        ? 'Result already fetched'
-                        : fetchingResult === m.id
-                          ? 'Fetching...'
-                          : 'Fetch Result from API'}
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {(m.status === 'locked' || m.status === 'completed') && (
+                      <button
+                        onClick={() => fetchResult(m.id)}
+                        disabled={fetchingResult === m.id || m.status === 'completed'}
+                        className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                      >
+                        <RefreshCw
+                          size={14}
+                          className={fetchingResult === m.id ? 'animate-spin' : ''}
+                        />
+                        {m.status === 'completed'
+                          ? 'Result already fetched'
+                          : fetchingResult === m.id
+                            ? 'Fetching...'
+                            : 'Fetch Result from API'}
+                      </button>
+                    )}
+                    {m.status === 'active' && (
+                      <button
+                        onClick={() => deactivateMatch(m.id)}
+                        disabled={deactivating === m.id}
+                        className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                        title="Deactivate only if no predictions have been made"
+                      >
+                        {deactivating === m.id ? '...' : 'Deactivate'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))
             )}
