@@ -1113,12 +1113,19 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <span className="text-gray-400 font-normal ml-2">({match.result})</span>
                 )}
               </div>
-              <div className="text-gray-500 text-xs mt-1">
+              <div className="text-gray-300 text-xs mt-1">
                 {kickoffDate.toLocaleDateString(undefined, {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
                 })}
+              </div>
+              <div className="text-gray-300 text-xs mt-1">
+                {kickoffDate.toLocaleTimeString(undefined, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}{' '}
+                at {match.venue}
               </div>
             </div>
 
