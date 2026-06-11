@@ -150,13 +150,11 @@ export const handler = async (event) => {
     const apiKey = process.env.FOOTBALL_DATA_API_KEY;
     if (!apiKey) throw new Error('FOOTBALL_DATA_API_KEY not set');
 
-    // Get date from query param or use today
     const dateParam = event.queryStringParameters?.date;
     const date = dateParam || new Date().toISOString().split('T')[0];
 
-    // football-data.org filters by UTC date. Halifax is UTC-4 in summer, so a
-    // match at 11pm Halifax on June 11 is 03:00 UTC June 12. We fetch dateTo=+1
-    // to catch all matches that fall on the requested local date.
+    // Halifax is UTC-4 (ADT) in summer. Convert each match UTC time to Halifax
+    // local date and keep only matches whose local date matches the requested date.
     const datePlusOne = new Date(date + 'T00:00:00Z');
     datePlusOne.setUTCDate(datePlusOne.getUTCDate() + 1);
     const dateTo = datePlusOne.toISOString().split('T')[0];
@@ -173,8 +171,6 @@ export const handler = async (event) => {
 
     const data = await res.json();
 
-    // Halifax is UTC-4 (ADT) in summer. Convert each match UTC time to Halifax
-    // local date and keep only matches whose local date matches the requested date.
     const HALIFAX_OFFSET_MS = -4 * 60 * 60 * 1000;
 
     const matches = (data.matches || [])
@@ -184,39 +180,22 @@ export const handler = async (event) => {
         return localDateStr === date;
       })
       .map((m) => {
-        // Get country codes with proper fallback
         const homeTeamTla = m.homeTeam?.tla || '';
         const awayTeamTla = m.awayTeam?.tla || '';
 
         let homeCode = FIFA_TO_ISO[homeTeamTla];
         let awayCode = FIFA_TO_ISO[awayTeamTla];
 
-        // Fallback: if not in mapping, try lowercase TLA
-        if (!homeCode && homeTeamTla) {
-          homeCode = homeTeamTla.toLowerCase();
-        }
-        if (!awayCode && awayTeamTla) {
-          awayCode = awayTeamTla.toLowerCase();
-        }
+        if (!homeCode && homeTeamTla) homeCode = homeTeamTla.toLowerCase();
+        if (!awayCode && awayTeamTla) awayCode = awayTeamTla.toLowerCase();
+        if (!homeCode) homeCode = 'white';
+        if (!awayCode) awayCode = 'white';
 
-        // Fallback: if still not found, use generic white flag
-        if (!homeCode) {
-          homeCode = 'white';
-        }
-        if (!awayCode) {
-          awayCode = 'white';
-        }
-
-        // Build flag URLs - ALWAYS ensure valid URLs
         let homeFlag = m.homeTeam?.flag;
-        if (!homeFlag) {
-          homeFlag = `https://flagcdn.com/w80/${homeCode}.png`;
-        }
+        if (!homeFlag) homeFlag = `https://flagcdn.com/w80/${homeCode}.png`;
 
         let awayFlag = m.awayTeam?.flag;
-        if (!awayFlag) {
-          awayFlag = `https://flagcdn.com/w80/${awayCode}.png`;
-        }
+        if (!awayFlag) awayFlag = `https://flagcdn.com/w80/${awayCode}.png`;
 
         return {
           fixture_id: m.id,
