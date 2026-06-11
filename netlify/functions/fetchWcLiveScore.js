@@ -2,6 +2,8 @@ import { neon } from '@netlify/neon';
 
 const sql = neon();
 
+// Normalises team names from both APIs to a common key so mismatches
+// like "Czechia" (football-data) vs "Czech Republic" (api-football) still match.
 const CANONICAL = {
   'czechia': 'czech',
   'czech republic': 'czech',
@@ -28,7 +30,8 @@ const toCanonical = (name) => {
   return CANONICAL[lower] || lower.replace(/[^a-z]/g, '');
 };
 
-const FINISHED_STATUSES = new Set(['FT', 'AET', 'PEN', 'AWD']);
+const LIVE_STATUSES = new Set(['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']);
+const SCORED_STATUSES = new Set(['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE', 'FT', 'AET', 'PEN', 'AWD']);
 
 export const handler = async (event) => {
   const corsHeaders = {
@@ -71,6 +74,14 @@ export const handler = async (event) => {
 
     const match = matches[0];
 
+    if (match.status === 'completed') {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Match is already completed. Use Fetch Result instead.' }),
+      };
+    }
+
     // Use UTC date from kickoff_time to search api-football by date
     const utcDate = new Date(match.kickoff_time).toISOString().split('T')[0];
 
@@ -100,66 +111,47 @@ export const handler = async (event) => {
         statusCode: 200,
         headers: corsHeaders,
         body: JSON.stringify({
-          message: `Match not found in api-football for ${match.home_team} vs ${match.away_team} on ${utcDate}. Use manual score entry instead.`,
+          message: `Match not found in api-football for ${match.home_team} vs ${match.away_team} on ${utcDate}. Try the manual score entry.`,
+          live_home_goals: null,
+          live_away_goals: null,
         }),
       };
     }
 
     const apiStatus = fixture.fixture.status.short;
 
-    if (!FINISHED_STATUSES.has(apiStatus)) {
+    if (!SCORED_STATUSES.has(apiStatus)) {
       return {
         statusCode: 200,
         headers: corsHeaders,
         body: JSON.stringify({
-          message: `Match not finished yet. Current status: ${apiStatus}`,
-          status: apiStatus,
+          message: `No live score yet. Match status: ${apiStatus}`,
+          api_status: apiStatus,
+          live_home_goals: null,
+          live_away_goals: null,
         }),
       };
     }
 
-    const homeGoals = fixture.goals.home;
-    const awayGoals = fixture.goals.away;
-
-    if (homeGoals === null || homeGoals === undefined || awayGoals === null || awayGoals === undefined) {
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          message: 'Match is marked finished but score is not available yet. Try again in a minute.',
-          status: apiStatus,
-        }),
-      };
-    }
-
-    let result;
-    if (homeGoals > awayGoals) result = 'home';
-    else if (awayGoals > homeGoals) result = 'away';
-    else result = 'draw';
+    const homeGoals = fixture.goals.home ?? 0;
+    const awayGoals = fixture.goals.away ?? 0;
 
     await sql`
       UPDATE wc_matches
-      SET result = ${result},
-          status = 'completed',
-          final_home_goals = ${homeGoals},
-          final_away_goals = ${awayGoals}
+      SET live_home_goals = ${homeGoals},
+          live_away_goals = ${awayGoals},
+          live_fetched_at = NOW()
       WHERE id = ${match_id}
-    `;
-
-    await sql`
-      UPDATE wc_predictions
-      SET points = CASE WHEN prediction = ${result} THEN 1 ELSE 0 END
-      WHERE match_id = ${match_id}
     `;
 
     return {
       statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify({
-        message: 'Result fetched and points awarded',
-        result,
-        home_goals: homeGoals,
-        away_goals: awayGoals,
+        message: `Live score updated: ${homeGoals} - ${awayGoals} (${apiStatus})`,
+        api_status: apiStatus,
+        live_home_goals: homeGoals,
+        live_away_goals: awayGoals,
       }),
     };
   } catch (error) {

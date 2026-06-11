@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, RefreshCw, CheckCircle2, AlertCircle, Zap, Clock } from 'lucide-react';
+import { Trophy, RefreshCw, CheckCircle2, AlertCircle, Zap, Clock, Activity } from 'lucide-react';
 
 interface Fixture {
   fixture_id: number;
@@ -24,14 +24,16 @@ interface ActiveMatch {
   kickoff_time: string;
   status: string;
   result: string | null;
+  live_home_goals: number | null;
+  live_away_goals: number | null;
+  live_fetched_at: string | null;
+  final_home_goals: number | null;
+  final_away_goals: number | null;
 }
 
 function FlagImg({ src, alt }: { src: string | null | undefined; alt: string }) {
   const [err, setErr] = useState(false);
-
-  // Handle missing or empty src
   if (!src || err) return <span>🏳️</span>;
-
   return (
     <img
       src={src}
@@ -52,9 +54,15 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [loadingActive, setLoadingActive] = useState(true);
   const [activating, setActivating] = useState<number | null>(null);
   const [fetchingResult, setFetchingResult] = useState<number | null>(null);
+  const [fetchingLive, setFetchingLive] = useState<number | null>(null);
   const [deactivating, setDeactivating] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
+  const [completedExpanded, setCompletedExpanded] = useState(false);
+  const [manualForm, setManualForm] = useState<{ [matchId: number]: { home: string; away: string } }>({});
+  const [manualOpen, setManualOpen] = useState<number | null>(null);
+  const [settingManual, setSettingManual] = useState<number | null>(null);
+  const [settingLiveManual, setSettingLiveManual] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isAdmin) navigate('/admin-login');
@@ -131,6 +139,31 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     }
   };
 
+  const fetchLiveScore = async (matchId: number, homeTeam: string, awayTeam: string) => {
+    setFetchingLive(matchId);
+    setMessage(null);
+    try {
+      const res = await fetch('/.netlify/functions/fetchWcLiveScore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match_id: matchId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch live score');
+      showMessage(
+        'success',
+        data.live_home_goals !== null
+          ? `${homeTeam} ${data.live_home_goals} – ${data.live_away_goals} ${awayTeam} (${data.api_status})`
+          : data.message
+      );
+      fetchActiveMatches();
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to fetch live score');
+    } finally {
+      setFetchingLive(null);
+    }
+  };
+
   const fetchResult = async (matchId: number) => {
     setFetchingResult(matchId);
     setMessage(null);
@@ -171,7 +204,64 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     }
   };
 
-  // Check if a fixture is already activated
+  const setLiveScoreManually = async (matchId: number) => {
+    const form = manualForm[matchId];
+    if (!form) return;
+    const hg = parseInt(form.home, 10);
+    const ag = parseInt(form.away, 10);
+    if (isNaN(hg) || isNaN(ag) || hg < 0 || ag < 0) {
+      showMessage('error', 'Enter valid non-negative scores for both teams.');
+      return;
+    }
+    setSettingLiveManual(matchId);
+    setMessage(null);
+    try {
+      const res = await fetch('/.netlify/functions/setWcLiveScoreManual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match_id: matchId, home_goals: hg, away_goals: ag }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update live score');
+      showMessage('success', data.message);
+      fetchActiveMatches();
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to update live score');
+    } finally {
+      setSettingLiveManual(null);
+    }
+  };
+
+  const setResultManually = async (matchId: number) => {
+    const form = manualForm[matchId];
+    if (!form) return;
+    const hg = parseInt(form.home, 10);
+    const ag = parseInt(form.away, 10);
+    if (isNaN(hg) || isNaN(ag) || hg < 0 || ag < 0) {
+      showMessage('error', 'Enter valid non-negative scores for both teams.');
+      return;
+    }
+    setSettingManual(matchId);
+    setMessage(null);
+    try {
+      const res = await fetch('/.netlify/functions/setWcResultManual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match_id: matchId, home_goals: hg, away_goals: ag }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to set result');
+      showMessage('success', data.message);
+      setManualOpen(null);
+      setManualForm((prev) => { const next = { ...prev }; delete next[matchId]; return next; });
+      fetchActiveMatches();
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to set result');
+    } finally {
+      setSettingManual(null);
+    }
+  };
+
   const isActivated = (fixtureId: number) => activeMatches.some((m) => m.fixture_id === fixtureId);
 
   if (!isAdmin) return null;
@@ -209,112 +299,271 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
         )}
 
         {/* Active Matches */}
-        <div className="bg-slate-800 border border-slate-700/60 rounded-2xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-700/50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap size={16} className="text-amber-400" />
-              <h2 className="text-white font-semibold text-sm">
-                Active Matches
-                {activeMatches.length > 0 && (
-                  <span className="ml-2 text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-semibold">
-                    {activeMatches.length}
-                  </span>
-                )}
-              </h2>
-            </div>
-            <button
-              onClick={fetchActiveMatches}
-              className="text-slate-400 hover:text-white transition-colors"
-            >
-              <RefreshCw size={14} />
-            </button>
-          </div>
-
-          <div className="px-5 py-4 space-y-4">
-            {loadingActive ? (
-              <p className="text-slate-400 text-sm">Loading...</p>
-            ) : activeMatches.length === 0 ? (
-              <p className="text-slate-400 text-sm">No active matches. Activate some below.</p>
-            ) : (
-              activeMatches.map((m) => (
-                <div
-                  key={m.id}
-                  className="space-y-3 pb-4 border-b border-slate-700/50 last:border-0 last:pb-0"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 flex-1">
-                      <FlagImg src={m.home_flag ?? ''} alt={m.home_team} />
-                      <span className="text-white font-semibold text-sm">{m.home_team}</span>
-                    </div>
-                    <span className="text-slate-500 font-black text-sm">VS</span>
-                    <div className="flex items-center gap-2 flex-1 justify-end">
-                      <span className="text-white font-semibold text-sm">{m.away_team}</span>
-                      <FlagImg src={m.away_flag ?? ''} alt={m.away_team} />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span
-                      className={`text-xs font-bold uppercase tracking-widest px-2 py-1 rounded-full ${
-                        m.status === 'completed'
-                          ? 'bg-green-500/20 text-green-400'
-                          : m.status === 'locked'
-                            ? 'bg-red-500/20 text-red-400'
-                            : 'bg-amber-500/20 text-amber-400'
-                      }`}
-                    >
-                      {m.status}
-                    </span>
-                    <span className="text-slate-400 text-xs flex items-center gap-1">
-                      <Clock size={12} />
-                      {new Date(m.kickoff_time).toLocaleString()}
-                    </span>
-                    {m.result && (
-                      <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-semibold">
-                        Result:{' '}
-                        {m.result === 'home'
-                          ? m.home_team
-                          : m.result === 'away'
-                            ? m.away_team
-                            : 'Draw'}
+        {(() => {
+          const inProgress = activeMatches.filter((m) => m.status !== 'completed');
+          const completed = activeMatches.filter((m) => m.status === 'completed');
+          return (
+            <div className="bg-slate-800 border border-slate-700/60 rounded-2xl overflow-hidden">
+              {/* Panel header */}
+              <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap size={16} className="text-amber-400" />
+                  <h2 className="text-white font-semibold text-sm">
+                    Active Matches
+                    {inProgress.length > 0 && (
+                      <span className="ml-2 text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-semibold">
+                        {inProgress.length}
                       </span>
                     )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    {(m.status === 'locked' || m.status === 'completed') && (
-                      <button
-                        onClick={() => fetchResult(m.id)}
-                        disabled={fetchingResult === m.id || m.status === 'completed'}
-                        className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
-                      >
-                        <RefreshCw
-                          size={14}
-                          className={fetchingResult === m.id ? 'animate-spin' : ''}
-                        />
-                        {m.status === 'completed'
-                          ? 'Result already fetched'
-                          : fetchingResult === m.id
-                            ? 'Fetching...'
-                            : 'Fetch Result from API'}
-                      </button>
-                    )}
-                    {m.status === 'active' && (
-                      <button
-                        onClick={() => deactivateMatch(m.id)}
-                        disabled={deactivating === m.id}
-                        className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
-                        title="Deactivate only if no predictions have been made"
-                      >
-                        {deactivating === m.id ? '...' : 'Deactivate'}
-                      </button>
-                    )}
-                  </div>
+                  </h2>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+                <button
+                  onClick={fetchActiveMatches}
+                  className="text-slate-400 hover:text-white transition-colors p-1"
+                >
+                  <RefreshCw size={14} />
+                </button>
+              </div>
+
+              <div className="px-4 py-4 space-y-4">
+                {loadingActive ? (
+                  <p className="text-slate-400 text-sm">Loading...</p>
+                ) : activeMatches.length === 0 ? (
+                  <p className="text-slate-400 text-sm">No active matches. Activate some below.</p>
+                ) : (
+                  <>
+                    {/* In-progress matches — full cards */}
+                    {inProgress.length === 0 ? (
+                      <p className="text-slate-500 text-sm">No matches in progress.</p>
+                    ) : (
+                      inProgress.map((m) => (
+                        <div
+                          key={m.id}
+                          className="space-y-3 pb-4 border-b border-slate-700/50 last:border-0 last:pb-0"
+                        >
+                          {/* Teams */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <FlagImg src={m.home_flag ?? ''} alt={m.home_team} />
+                              <span className="text-white font-semibold text-sm truncate">{m.home_team}</span>
+                            </div>
+                            <span className="text-slate-500 font-black text-xs flex-shrink-0">VS</span>
+                            <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                              <span className="text-white font-semibold text-sm truncate text-right">{m.away_team}</span>
+                              <FlagImg src={m.away_flag ?? ''} alt={m.away_team} />
+                            </div>
+                          </div>
+
+                          {/* Live score */}
+                          {m.live_home_goals !== null && m.live_away_goals !== null && (
+                            <div className="flex items-center justify-center gap-2 bg-slate-700/60 rounded-xl py-2 px-3">
+                              <span className="text-white font-bold text-xs truncate max-w-[70px]">{m.home_team}</span>
+                              <span className="text-white font-black text-lg tabular-nums flex-shrink-0">
+                                {m.live_home_goals} – {m.live_away_goals}
+                              </span>
+                              <span className="text-white font-bold text-xs truncate max-w-[70px] text-right">{m.away_team}</span>
+                              {m.live_fetched_at && (
+                                <span className="text-slate-500 text-xs flex-shrink-0">
+                                  {new Date(m.live_fetched_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Status + kickoff */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                                m.status === 'locked'
+                                  ? 'bg-red-500/20 text-red-400'
+                                  : 'bg-amber-500/20 text-amber-400'
+                              }`}
+                            >
+                              {m.status}
+                            </span>
+                            <span className="text-slate-400 text-xs flex items-center gap-1">
+                              <Clock size={11} />
+                              {new Date(m.kickoff_time).toLocaleString()}
+                            </span>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex gap-2 flex-wrap">
+                            {m.status === 'locked' && (
+                              <button
+                                onClick={() => fetchLiveScore(m.id, m.home_team, m.away_team)}
+                                disabled={fetchingLive === m.id}
+                                className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2 min-w-[110px]"
+                              >
+                                <Activity size={14} className={fetchingLive === m.id ? 'animate-pulse' : ''} />
+                                {fetchingLive === m.id ? 'Fetching...' : 'Live Score'}
+                              </button>
+                            )}
+                            {m.status === 'locked' && (
+                              <button
+                                onClick={() => fetchResult(m.id)}
+                                disabled={fetchingResult === m.id}
+                                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2 min-w-[110px]"
+                              >
+                                <RefreshCw size={14} className={fetchingResult === m.id ? 'animate-spin' : ''} />
+                                {fetchingResult === m.id ? 'Fetching...' : 'Final Result'}
+                              </button>
+                            )}
+                            {m.status === 'locked' && (
+                              <button
+                                onClick={() =>
+                                  setManualOpen((prev) => (prev === m.id ? null : m.id))
+                                }
+                                className="flex-1 py-2.5 bg-slate-600 hover:bg-slate-500 active:bg-slate-700 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2 min-w-[110px]"
+                              >
+                                Set Manually
+                              </button>
+                            )}
+                            {m.status === 'active' && (
+                              <button
+                                onClick={() => deactivateMatch(m.id)}
+                                disabled={deactivating === m.id}
+                                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                                title="Deactivate only if no predictions have been made"
+                              >
+                                {deactivating === m.id ? '...' : 'Deactivate'}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Manual score entry form */}
+                          {m.status === 'locked' && manualOpen === m.id && (
+                            <div className="bg-slate-900/60 border border-slate-600/60 rounded-xl p-3 space-y-3">
+                              <p className="text-slate-400 text-xs">Enter the final score manually:</p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                                  <label className="text-slate-400 text-xs truncate">{m.home_team}</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="0"
+                                    value={manualForm[m.id]?.home ?? ''}
+                                    onChange={(e) =>
+                                      setManualForm((prev) => ({
+                                        ...prev,
+                                        [m.id]: { home: e.target.value, away: prev[m.id]?.away ?? '' },
+                                      }))
+                                    }
+                                    className="w-full bg-slate-700 border border-slate-600 text-white text-center text-lg font-bold rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                  />
+                                </div>
+                                <span className="text-slate-500 font-black text-lg mt-5 flex-shrink-0">–</span>
+                                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                                  <label className="text-slate-400 text-xs truncate text-right">{m.away_team}</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="0"
+                                    value={manualForm[m.id]?.away ?? ''}
+                                    onChange={(e) =>
+                                      setManualForm((prev) => ({
+                                        ...prev,
+                                        [m.id]: { home: prev[m.id]?.home ?? '', away: e.target.value },
+                                      }))
+                                    }
+                                    className="w-full bg-slate-700 border border-slate-600 text-white text-center text-lg font-bold rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setLiveScoreManually(m.id)}
+                                  disabled={
+                                    settingLiveManual === m.id ||
+                                    settingManual === m.id ||
+                                    !manualForm[m.id]?.home ||
+                                    !manualForm[m.id]?.away
+                                  }
+                                  className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm"
+                                >
+                                  {settingLiveManual === m.id ? 'Updating...' : 'Update Live Score'}
+                                </button>
+                                <button
+                                  onClick={() => setResultManually(m.id)}
+                                  disabled={
+                                    settingManual === m.id ||
+                                    settingLiveManual === m.id ||
+                                    !manualForm[m.id]?.home ||
+                                    !manualForm[m.id]?.away
+                                  }
+                                  className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm"
+                                >
+                                  {settingManual === m.id ? 'Saving...' : 'Final & Award Points'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+
+                    {/* Completed matches — collapsible compact list */}
+                    {completed.length > 0 && (
+                      <div className={inProgress.length > 0 ? 'pt-2 border-t border-slate-700/50' : ''}>
+                        <button
+                          onClick={() => setCompletedExpanded((v) => !v)}
+                          className="w-full flex items-center justify-between py-2 text-slate-400 hover:text-white transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 size={14} className="text-green-500" />
+                            <span className="text-sm font-medium">Completed</span>
+                            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-semibold">
+                              {completed.length}
+                            </span>
+                          </div>
+                          <span className="text-xs text-slate-500">{completedExpanded ? '▲ hide' : '▼ show'}</span>
+                        </button>
+
+                        {completedExpanded && (
+                          <div className="mt-1 space-y-2">
+                            {completed.map((m) => (
+                              <div
+                                key={m.id}
+                                className="flex flex-col gap-1.5 bg-slate-700/40 rounded-xl px-3 py-2.5"
+                              >
+                                {/* Teams + score row */}
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <FlagImg src={m.home_flag ?? ''} alt={m.home_team} />
+                                    <span className="text-slate-300 text-xs font-medium truncate">{m.home_team}</span>
+                                  </div>
+                                  <span className="text-white font-black text-sm tabular-nums flex-shrink-0">
+                                    {m.final_home_goals !== null && m.final_away_goals !== null
+                                      ? `${m.final_home_goals} – ${m.final_away_goals}`
+                                      : m.live_home_goals !== null && m.live_away_goals !== null
+                                        ? `${m.live_home_goals} – ${m.live_away_goals}`
+                                        : 'FT'}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                                    <span className="text-slate-300 text-xs font-medium truncate text-right">{m.away_team}</span>
+                                    <FlagImg src={m.away_flag ?? ''} alt={m.away_team} />
+                                  </div>
+                                </div>
+                                {/* Winner chip — always visible */}
+                                {m.result && (
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-semibold">
+                                      Winner: {m.result === 'home' ? m.home_team : m.result === 'away' ? m.away_team : 'Draw'}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Fetch Fixtures */}
         <div className="bg-slate-800 border border-slate-700/60 rounded-2xl overflow-hidden">
@@ -354,9 +603,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <FlagImg src={fix.home_flag} alt={fix.home_team} />
-                        <span className="text-white text-sm font-medium truncate">
-                          {fix.home_team}
-                        </span>
+                        <span className="text-white text-sm font-medium truncate">{fix.home_team}</span>
                       </div>
                       <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
                         <span className="text-slate-500 text-xs font-black">VS</span>
@@ -368,9 +615,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                        <span className="text-white text-sm font-medium truncate">
-                          {fix.away_team}
-                        </span>
+                        <span className="text-white text-sm font-medium truncate">{fix.away_team}</span>
                         <FlagImg src={fix.away_flag} alt={fix.away_team} />
                       </div>
                       <button
@@ -382,11 +627,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                             : 'bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white'
                         }`}
                       >
-                        {activated
-                          ? '✓ Active'
-                          : activating === fix.fixture_id
-                            ? '...'
-                            : 'Activate'}
+                        {activated ? '✓ Active' : activating === fix.fixture_id ? '...' : 'Activate'}
                       </button>
                     </div>
                   );
