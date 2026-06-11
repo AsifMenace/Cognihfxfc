@@ -63,7 +63,7 @@ function App() {
             <Route path="/games" element={<Games />} />
             <Route path="/standings" element={<LeagueStandings />} />
             <Route path="/predict" element={<WcPredict />} />
-            <Route path="/player-map" element={<PlayerMap />} />
+
             <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
             <Route path="/squad-creator" element={<SquadCreator isAdmin={isAdmin} />} />
             <Route path="/bookings" element={<BookingsPage />} />
@@ -84,6 +84,21 @@ function App() {
                     to="/admin-login"
                     replace
                     state={{ intended: '/balances' }} // 👈 ADD THIS LINE
+                  />
+                )
+              }
+            />
+
+            <Route
+              path="/player-map"
+              element={
+                isAdmin ? (
+                  <PlayerMap />
+                ) : (
+                  <Navigate
+                    to="/admin-login"
+                    replace
+                    state={{ intended: '/player-map' }} // 👈 ADD THIS LINE
                   />
                 )
               }
