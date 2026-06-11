@@ -595,36 +595,40 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                   return (
                     <div
                       key={fix.fixture_id}
-                      className={`flex items-center gap-3 border rounded-xl px-4 py-3 ${
+                      className={`flex flex-col gap-2 border rounded-xl px-4 py-3 ${
                         activated
                           ? 'bg-green-500/10 border-green-500/30'
                           : 'bg-slate-700/50 border-slate-600/50'
                       }`}
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <FlagImg src={fix.home_flag} alt={fix.home_team} />
-                        <span className="text-white text-sm font-medium truncate">{fix.home_team}</span>
+                      {/* Teams row — full width, no button competing */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <FlagImg src={fix.home_flag} alt={fix.home_team} />
+                          <span className="text-white text-sm font-medium truncate">{fix.home_team}</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-0.5 flex-shrink-0 px-1">
+                          <span className="text-slate-500 text-xs font-black">VS</span>
+                          <span className="text-slate-500 text-xs">
+                            {new Date(fix.kickoff_time).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                          <span className="text-white text-sm font-medium truncate text-right">{fix.away_team}</span>
+                          <FlagImg src={fix.away_flag} alt={fix.away_team} />
+                        </div>
                       </div>
-                      <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
-                        <span className="text-slate-500 text-xs font-black">VS</span>
-                        <span className="text-slate-500 text-xs">
-                          {new Date(fix.kickoff_time).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                        <span className="text-white text-sm font-medium truncate">{fix.away_team}</span>
-                        <FlagImg src={fix.away_flag} alt={fix.away_team} />
-                      </div>
+                      {/* Activate button — own row, full width */}
                       <button
                         onClick={() => !activated && activateMatch(fix)}
                         disabled={activating === fix.fixture_id || activated}
-                        className={`ml-2 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors flex-shrink-0 ${
+                        className={`w-full py-2 text-xs font-bold rounded-lg transition-colors ${
                           activated
                             ? 'bg-green-600/20 text-green-400 cursor-default'
-                            : 'bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white'
+                            : 'bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-50 text-white'
                         }`}
                       >
                         {activated ? '✓ Active' : activating === fix.fixture_id ? '...' : 'Activate'}
