@@ -30,6 +30,7 @@ const getCountryCode = (name) => {
     Ghana: 'gh',
     Greece: 'gr',
     Guatemala: 'gt',
+    Haiti: 'ht',
     Honduras: 'hn',
     Iran: 'ir',
     Japan: 'jp',

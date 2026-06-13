@@ -9,6 +9,7 @@ const FIFA_TO_ISO = {
   PAN: 'pa',
   HND: 'hn',
   JAM: 'jm',
+  HAI: 'ht',
 
   // CONMEBOL (South America)
   ARG: 'ar',
