@@ -37,6 +37,7 @@ const getCountryCode = (teamName) => {
     Ghana: 'gh',
     Greece: 'gr',
     Guatemala: 'gt',
+    Haiti: 'ht',
     Honduras: 'hn',
     Iran: 'ir',
     Japan: 'jp',
