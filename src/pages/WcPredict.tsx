@@ -98,6 +98,48 @@ function PlayerAvatar({ photo, name, size = 7 }: { photo?: string; name: string;
   );
 }
 
+// Leaderboard avatar — sizes via inline style (survives Tailwind purge), optional ring.
+function LeaderAvatar({
+  photo,
+  name,
+  px,
+  ringColor,
+  glow = false,
+}: {
+  photo?: string;
+  name: string;
+  px: number;
+  ringColor?: string;
+  glow?: boolean;
+}) {
+  const ringStyle: React.CSSProperties = ringColor
+    ? {
+        boxShadow: `0 0 0 3px ${ringColor}${
+          glow ? `, 0 0 18px ${ringColor}66` : ''
+        }, 0 6px 16px rgba(0,0,0,0.45)`,
+      }
+    : { boxShadow: '0 4px 12px rgba(0,0,0,0.4)' };
+
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt={name}
+        className="rounded-full object-cover flex-shrink-0"
+        style={{ width: px, height: px, ...ringStyle }}
+      />
+    );
+  }
+  return (
+    <div
+      className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 bg-gradient-to-br from-slate-600 to-slate-800"
+      style={{ width: px, height: px, fontSize: px * 0.4, ...ringStyle }}
+    >
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
 // ─── Countdown ───────────────────────────────────────────────────────────────
 
 function Countdown({ kickoff, onLock }: { kickoff: string; onLock?: () => void }) {
@@ -533,15 +575,30 @@ const WcPredict: React.FC = () => {
   const [sharing, setSharing] = useState(false);
 
   const shareLeaderboard = useCallback(async () => {
-    const top = leaderboard.slice(0, 5);
+    const top = leaderboard.slice(0, 8);
     if (top.length === 0) return;
     setSharing(true);
     try {
+      // Preload all player photos in parallel (CORS-safe). Failures fall back to initials.
+      const photos = await Promise.all(
+        top.map((e) =>
+          e.player_photo
+            ? new Promise<HTMLImageElement | null>((resolve) => {
+                const image = new Image();
+                image.crossOrigin = 'anonymous';
+                image.onload = () => resolve(image);
+                image.onerror = () => resolve(null);
+                image.src = e.player_photo;
+              })
+            : Promise.resolve<HTMLImageElement | null>(null)
+        )
+      );
+
       const DPR = 2;
-      const W = 390;
-      const ROW_H = 68;
-      const HEADER_H = 96;
-      const FOOTER_H = 44;
+      const W = 440;
+      const HEADER_H = 138;
+      const ROW_H = 78;
+      const FOOTER_H = 50;
       const H = HEADER_H + top.length * ROW_H + FOOTER_H;
 
       const canvas = document.createElement('canvas');
@@ -550,12 +607,30 @@ const WcPredict: React.FC = () => {
       const ctx = canvas.getContext('2d')!;
       ctx.scale(DPR, DPR);
 
+      const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      };
+
       // Background
       const bg = ctx.createLinearGradient(0, 0, 0, H);
-      bg.addColorStop(0, '#0f172a');
-      bg.addColorStop(1, '#1a2744');
+      bg.addColorStop(0, '#0b1220');
+      bg.addColorStop(0.5, '#0f1b2e');
+      bg.addColorStop(1, '#0b1220');
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
+
+      // Header glow
+      const glow = ctx.createRadialGradient(W / 2, 24, 8, W / 2, 24, 200);
+      glow.addColorStop(0, 'rgba(251,191,36,0.20)');
+      glow.addColorStop(1, 'rgba(251,191,36,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, HEADER_H);
 
       // Top accent stripe (green → gold → green)
       const stripe = ctx.createLinearGradient(0, 0, W, 0);
@@ -563,147 +638,134 @@ const WcPredict: React.FC = () => {
       stripe.addColorStop(0.5, '#fbbf24');
       stripe.addColorStop(1, '#16a34a');
       ctx.fillStyle = stripe;
-      ctx.fillRect(0, 0, W, 4);
+      ctx.fillRect(0, 0, W, 5);
 
       // Header
-      ctx.font = '28px serif';
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#fff';
-      ctx.fillText('🏆', W / 2, 44);
+      ctx.font = '34px serif';
+      ctx.fillText('🏆', W / 2, 56);
 
       ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 17px system-ui, -apple-system, sans-serif';
-      ctx.fillText('WC 2026 Leaderboard', W / 2, 68);
+      ctx.font = '800 23px system-ui, -apple-system, sans-serif';
+      ctx.fillText('WC 2026 Leaderboard', W / 2, 92);
 
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px system-ui, -apple-system, sans-serif';
-      ctx.fillText('Cogni HFX FC Predictions', W / 2, 85);
+      ctx.fillStyle = '#7c8aa3';
+      ctx.font = '12px system-ui, -apple-system, sans-serif';
+      ctx.fillText('Cogni HFX FC · Match Predictions', W / 2, 113);
 
-      // Row data
-      const rankEmoji = ['🥇', '🥈', '🥉'];
-      const avatarBg = ['#92400e', '#374151', '#7c2d12'];
-      const nameFill = ['#fde68a', '#cbd5e1', '#fed7aa'];
-      const ptsFill = ['#fbbf24', '#94a3b8', '#d97706'];
-      const rowHighlight = [
+      // Per-rank palettes
+      const medal = ['🥇', '🥈', '🥉'];
+      const ringClr = ['#fbbf24', '#cbd5e1', '#fb923c'];
+      const ptsClr = ['#fbbf24', '#e2e8f0', '#fb923c'];
+      const tint = [
         'rgba(251,191,36,0.10)',
-        'rgba(148,163,184,0.06)',
-        'rgba(217,119,6,0.08)',
+        'rgba(203,213,225,0.06)',
+        'rgba(251,146,60,0.08)',
       ];
 
       for (let i = 0; i < top.length; i++) {
         const e = top[i];
         const rowY = HEADER_H + i * ROW_H;
+        const cardX = 14;
+        const cardY = rowY + 6;
+        const cardW = W - 28;
+        const cardH = ROW_H - 12;
+        const midY = cardY + cardH / 2;
 
-        ctx.strokeStyle = 'rgba(30,41,59,1)';
+        // Card
+        roundRect(cardX, cardY, cardW, cardH, 16);
+        ctx.fillStyle = i < 3 ? tint[i] : 'rgba(255,255,255,0.03)';
+        ctx.fill();
         ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, rowY);
-        ctx.lineTo(W, rowY);
+        ctx.strokeStyle = i < 3 ? `${ringClr[i]}55` : 'rgba(148,163,184,0.12)';
         ctx.stroke();
 
+        // Rank badge
+        const rankX = cardX + 28;
         if (i < 3) {
-          ctx.fillStyle = rowHighlight[i];
-          ctx.fillRect(0, rowY, W, ROW_H);
-        }
-
-        // Rank
-        if (i < 3) {
-          ctx.font = '22px serif';
+          ctx.font = '25px serif';
           ctx.textAlign = 'center';
-          ctx.fillText(rankEmoji[i], 26, rowY + ROW_H / 2 + 8);
+          ctx.fillText(medal[i], rankX, midY + 9);
         } else {
-          ctx.fillStyle = '#64748b';
-          ctx.font = 'bold 13px system-ui, sans-serif';
+          ctx.fillStyle = 'rgba(148,163,184,0.14)';
+          roundRect(rankX - 13, midY - 13, 26, 26, 9);
+          ctx.fill();
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = 'bold 14px system-ui, sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(String(i + 1), 26, rowY + ROW_H / 2 + 5);
+          ctx.fillText(String(i + 1), rankX, midY + 5);
         }
 
-        // Avatar circle — load actual photo, fallback to initial
-        const cx = 62, cy = rowY + ROW_H / 2, r = 19;
-
-        // Background fill
+        // Avatar
+        const ax = cardX + 74;
+        const ar = 25;
+        if (i < 3) {
+          ctx.beginPath();
+          ctx.arc(ax, midY, ar + 3, 0, Math.PI * 2);
+          ctx.fillStyle = ringClr[i];
+          ctx.fill();
+        }
         ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.fillStyle = i < 3 ? avatarBg[i] : '#1e293b';
+        ctx.arc(ax, midY, ar, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e293b';
         ctx.fill();
 
-        let photoDrawn = false;
-        if (e.player_photo) {
-          try {
-            const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-              const image = new Image();
-              image.crossOrigin = 'anonymous';
-              image.onload = () => resolve(image);
-              image.onerror = reject;
-              image.src = e.player_photo;
-            });
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            ctx.clip();
-            ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2);
-            ctx.restore();
-            photoDrawn = true;
-          } catch { /* CORS blocked — use initial */ }
-        }
-
-        if (!photoDrawn) {
-          ctx.fillStyle = i < 3 ? nameFill[i] : '#94a3b8';
-          ctx.font = 'bold 15px system-ui, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(e.player_name.charAt(0).toUpperCase(), cx, cy + 6);
-        }
-
-        // Coloured ring for top 3
-        if (i < 3) {
-          ctx.strokeStyle = ptsFill[i];
-          ctx.lineWidth = 2;
+        const ph = photos[i];
+        if (ph) {
+          ctx.save();
           ctx.beginPath();
-          ctx.arc(cx, cy, r, 0, Math.PI * 2);
-          ctx.stroke();
+          ctx.arc(ax, midY, ar, 0, Math.PI * 2);
+          ctx.clip();
+          // cover-fit
+          const s = Math.max((ar * 2) / ph.width, (ar * 2) / ph.height);
+          const dw = ph.width * s;
+          const dh = ph.height * s;
+          ctx.drawImage(ph, ax - dw / 2, midY - dh / 2, dw, dh);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = '#cbd5e1';
+          ctx.font = 'bold 19px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(e.player_name.charAt(0).toUpperCase(), ax, midY + 6);
         }
 
-        // Name (truncated)
-        const maxNameW = 190;
-        ctx.font = `${i === 0 ? 'bold 15px' : '500 14px'} system-ui, sans-serif`;
+        // Name + record
+        const nameX = cardX + 110;
+        const maxNameW = cardW - 110 - 74;
+        ctx.textAlign = 'left';
+        ctx.fillStyle = i < 3 ? '#ffffff' : '#e2e8f0';
+        ctx.font = `${i === 0 ? '800 17px' : '700 15px'} system-ui, sans-serif`;
         let displayName = e.player_name;
         while (ctx.measureText(displayName).width > maxNameW && displayName.length > 3)
           displayName = displayName.slice(0, -1);
         if (displayName !== e.player_name) displayName += '…';
+        ctx.fillText(displayName, nameX, midY - 4);
 
-        ctx.fillStyle = i < 3 ? nameFill[i] : '#cbd5e1';
-        ctx.textAlign = 'left';
-        ctx.fillText(displayName, 90, rowY + ROW_H / 2 - 3);
-
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = '#64748b';
         ctx.font = '11px system-ui, sans-serif';
-        ctx.fillText(`${e.correct_predictions}/${e.predictions_made} correct`, 90, rowY + ROW_H / 2 + 14);
+        ctx.fillText(
+          `${e.correct_predictions}/${e.predictions_made} correct`,
+          nameX,
+          midY + 14
+        );
 
         // Points
-        ctx.fillStyle = i < 3 ? ptsFill[i] : '#94a3b8';
-        ctx.font = `bold ${i === 0 ? 26 : 22}px system-ui, sans-serif`;
+        const ptsX = cardX + cardW - 18;
         ctx.textAlign = 'right';
-        ctx.fillText(String(e.total_points), W - 38, rowY + ROW_H / 2 + 8);
-
-        ctx.fillStyle = '#475569';
-        ctx.font = '10px system-ui, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('pts', W - 34, rowY + ROW_H / 2 + 8);
+        ctx.fillStyle = i < 3 ? ptsClr[i] : '#e2e8f0';
+        ctx.font = `800 ${i === 0 ? 27 : 22}px system-ui, sans-serif`;
+        ctx.fillText(String(e.total_points), ptsX, midY + 3);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '9px system-ui, sans-serif';
+        ctx.fillText('PTS', ptsX, midY + 16);
       }
 
       // Footer
       const fY = HEADER_H + top.length * ROW_H;
-      ctx.strokeStyle = 'rgba(30,41,59,1)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, fY);
-      ctx.lineTo(W, fY);
-      ctx.stroke();
-
-      ctx.fillStyle = '#334155';
+      ctx.fillStyle = '#475569';
       ctx.font = '11px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Cogni HFX FC • WC 2026', W / 2, fY + 27);
+      ctx.fillText('Cogni HFX FC · FIFA World Cup 2026', W / 2, fY + 30);
 
       canvas.toBlob(async (blob) => {
         if (!blob) return;
@@ -863,47 +925,85 @@ const WcPredict: React.FC = () => {
             {showLeaderboard && (
               <>
                 {/* Podium — top 3 */}
-                <div className="px-4 pt-5 pb-3">
-                  <div className="flex items-end gap-2">
+                <div className="relative px-4 pt-7 pb-4 overflow-hidden">
+                  {/* glow backdrop */}
+                  <div className="pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-amber-500/10 blur-3xl" />
+
+                  <div className="relative flex items-end justify-center gap-2.5">
                     {/* 2nd place */}
                     {leaderboard[1] && (
-                      <div className="flex-1 flex flex-col items-center bg-gradient-to-b from-slate-600/30 to-slate-700/10 border border-slate-500/30 rounded-2xl pt-4 pb-3 px-2">
-                        <span className="text-xl mb-2">🥈</span>
-                        <PlayerAvatar photo={leaderboard[1].player_photo} name={leaderboard[1].player_name} size={10} />
-                        <p className="text-slate-300 text-xs font-semibold mt-2 text-center leading-tight truncate w-full px-1">
-                          {leaderboard[1].player_name.split(' ')[0]}
-                        </p>
-                        <p className="text-slate-200 font-black text-2xl mt-1 leading-none">{leaderboard[1].total_points}</p>
-                        <p className="text-slate-500 text-xs">pts</p>
-                        <p className="text-slate-600 text-xs mt-1">{leaderboard[1].correct_predictions}/{leaderboard[1].predictions_made}</p>
+                      <div className="flex-1 flex flex-col items-center">
+                        <div className="relative mb-3">
+                          <LeaderAvatar
+                            photo={leaderboard[1].player_photo}
+                            name={leaderboard[1].player_name}
+                            px={58}
+                            ringColor="#cbd5e1"
+                          />
+                          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-base drop-shadow">🥈</span>
+                        </div>
+                        <div className="w-full flex flex-col items-center rounded-2xl bg-gradient-to-b from-slate-500/25 to-slate-700/5 border border-slate-400/25 px-2 pt-3 pb-3">
+                          <p className="text-slate-200 text-xs font-semibold text-center leading-tight truncate w-full px-1">
+                            {leaderboard[1].player_name.split(' ')[0]}
+                          </p>
+                          <p className="text-white font-black text-2xl mt-1 leading-none">{leaderboard[1].total_points}</p>
+                          <p className="text-slate-400 text-[10px] uppercase tracking-wider">pts</p>
+                          <p className="text-slate-400 text-[11px] mt-1.5">
+                            {leaderboard[1].correct_predictions}/{leaderboard[1].predictions_made} correct
+                          </p>
+                        </div>
                       </div>
                     )}
 
                     {/* 1st place — center, elevated */}
                     {leaderboard[0] && (
-                      <div className="flex-1 flex flex-col items-center bg-gradient-to-b from-amber-500/20 to-amber-900/10 border-2 border-amber-400/50 rounded-2xl pt-2 pb-3 px-2 -mt-4 shadow-lg shadow-amber-500/15">
-                        <span className="text-3xl mb-2">👑</span>
-                        <PlayerAvatar photo={leaderboard[0].player_photo} name={leaderboard[0].player_name} size={14} />
-                        <p className="text-amber-200 text-xs font-bold mt-2 text-center leading-tight truncate w-full px-1">
-                          {leaderboard[0].player_name.split(' ')[0]}
-                        </p>
-                        <p className="text-amber-400 font-black text-4xl mt-1 leading-none">{leaderboard[0].total_points}</p>
-                        <p className="text-amber-600 text-xs">pts</p>
-                        <p className="text-amber-800 text-xs mt-1">{leaderboard[0].correct_predictions}/{leaderboard[0].predictions_made}</p>
+                      <div className="flex-1 flex flex-col items-center -mt-5">
+                        <span className="text-2xl mb-1 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">👑</span>
+                        <div className="relative mb-3">
+                          <LeaderAvatar
+                            photo={leaderboard[0].player_photo}
+                            name={leaderboard[0].player_name}
+                            px={76}
+                            ringColor="#fbbf24"
+                            glow
+                          />
+                          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-lg drop-shadow">🥇</span>
+                        </div>
+                        <div className="w-full flex flex-col items-center rounded-2xl bg-gradient-to-b from-amber-400/25 to-amber-900/10 border-2 border-amber-400/50 px-2 pt-3 pb-3.5 shadow-lg shadow-amber-500/15">
+                          <p className="text-amber-100 text-xs font-bold text-center leading-tight truncate w-full px-1">
+                            {leaderboard[0].player_name.split(' ')[0]}
+                          </p>
+                          <p className="text-amber-300 font-black text-4xl mt-1 leading-none drop-shadow">{leaderboard[0].total_points}</p>
+                          <p className="text-amber-500/80 text-[10px] uppercase tracking-wider">pts</p>
+                          <p className="text-amber-200/70 text-[11px] mt-1.5">
+                            {leaderboard[0].correct_predictions}/{leaderboard[0].predictions_made} correct
+                          </p>
+                        </div>
                       </div>
                     )}
 
                     {/* 3rd place */}
                     {leaderboard[2] && (
-                      <div className="flex-1 flex flex-col items-center bg-gradient-to-b from-orange-900/20 to-orange-950/10 border border-orange-700/30 rounded-2xl pt-4 pb-3 px-2">
-                        <span className="text-xl mb-2">🥉</span>
-                        <PlayerAvatar photo={leaderboard[2].player_photo} name={leaderboard[2].player_name} size={10} />
-                        <p className="text-orange-200 text-xs font-semibold mt-2 text-center leading-tight truncate w-full px-1">
-                          {leaderboard[2].player_name.split(' ')[0]}
-                        </p>
-                        <p className="text-orange-400 font-black text-2xl mt-1 leading-none">{leaderboard[2].total_points}</p>
-                        <p className="text-orange-600 text-xs">pts</p>
-                        <p className="text-orange-900 text-xs mt-1">{leaderboard[2].correct_predictions}/{leaderboard[2].predictions_made}</p>
+                      <div className="flex-1 flex flex-col items-center">
+                        <div className="relative mb-3">
+                          <LeaderAvatar
+                            photo={leaderboard[2].player_photo}
+                            name={leaderboard[2].player_name}
+                            px={58}
+                            ringColor="#fb923c"
+                          />
+                          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-base drop-shadow">🥉</span>
+                        </div>
+                        <div className="w-full flex flex-col items-center rounded-2xl bg-gradient-to-b from-orange-500/20 to-orange-950/5 border border-orange-500/25 px-2 pt-3 pb-3">
+                          <p className="text-orange-200 text-xs font-semibold text-center leading-tight truncate w-full px-1">
+                            {leaderboard[2].player_name.split(' ')[0]}
+                          </p>
+                          <p className="text-white font-black text-2xl mt-1 leading-none">{leaderboard[2].total_points}</p>
+                          <p className="text-orange-400/80 text-[10px] uppercase tracking-wider">pts</p>
+                          <p className="text-orange-300/70 text-[11px] mt-1.5">
+                            {leaderboard[2].correct_predictions}/{leaderboard[2].predictions_made} correct
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -911,32 +1011,35 @@ const WcPredict: React.FC = () => {
 
                 {/* Ranks 4+ */}
                 {leaderboard.length > 3 && (
-                  <div className="border-t border-slate-700/40">
-                    <div className="flex items-center gap-3 px-5 py-2">
+                  <div className="px-4 pb-4 pt-1">
+                    <div className="flex items-center gap-3 px-1 py-2 mb-1">
                       <div className="h-px flex-1 bg-slate-700/50" />
-                      <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">More</span>
+                      <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">Chasing the podium</span>
                       <div className="h-px flex-1 bg-slate-700/50" />
                     </div>
-                    {leaderboard.slice(3).map((entry, idx) => (
-                      <div key={entry.player_id} className="flex items-center gap-3 px-5 py-3 border-t border-slate-700/30">
-                        <span className="text-slate-500 font-bold text-sm w-5 text-center flex-shrink-0">
-                          {idx + 4}
-                        </span>
-                        <PlayerAvatar photo={entry.player_photo} name={entry.player_name} size={8} />
-                        <span className="text-slate-200 text-sm font-medium flex-1 min-w-0 truncate">
-                          {entry.player_name}
-                        </span>
-                        <div className="text-right flex-shrink-0">
-                          <div>
-                            <span className="text-white font-bold text-base">{entry.total_points}</span>
-                            <span className="text-slate-500 text-xs ml-1">pts</span>
+                    <div className="space-y-2">
+                      {leaderboard.slice(3).map((entry, idx) => (
+                        <div
+                          key={entry.player_id}
+                          className="flex items-center gap-3 rounded-xl bg-slate-800/60 border border-slate-700/40 px-3 py-2.5 hover:border-slate-600/60 transition-colors"
+                        >
+                          <span className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-700/60 text-slate-300 font-bold text-sm flex-shrink-0">
+                            {idx + 4}
+                          </span>
+                          <LeaderAvatar photo={entry.player_photo} name={entry.player_name} px={40} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm font-semibold truncate">{entry.player_name}</p>
+                            <p className="text-slate-500 text-[11px] mt-0.5">
+                              {entry.correct_predictions}/{entry.predictions_made} correct
+                            </p>
                           </div>
-                          <div className="text-slate-500 text-xs mt-0.5">
-                            {entry.correct_predictions}/{entry.predictions_made} correct
+                          <div className="flex items-baseline gap-1 flex-shrink-0">
+                            <span className="text-white font-black text-lg leading-none">{entry.total_points}</span>
+                            <span className="text-slate-500 text-[10px] uppercase tracking-wide">pts</span>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </>
