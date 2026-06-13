@@ -74,13 +74,21 @@ export const handler = async (event) => {
       };
     }
 
-    // Upsert - player can change prediction before kickoff
-    await sql`
+    // Insert once - a prediction is final and cannot be changed.
+    const inserted = await sql`
       INSERT INTO wc_predictions (match_id, player_id, prediction)
       VALUES (${match_id}, ${player_id}, ${prediction})
-      ON CONFLICT (match_id, player_id)
-      DO UPDATE SET prediction = ${prediction}
+      ON CONFLICT (match_id, player_id) DO NOTHING
+      RETURNING id
     `;
+
+    if (inserted.length === 0) {
+      return {
+        statusCode: 409,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "You have already predicted this match" }),
+      };
+    }
 
     return {
       statusCode: 200,
