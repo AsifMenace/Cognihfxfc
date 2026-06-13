@@ -305,7 +305,6 @@ function ActiveMatchCard({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(
     match.status === 'locked' || new Date(match.kickoff_time) <= new Date()
   );
@@ -330,7 +329,6 @@ function ActiveMatchCard({
     if (!selectedPlayer || !selectedPrediction) return;
     setSubmitting(true);
     setError(null);
-    setSuccessMsg(null);
     try {
       const res = await fetch('/.netlify/functions/submitPrediction', {
         method: 'POST',
@@ -343,7 +341,6 @@ function ActiveMatchCard({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
-      setSuccessMsg('Prediction saved!');
       setSubmitted(true);
       onPredicted();
     } catch (err) {
@@ -412,8 +409,31 @@ function ActiveMatchCard({
         </div>
       </div>
 
-      {/* Prediction form — open matches only */}
-      {!isLocked && selectedPlayer && (
+      {/* Prediction form — open matches only, and only until a pick is locked in */}
+      {!isLocked && selectedPlayer && submitted && (
+        <div className="px-6 pb-6 border-t border-slate-700/50 pt-4">
+          <div className="flex items-center gap-3 rounded-xl bg-green-600/10 border border-green-500/30 px-4 py-3">
+            <CheckCircle2 size={18} className="text-green-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-green-300 text-sm font-semibold">
+                Your prediction:{' '}
+                <span className="text-white">
+                  {selectedPrediction === 'home'
+                    ? match.home_team
+                    : selectedPrediction === 'away'
+                      ? match.away_team
+                      : 'Draw'}
+                </span>
+              </p>
+              <p className="text-slate-500 text-xs mt-0.5">
+                Predictions are final and can&apos;t be changed.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isLocked && selectedPlayer && !submitted && (
         <div className="px-6 pb-6 space-y-3 border-t border-slate-700/50 pt-4">
           <div className="grid grid-cols-3 gap-2">
             {(['home', 'draw', 'away'] as const).map((val) => {
@@ -423,11 +443,7 @@ function ActiveMatchCard({
               return (
                 <button
                   key={val}
-                  onClick={() => {
-                    setSelectedPrediction(val);
-                    setSubmitted(false);
-                    setSuccessMsg(null);
-                  }}
+                  onClick={() => setSelectedPrediction(val)}
                   className={`py-3 px-2 rounded-xl text-xs font-bold transition-all duration-200 border ${
                     isSelected
                       ? 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-600/30'
@@ -445,14 +461,12 @@ function ActiveMatchCard({
               disabled={submitting}
               className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 text-sm"
             >
-              {submitting ? 'Saving...' : submitted ? 'Update Prediction' : 'Submit Prediction'}
+              {submitting ? 'Saving...' : 'Submit Prediction'}
             </button>
           )}
-          {successMsg && (
-            <div className="flex items-center gap-2 text-green-400 text-sm">
-              <CheckCircle2 size={16} /> {successMsg}
-            </div>
-          )}
+          <p className="text-slate-500 text-xs text-center">
+            Choose carefully — a prediction can only be made once.
+          </p>
           {error && (
             <div className="flex items-center gap-2 text-red-400 text-sm">
               <AlertCircle size={16} /> {error}
