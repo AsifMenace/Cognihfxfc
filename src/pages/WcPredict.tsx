@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   Activity,
+  Share2,
 } from 'lucide-react';
 
 interface Match {
@@ -529,6 +530,201 @@ const WcPredict: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
+  const [sharing, setSharing] = useState(false);
+
+  const shareLeaderboard = useCallback(async () => {
+    const top = leaderboard.slice(0, 5);
+    if (top.length === 0) return;
+    setSharing(true);
+    try {
+      const DPR = 2;
+      const W = 390;
+      const ROW_H = 68;
+      const HEADER_H = 96;
+      const FOOTER_H = 44;
+      const H = HEADER_H + top.length * ROW_H + FOOTER_H;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W * DPR;
+      canvas.height = H * DPR;
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(DPR, DPR);
+
+      // Background
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#0f172a');
+      bg.addColorStop(1, '#1a2744');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // Top accent stripe (green → gold → green)
+      const stripe = ctx.createLinearGradient(0, 0, W, 0);
+      stripe.addColorStop(0, '#16a34a');
+      stripe.addColorStop(0.5, '#fbbf24');
+      stripe.addColorStop(1, '#16a34a');
+      ctx.fillStyle = stripe;
+      ctx.fillRect(0, 0, W, 4);
+
+      // Header
+      ctx.font = '28px serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('🏆', W / 2, 44);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 17px system-ui, -apple-system, sans-serif';
+      ctx.fillText('WC 2026 Leaderboard', W / 2, 68);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px system-ui, -apple-system, sans-serif';
+      ctx.fillText('Cogni HFX FC Predictions', W / 2, 85);
+
+      // Row data
+      const rankEmoji = ['🥇', '🥈', '🥉'];
+      const avatarBg = ['#92400e', '#374151', '#7c2d12'];
+      const nameFill = ['#fde68a', '#cbd5e1', '#fed7aa'];
+      const ptsFill = ['#fbbf24', '#94a3b8', '#d97706'];
+      const rowHighlight = [
+        'rgba(251,191,36,0.10)',
+        'rgba(148,163,184,0.06)',
+        'rgba(217,119,6,0.08)',
+      ];
+
+      for (let i = 0; i < top.length; i++) {
+        const e = top[i];
+        const rowY = HEADER_H + i * ROW_H;
+
+        ctx.strokeStyle = 'rgba(30,41,59,1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, rowY);
+        ctx.lineTo(W, rowY);
+        ctx.stroke();
+
+        if (i < 3) {
+          ctx.fillStyle = rowHighlight[i];
+          ctx.fillRect(0, rowY, W, ROW_H);
+        }
+
+        // Rank
+        if (i < 3) {
+          ctx.font = '22px serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(rankEmoji[i], 26, rowY + ROW_H / 2 + 8);
+        } else {
+          ctx.fillStyle = '#64748b';
+          ctx.font = 'bold 13px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(String(i + 1), 26, rowY + ROW_H / 2 + 5);
+        }
+
+        // Avatar circle — load actual photo, fallback to initial
+        const cx = 62, cy = rowY + ROW_H / 2, r = 19;
+
+        // Background fill
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = i < 3 ? avatarBg[i] : '#1e293b';
+        ctx.fill();
+
+        let photoDrawn = false;
+        if (e.player_photo) {
+          try {
+            const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+              const image = new Image();
+              image.crossOrigin = 'anonymous';
+              image.onload = () => resolve(image);
+              image.onerror = reject;
+              image.src = e.player_photo;
+            });
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2);
+            ctx.restore();
+            photoDrawn = true;
+          } catch { /* CORS blocked — use initial */ }
+        }
+
+        if (!photoDrawn) {
+          ctx.fillStyle = i < 3 ? nameFill[i] : '#94a3b8';
+          ctx.font = 'bold 15px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(e.player_name.charAt(0).toUpperCase(), cx, cy + 6);
+        }
+
+        // Coloured ring for top 3
+        if (i < 3) {
+          ctx.strokeStyle = ptsFill[i];
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Name (truncated)
+        const maxNameW = 190;
+        ctx.font = `${i === 0 ? 'bold 15px' : '500 14px'} system-ui, sans-serif`;
+        let displayName = e.player_name;
+        while (ctx.measureText(displayName).width > maxNameW && displayName.length > 3)
+          displayName = displayName.slice(0, -1);
+        if (displayName !== e.player_name) displayName += '…';
+
+        ctx.fillStyle = i < 3 ? nameFill[i] : '#cbd5e1';
+        ctx.textAlign = 'left';
+        ctx.fillText(displayName, 90, rowY + ROW_H / 2 - 3);
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '11px system-ui, sans-serif';
+        ctx.fillText(`${e.correct_predictions}/${e.predictions_made} correct`, 90, rowY + ROW_H / 2 + 14);
+
+        // Points
+        ctx.fillStyle = i < 3 ? ptsFill[i] : '#94a3b8';
+        ctx.font = `bold ${i === 0 ? 26 : 22}px system-ui, sans-serif`;
+        ctx.textAlign = 'right';
+        ctx.fillText(String(e.total_points), W - 38, rowY + ROW_H / 2 + 8);
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '10px system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('pts', W - 34, rowY + ROW_H / 2 + 8);
+      }
+
+      // Footer
+      const fY = HEADER_H + top.length * ROW_H;
+      ctx.strokeStyle = 'rgba(30,41,59,1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, fY);
+      ctx.lineTo(W, fY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Cogni HFX FC • WC 2026', W / 2, fY + 27);
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], 'wc-leaderboard.png', { type: 'image/png' });
+        try {
+          if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'WC 2026 – Cogni HFX FC Leaderboard' });
+          } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'wc-leaderboard.png';
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        } catch { /* user cancelled */ }
+      }, 'image/png');
+    } finally {
+      setSharing(false);
+    }
+  }, [leaderboard]);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -639,56 +835,111 @@ const WcPredict: React.FC = () => {
           ))
         )}
 
-        {/* Leaderboard — collapsible */}
+        {/* Leaderboard */}
         {leaderboard.length > 0 && (
-          <div className="bg-slate-800 border border-slate-700/60 rounded-2xl overflow-hidden">
-            <button
-              onClick={() => setShowLeaderboard((s) => !s)}
-              className="w-full px-5 py-3 border-b border-slate-700/50 flex items-center justify-between hover:bg-slate-700/30 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Trophy size={16} className="text-amber-400" />
-                <h3 className="text-white font-semibold text-sm">Leaderboard</h3>
-              </div>
-              {showLeaderboard ? (
-                <ChevronUp size={14} className="text-slate-500" />
-              ) : (
-                <ChevronDown size={14} className="text-slate-500" />
-              )}
-            </button>
+          <div className="bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/40 bg-gradient-to-r from-slate-800 to-green-950/40">
+              <button
+                onClick={() => setShowLeaderboard((s) => !s)}
+                className="flex items-center gap-2 flex-1"
+              >
+                <Trophy size={18} className="text-amber-400" />
+                <h3 className="text-white font-bold tracking-wide">Leaderboard</h3>
+                {showLeaderboard
+                  ? <ChevronUp size={14} className="text-slate-500 ml-1" />
+                  : <ChevronDown size={14} className="text-slate-500 ml-1" />}
+              </button>
+              <button
+                onClick={shareLeaderboard}
+                disabled={sharing}
+                className="flex items-center gap-1.5 bg-green-600/20 hover:bg-green-600/30 active:bg-green-600/40 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors disabled:opacity-50"
+              >
+                <Share2 size={13} />
+                {sharing ? 'Sharing…' : 'Share'}
+              </button>
+            </div>
 
             {showLeaderboard && (
-              <div className="divide-y divide-slate-700/40">
-                {leaderboard.map((entry, i) => (
-                  <div key={entry.player_id} className="flex items-center gap-3 px-5 py-3">
-                    <span
-                      className={`text-sm font-black w-6 text-center flex-shrink-0 ${
-                        i === 0
-                          ? 'text-amber-400'
-                          : i === 1
-                            ? 'text-slate-300'
-                            : i === 2
-                              ? 'text-amber-700'
-                              : 'text-slate-500'
-                      }`}
-                    >
-                      {i + 1}
-                    </span>
-                    <PlayerAvatar photo={entry.player_photo} name={entry.player_name} size={8} />
-                    <span className="text-white text-sm font-medium flex-1">
-                      {entry.player_name}
-                    </span>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-amber-400 font-black text-base leading-none">
-                        {entry.total_points}
+              <>
+                {/* Podium — top 3 */}
+                <div className="px-4 pt-5 pb-3">
+                  <div className="flex items-end gap-2">
+                    {/* 2nd place */}
+                    {leaderboard[1] && (
+                      <div className="flex-1 flex flex-col items-center bg-gradient-to-b from-slate-600/30 to-slate-700/10 border border-slate-500/30 rounded-2xl pt-4 pb-3 px-2">
+                        <span className="text-xl mb-2">🥈</span>
+                        <PlayerAvatar photo={leaderboard[1].player_photo} name={leaderboard[1].player_name} size={10} />
+                        <p className="text-slate-300 text-xs font-semibold mt-2 text-center leading-tight truncate w-full px-1">
+                          {leaderboard[1].player_name.split(' ')[0]}
+                        </p>
+                        <p className="text-slate-200 font-black text-2xl mt-1 leading-none">{leaderboard[1].total_points}</p>
+                        <p className="text-slate-500 text-xs">pts</p>
+                        <p className="text-slate-600 text-xs mt-1">{leaderboard[1].correct_predictions}/{leaderboard[1].predictions_made}</p>
                       </div>
-                      <div className="text-slate-500 text-xs mt-0.5">
-                        {entry.correct_predictions}/{entry.predictions_made} correct
+                    )}
+
+                    {/* 1st place — center, elevated */}
+                    {leaderboard[0] && (
+                      <div className="flex-1 flex flex-col items-center bg-gradient-to-b from-amber-500/20 to-amber-900/10 border-2 border-amber-400/50 rounded-2xl pt-2 pb-3 px-2 -mt-4 shadow-lg shadow-amber-500/15">
+                        <span className="text-3xl mb-2">👑</span>
+                        <PlayerAvatar photo={leaderboard[0].player_photo} name={leaderboard[0].player_name} size={14} />
+                        <p className="text-amber-200 text-xs font-bold mt-2 text-center leading-tight truncate w-full px-1">
+                          {leaderboard[0].player_name.split(' ')[0]}
+                        </p>
+                        <p className="text-amber-400 font-black text-4xl mt-1 leading-none">{leaderboard[0].total_points}</p>
+                        <p className="text-amber-600 text-xs">pts</p>
+                        <p className="text-amber-800 text-xs mt-1">{leaderboard[0].correct_predictions}/{leaderboard[0].predictions_made}</p>
                       </div>
-                    </div>
+                    )}
+
+                    {/* 3rd place */}
+                    {leaderboard[2] && (
+                      <div className="flex-1 flex flex-col items-center bg-gradient-to-b from-orange-900/20 to-orange-950/10 border border-orange-700/30 rounded-2xl pt-4 pb-3 px-2">
+                        <span className="text-xl mb-2">🥉</span>
+                        <PlayerAvatar photo={leaderboard[2].player_photo} name={leaderboard[2].player_name} size={10} />
+                        <p className="text-orange-200 text-xs font-semibold mt-2 text-center leading-tight truncate w-full px-1">
+                          {leaderboard[2].player_name.split(' ')[0]}
+                        </p>
+                        <p className="text-orange-400 font-black text-2xl mt-1 leading-none">{leaderboard[2].total_points}</p>
+                        <p className="text-orange-600 text-xs">pts</p>
+                        <p className="text-orange-900 text-xs mt-1">{leaderboard[2].correct_predictions}/{leaderboard[2].predictions_made}</p>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                </div>
+
+                {/* Ranks 4+ */}
+                {leaderboard.length > 3 && (
+                  <div className="border-t border-slate-700/40">
+                    <div className="flex items-center gap-3 px-5 py-2">
+                      <div className="h-px flex-1 bg-slate-700/50" />
+                      <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">More</span>
+                      <div className="h-px flex-1 bg-slate-700/50" />
+                    </div>
+                    {leaderboard.slice(3).map((entry, idx) => (
+                      <div key={entry.player_id} className="flex items-center gap-3 px-5 py-3 border-t border-slate-700/30">
+                        <span className="text-slate-500 font-bold text-sm w-5 text-center flex-shrink-0">
+                          {idx + 4}
+                        </span>
+                        <PlayerAvatar photo={entry.player_photo} name={entry.player_name} size={8} />
+                        <span className="text-slate-200 text-sm font-medium flex-1 min-w-0 truncate">
+                          {entry.player_name}
+                        </span>
+                        <div className="text-right flex-shrink-0">
+                          <div>
+                            <span className="text-white font-bold text-base">{entry.total_points}</span>
+                            <span className="text-slate-500 text-xs ml-1">pts</span>
+                          </div>
+                          <div className="text-slate-500 text-xs mt-0.5">
+                            {entry.correct_predictions}/{entry.predictions_made} correct
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
