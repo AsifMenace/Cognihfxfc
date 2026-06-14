@@ -301,7 +301,9 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
         {/* Active Matches */}
         {(() => {
           const inProgress = activeMatches.filter((m) => m.status !== 'completed');
-          const completed = activeMatches.filter((m) => m.status === 'completed');
+          const completed = activeMatches
+            .filter((m) => m.status === 'completed')
+            .sort((a, b) => new Date(b.kickoff_time).getTime() - new Date(a.kickoff_time).getTime());
           return (
             <div className="bg-slate-800 border border-slate-700/60 rounded-2xl overflow-hidden">
               {/* Panel header */}
