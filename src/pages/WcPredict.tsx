@@ -665,9 +665,26 @@ const WcPredict: React.FC = () => {
       const loadImage = (src: string, crossOrigin?: boolean) =>
         new Promise<HTMLImageElement | null>((resolve) => {
           const image = new Image();
-          if (crossOrigin) image.crossOrigin = 'anonymous';
-          image.onload = () => resolve(image);
-          image.onerror = () => resolve(null);
+          let done = false;
+          const finish = (result: HTMLImageElement | null) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            resolve(result);
+          };
+          // The same photo URLs are rendered elsewhere as plain <img> (no CORS),
+          // so the browser may have a cached "no-CORS" response. Reusing it for a
+          // crossOrigin load fails (missing Access-Control-Allow-Origin) and taints
+          // the canvas. Append a cache-buster so the crossOrigin fetch is a distinct
+          // cache entry that actually carries the CORS headers.
+          if (crossOrigin) {
+            image.crossOrigin = 'anonymous';
+            src += (src.includes('?') ? '&' : '?') + 'cors=1';
+          }
+          // Don't let a slow/hanging photo block the whole share.
+          const timer = setTimeout(() => finish(null), 8000);
+          image.onload = () => finish(image);
+          image.onerror = () => finish(null);
           image.src = src;
         });
 

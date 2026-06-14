@@ -152,13 +152,15 @@ export const handler = async (event) => {
       let homeFlag = match.home_flag;
       let awayFlag = match.away_flag;
 
-      // If flags are null, reconstruct them from country names
+      // If flags are null, reconstruct them. Prefer the stored ISO code (always
+      // flagcdn-valid, set by getWcFixtures) and only fall back to the country-name
+      // lookup for legacy rows that have no code.
       if (!homeFlag) {
-        const homeCode = getCountryCode(match.home_team);
+        const homeCode = match.home_code || getCountryCode(match.home_team);
         homeFlag = `https://flagcdn.com/w80/${homeCode}.png`;
       }
       if (!awayFlag) {
-        const awayCode = getCountryCode(match.away_team);
+        const awayCode = match.away_code || getCountryCode(match.away_team);
         awayFlag = `https://flagcdn.com/w80/${awayCode}.png`;
       }
 
