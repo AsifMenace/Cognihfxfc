@@ -226,6 +226,18 @@ function LiveScoreBanner({ match }: { match: Match }) {
 
 // ─── Predictions list (shared, collapsible) ───────────────────────────────────
 
+function PointsBadge({ points }: { points: number }) {
+  return (
+    <span
+      className={`text-xs font-bold px-2 py-0.5 rounded-full ml-1 ${
+        points > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+      }`}
+    >
+      {points > 0 ? `+${points}` : '0'}
+    </span>
+  );
+}
+
 function PredictionsList({
   predictions,
   match,
@@ -236,11 +248,76 @@ function PredictionsList({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [activePick, setActivePick] = useState<'home' | 'draw' | 'away' | null>(null);
 
   if (predictions.length === 0) return null;
 
+  const isCompleted = match.status === 'completed';
+  const picks = [
+    { val: 'home' as const, label: match.home_team },
+    { val: 'draw' as const, label: 'Draw' },
+    { val: 'away' as const, label: match.away_team },
+  ];
+  const votersFor = (val: 'home' | 'draw' | 'away') =>
+    predictions.filter((p) => p.prediction === val);
+  const activeVoters = activePick ? votersFor(activePick) : [];
+  const activeLabel = picks.find((p) => p.val === activePick)?.label ?? '';
+
   return (
     <div className="border-t border-slate-700/50">
+      {/* Vote breakdown — tap a side to see who picked it */}
+      <div className="px-5 pt-3 pb-1">
+        <div className="grid grid-cols-3 gap-2">
+          {picks.map(({ val, label }) => {
+            const count = votersFor(val).length;
+            const active = activePick === val;
+            const isResult = isCompleted && match.result === val;
+            return (
+              <button
+                key={val}
+                onClick={() => setActivePick((p) => (p === val ? null : val))}
+                className={`flex flex-col items-center gap-0.5 py-2 px-2 rounded-xl border text-xs font-semibold transition-colors ${
+                  active
+                    ? 'bg-green-600/20 border-green-500/50 text-white'
+                    : isResult
+                      ? 'bg-amber-500/10 border-amber-500/40 text-amber-200 hover:border-amber-400/60'
+                      : 'bg-slate-700/40 border-slate-600/40 text-slate-300 hover:border-slate-500'
+                }`}
+              >
+                <span className="truncate max-w-full leading-tight">{label}</span>
+                <span
+                  className={`text-base font-black leading-none ${
+                    active ? 'text-green-300' : isResult ? 'text-amber-300' : 'text-slate-400'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {activePick && (
+          <div className="mt-2 rounded-xl bg-slate-900/40 border border-slate-700/40 overflow-hidden">
+            {activeVoters.length === 0 ? (
+              <p className="text-slate-500 text-xs px-4 py-3">No one picked {activeLabel}.</p>
+            ) : (
+              <div className="divide-y divide-slate-700/40">
+                {activeVoters.map((pred) => (
+                  <div key={pred.player_id} className="flex items-center gap-3 px-4 py-2.5">
+                    <PlayerAvatar photo={pred.player_photo} name={pred.player_name} size={7} />
+                    <span className="text-white text-sm font-medium flex-1">
+                      {pred.player_name}
+                    </span>
+                    {isCompleted && <PointsBadge points={pred.points} />}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full px-5 py-2.5 flex items-center justify-between hover:bg-slate-700/30 transition-colors"
@@ -271,17 +348,7 @@ function PredictionsList({
                     ? match.away_team
                     : 'Draw'}
               </span>
-              {match.status === 'completed' && (
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full ml-1 ${
-                    pred.points > 0
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-red-500/20 text-red-400'
-                  }`}
-                >
-                  {pred.points > 0 ? `+${pred.points}` : '0'}
-                </span>
-              )}
+              {isCompleted && <PointsBadge points={pred.points} />}
             </div>
           ))}
         </div>
@@ -593,20 +660,27 @@ const WcPredict: React.FC = () => {
     if (top.length === 0) return;
     setSharing(true);
     try {
-      // Preload all player photos in parallel (CORS-safe). Failures fall back to initials.
-      const photos = await Promise.all(
-        top.map((e) =>
-          e.player_photo
-            ? new Promise<HTMLImageElement | null>((resolve) => {
-                const image = new Image();
-                image.crossOrigin = 'anonymous';
-                image.onload = () => resolve(image);
-                image.onerror = () => resolve(null);
-                image.src = e.player_photo;
-              })
-            : Promise.resolve<HTMLImageElement | null>(null)
-        )
-      );
+      // Preload the club logo (same-origin, so it won't taint the canvas) and all
+      // player photos in parallel. Any failure falls back to emoji/initials.
+      const loadImage = (src: string, crossOrigin?: boolean) =>
+        new Promise<HTMLImageElement | null>((resolve) => {
+          const image = new Image();
+          if (crossOrigin) image.crossOrigin = 'anonymous';
+          image.onload = () => resolve(image);
+          image.onerror = () => resolve(null);
+          image.src = src;
+        });
+
+      const [logo, photos] = await Promise.all([
+        loadImage('/icons/icon-512x512.png'),
+        Promise.all(
+          top.map((e) =>
+            e.player_photo
+              ? loadImage(e.player_photo, true)
+              : Promise.resolve<HTMLImageElement | null>(null)
+          )
+        ),
+      ]);
 
       const DPR = 2;
       const W = 440;
@@ -654,10 +728,31 @@ const WcPredict: React.FC = () => {
       ctx.fillStyle = stripe;
       ctx.fillRect(0, 0, W, 5);
 
-      // Header
+      // Header — club logo (circular) with trophy-emoji fallback
       ctx.textAlign = 'center';
-      ctx.font = '34px serif';
-      ctx.fillText('🏆', W / 2, 56);
+      if (logo) {
+        const lx = W / 2;
+        const ly = 40;
+        const lr = 27;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(lx, ly, lr, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        const s = Math.max((lr * 2) / logo.width, (lr * 2) / logo.height);
+        const dw = logo.width * s;
+        const dh = logo.height * s;
+        ctx.drawImage(logo, lx - dw / 2, ly - dh / 2, dw, dh);
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(lx, ly, lr, 0, Math.PI * 2);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(251,191,36,0.6)';
+        ctx.stroke();
+      } else {
+        ctx.font = '34px serif';
+        ctx.fillText('🏆', W / 2, 56);
+      }
 
       ctx.fillStyle = '#fbbf24';
       ctx.font = '800 23px system-ui, -apple-system, sans-serif';
