@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, RefreshCw, CheckCircle2, AlertCircle, Zap, Clock, Activity } from 'lucide-react';
+import { Trophy, RefreshCw, CheckCircle2, AlertCircle, Zap, Clock, Activity, ExternalLink } from 'lucide-react';
 
 interface Fixture {
   fixture_id: number;
@@ -279,6 +279,13 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
               <h1 className="text-xl font-bold text-white tracking-tight">WC Predictor Admin</h1>
               <p className="text-slate-400 text-sm">FIFA World Cup 2026</p>
             </div>
+            <button
+              onClick={() => navigate('/predict')}
+              className="ml-auto flex items-center gap-1.5 bg-green-600/20 hover:bg-green-600/30 active:bg-green-600/40 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-2 rounded-xl transition-colors"
+            >
+              <ExternalLink size={14} />
+              Predict page
+            </button>
           </div>
         </div>
       </div>

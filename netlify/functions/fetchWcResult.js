@@ -188,7 +188,10 @@ export const handler = async (event) => {
 
     await sql`
       UPDATE wc_predictions
-      SET points = CASE WHEN prediction = ${result} THEN 1 ELSE 0 END
+      SET points = CASE
+        WHEN prediction = ${result} THEN (CASE WHEN is_banker THEN 2 ELSE 1 END)
+        ELSE (CASE WHEN is_banker THEN -1 ELSE 0 END)
+      END
       WHERE match_id = ${match_id}
     `;
 

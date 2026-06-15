@@ -2,6 +2,16 @@ import { neon } from "@netlify/neon";
 
 const sql = neon();
 
+// Halifax-local calendar date (YYYY-MM-DD) for an instant — defines "a day"
+// for the one-banker-per-day rule. Mirrors getWcPerfectDays.js.
+const halifaxDay = (iso) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Halifax",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+
 export const handler = async (event) => {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -23,6 +33,7 @@ export const handler = async (event) => {
 
   try {
     const { match_id, player_id, prediction } = JSON.parse(event.body);
+    const is_banker = JSON.parse(event.body).is_banker === true;
 
     if (!match_id || !player_id || !prediction) {
       return {
@@ -74,10 +85,33 @@ export const handler = async (event) => {
       };
     }
 
+    // Banker: at most one per player per Halifax-local match-day.
+    if (is_banker) {
+      const matchDay = halifaxDay(match.kickoff_time);
+      const existingBankers = await sql`
+        SELECT m.kickoff_time
+        FROM wc_predictions wp
+        JOIN wc_matches m ON m.id = wp.match_id
+        WHERE wp.player_id = ${player_id} AND wp.is_banker = TRUE
+      `;
+      const clash = existingBankers.some(
+        (b) => halifaxDay(b.kickoff_time) === matchDay
+      );
+      if (clash) {
+        return {
+          statusCode: 409,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            error: "You've already used your Banker for this day",
+          }),
+        };
+      }
+    }
+
     // Insert once - a prediction is final and cannot be changed.
     const inserted = await sql`
-      INSERT INTO wc_predictions (match_id, player_id, prediction)
-      VALUES (${match_id}, ${player_id}, ${prediction})
+      INSERT INTO wc_predictions (match_id, player_id, prediction, is_banker)
+      VALUES (${match_id}, ${player_id}, ${prediction}, ${is_banker})
       ON CONFLICT (match_id, player_id) DO NOTHING
       RETURNING id
     `;
