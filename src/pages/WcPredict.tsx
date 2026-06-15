@@ -8,6 +8,8 @@ import {
   ChevronUp,
   Activity,
   Share2,
+  Flame,
+  Star,
 } from 'lucide-react';
 
 interface Match {
@@ -37,6 +39,7 @@ interface Prediction {
   player_photo: string;
   prediction: string;
   points: number;
+  is_banker: boolean;
 }
 
 interface Player {
@@ -54,7 +57,24 @@ interface LeaderboardEntry {
   correct_predictions: number;
 }
 
+interface PerfectDay {
+  day: string; // YYYY-MM-DD (Halifax local)
+  game_count: number;
+  perfect_players: { player_id: number; player_name: string; player_photo: string }[];
+}
+
 // ─── Shared helpers ──────────────────────────────────────────────────────────
+
+// Halifax-local calendar date (YYYY-MM-DD) for an instant — defines "a day" for
+// the one-banker-per-day rule. Mirrors the backend (getWcPerfectDays.js).
+function halifaxDay(iso: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Halifax',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(iso));
+}
 
 function FlagImg({
   src,
@@ -233,7 +253,16 @@ function PointsBadge({ points }: { points: number }) {
         points > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
       }`}
     >
-      {points > 0 ? `+${points}` : '0'}
+      {points > 0 ? `+${points}` : `${points}`}
+    </span>
+  );
+}
+
+// Star marking a banker pick (2× points, −1 if wrong).
+function BankerStar({ size = 12 }: { size?: number }) {
+  return (
+    <span title="Banker · 2× points (−1 if wrong)" className="inline-flex items-center">
+      <Star size={size} className="text-amber-400 fill-amber-400" />
     </span>
   );
 }
@@ -306,8 +335,9 @@ function PredictionsList({
                 {activeVoters.map((pred) => (
                   <div key={pred.player_id} className="flex items-center gap-3 px-4 py-2.5">
                     <PlayerAvatar photo={pred.player_photo} name={pred.player_name} size={7} />
-                    <span className="text-white text-sm font-medium flex-1">
+                    <span className="text-white text-sm font-medium flex-1 flex items-center gap-1.5">
                       {pred.player_name}
+                      {pred.is_banker && <BankerStar />}
                     </span>
                     {isCompleted && <PointsBadge points={pred.points} />}
                   </div>
@@ -340,7 +370,10 @@ function PredictionsList({
           {predictions.map((pred) => (
             <div key={pred.player_id} className="flex items-center gap-3 px-5 py-2.5">
               <PlayerAvatar photo={pred.player_photo} name={pred.player_name} size={7} />
-              <span className="text-white text-sm font-medium flex-1">{pred.player_name}</span>
+              <span className="text-white text-sm font-medium flex-1 flex items-center gap-1.5">
+                {pred.player_name}
+                {pred.is_banker && <BankerStar />}
+              </span>
               <span className="text-xs text-slate-400">
                 {pred.prediction === 'home'
                   ? match.home_team
@@ -363,12 +396,16 @@ function ActiveMatchCard({
   match,
   selectedPlayer,
   onPredicted,
+  bankerUsedToday,
 }: {
   match: Match;
   selectedPlayer: number | null;
   onPredicted: () => void;
+  // The selected player already spent their banker on another game this day.
+  bankerUsedToday: boolean;
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
+  const [banker, setBanker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -376,10 +413,16 @@ function ActiveMatchCard({
     match.status === 'locked' || new Date(match.kickoff_time) <= new Date()
   );
 
+  // The selected player's existing prediction for this match, if any.
+  const myPrediction = selectedPlayer
+    ? match.predictions.find((p) => p.player_id === selectedPlayer)
+    : undefined;
+
   useEffect(() => {
     if (!selectedPlayer) {
       setSelectedPrediction(null);
       setSubmitted(false);
+      setBanker(false);
       return;
     }
     const existing = match.predictions.find((p) => p.player_id === selectedPlayer);
@@ -389,6 +432,7 @@ function ActiveMatchCard({
     } else {
       setSelectedPrediction(null);
       setSubmitted(false);
+      setBanker(false);
     }
   }, [selectedPlayer, match.predictions]);
 
@@ -404,6 +448,7 @@ function ActiveMatchCard({
           match_id: match.id,
           player_id: selectedPlayer,
           prediction: selectedPrediction,
+          is_banker: banker,
         }),
       });
       const data = await res.json();
@@ -482,7 +527,7 @@ function ActiveMatchCard({
           <div className="flex items-center gap-3 rounded-xl bg-green-600/10 border border-green-500/30 px-4 py-3">
             <CheckCircle2 size={18} className="text-green-400 flex-shrink-0" />
             <div className="min-w-0">
-              <p className="text-green-300 text-sm font-semibold">
+              <p className="text-green-300 text-sm font-semibold flex items-center gap-1.5 flex-wrap">
                 Your prediction:{' '}
                 <span className="text-white">
                   {selectedPrediction === 'home'
@@ -491,6 +536,11 @@ function ActiveMatchCard({
                       ? match.away_team
                       : 'Draw'}
                 </span>
+                {myPrediction?.is_banker && (
+                  <span className="inline-flex items-center gap-1 text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full text-xs font-bold">
+                    <BankerStar size={11} /> Banker
+                  </span>
+                )}
               </p>
               <p className="text-slate-500 text-xs mt-0.5">
                 Predictions are final and can&apos;t be changed.
@@ -522,6 +572,52 @@ function ActiveMatchCard({
               );
             })}
           </div>
+
+          {/* Banker — one per day, doubles a correct pick but stings if wrong */}
+          {selectedPrediction &&
+            (bankerUsedToday ? (
+              <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
+                <Star size={14} className="flex-shrink-0 text-slate-500" />
+                Banker already used for another game today — one per day.
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setBanker((b) => !b)}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
+                  banker
+                    ? 'bg-amber-500/15 border-amber-500/50'
+                    : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
+                }`}
+              >
+                <Star
+                  size={18}
+                  className={`flex-shrink-0 ${banker ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`}
+                />
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block text-sm font-bold ${banker ? 'text-amber-200' : 'text-slate-200'}`}
+                  >
+                    Make this my Banker
+                  </span>
+                  <span className="block text-xs text-slate-400 mt-0.5">
+                    2× points if right · −1 if wrong · one per day
+                  </span>
+                </span>
+                <span
+                  className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                    banker ? 'bg-amber-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                      banker ? 'left-[1.125rem]' : 'left-0.5'
+                    }`}
+                  />
+                </span>
+              </button>
+            ))}
+
           {selectedPrediction && (
             <button
               onClick={handleSubmit}
@@ -643,12 +739,109 @@ function CompletedMatchCard({ match }: { match: Match }) {
   );
 }
 
+// ─── Perfect Predictors (trivia of the day) ───────────────────────────────────
+
+// "YYYY-MM-DD" is a Halifax-local calendar date. Parse the parts directly so the
+// label doesn't drift by a day in the viewer's own timezone.
+function formatDayLabel(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function PerfectDayRow({ day, defaultOpen = false }: { day: PerfectDay; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="rounded-2xl bg-slate-800/60 border border-slate-700/40 overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-900/40 hover:bg-slate-900/60 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <span className="text-white text-sm font-semibold">{formatDayLabel(day.day)}</span>
+          <span className="text-slate-500 text-xs">
+            {day.perfect_players.length} perfect
+          </span>
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 text-amber-300 text-xs font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
+            <Flame size={11} />
+            {day.game_count}/{day.game_count} games
+          </span>
+          {open ? (
+            <ChevronUp size={14} className="text-slate-500" />
+          ) : (
+            <ChevronDown size={14} className="text-slate-500" />
+          )}
+        </span>
+      </button>
+
+      {open && (
+        <div className="divide-y divide-slate-700/40 border-t border-slate-700/40">
+          {day.perfect_players.map((pl) => (
+            <div key={pl.player_id} className="flex items-center gap-3 px-4 py-2.5">
+              <PlayerAvatar photo={pl.player_photo} name={pl.player_name} size={7} />
+              <span className="text-white text-sm font-medium flex-1">{pl.player_name}</span>
+              <span className="text-amber-300 text-base" title="Perfect day">
+                🔥
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PerfectDaysCard({ days }: { days: PerfectDay[] }) {
+  const [open, setOpen] = useState(true);
+
+  if (days.length === 0) return null;
+
+  return (
+    <div className="bg-gradient-to-b from-slate-800 to-slate-900 border border-amber-500/20 rounded-2xl overflow-hidden shadow-xl">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-2 px-5 py-4 border-b border-slate-700/40 bg-gradient-to-r from-amber-950/40 to-slate-800"
+      >
+        <Flame size={18} className="text-amber-400" />
+        <h3 className="text-white font-bold tracking-wide">Perfect Predictors</h3>
+        {open ? (
+          <ChevronUp size={14} className="text-slate-500 ml-auto" />
+        ) : (
+          <ChevronDown size={14} className="text-slate-500 ml-auto" />
+        )}
+      </button>
+
+      {open && (
+        <>
+          <p className="text-slate-400 text-xs px-5 pt-3">
+            Players who called <span className="text-amber-300 font-semibold">every</span> game right
+            on a full match day.
+          </p>
+
+          <div className="px-4 py-4 space-y-3">
+            {days.map((d, i) => (
+              <PerfectDayRow key={d.day} day={d} defaultOpen={i === 0} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const WcPredict: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [perfectDays, setPerfectDays] = useState<PerfectDay[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -916,17 +1109,20 @@ const WcPredict: React.FC = () => {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [matchRes, playersRes, lbRes] = await Promise.all([
+      const [matchRes, playersRes, lbRes, perfectRes] = await Promise.all([
         fetch('/.netlify/functions/getActiveWcMatch'),
         fetch('/.netlify/functions/getPlayers'),
         fetch('/.netlify/functions/getWcLeaderboard'),
+        fetch('/.netlify/functions/getWcPerfectDays'),
       ]);
       const matchData = await matchRes.json();
       const playersData = await playersRes.json();
       const lbData = await lbRes.json();
+      const perfectData = await perfectRes.json();
       setMatches(matchData.matches ?? []);
       setPlayers(playersData);
       setLeaderboard(lbData);
+      setPerfectDays(perfectData.days ?? []);
     } catch {
       setError('Failed to load data. Please refresh.');
     } finally {
@@ -959,6 +1155,19 @@ const WcPredict: React.FC = () => {
     .sort((a, b) => new Date(b.kickoff_time).getTime() - new Date(a.kickoff_time).getTime());
 
   const hasActiveMatches = activeMatches.length > 0;
+
+  // Halifax-local days on which the selected player has already placed a banker —
+  // used to lock the banker toggle on that day's other games (one per day).
+  const bankerDays = new Set<string>();
+  if (selectedPlayer) {
+    for (const m of matches) {
+      for (const p of m.predictions) {
+        if (p.player_id === selectedPlayer && p.is_banker) {
+          bankerDays.add(halifaxDay(m.kickoff_time));
+        }
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 pb-16">
@@ -1019,6 +1228,7 @@ const WcPredict: React.FC = () => {
               match={match}
               selectedPlayer={selectedPlayer}
               onPredicted={fetchAll}
+              bankerUsedToday={bankerDays.has(halifaxDay(match.kickoff_time))}
             />
           ))
         )}
@@ -1172,6 +1382,9 @@ const WcPredict: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* Perfect Predictors — trivia of the day */}
+        <PerfectDaysCard days={perfectDays} />
 
         {/* Completed matches section */}
         {completedMatches.length > 0 && (
