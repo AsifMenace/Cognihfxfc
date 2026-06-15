@@ -2,6 +2,16 @@ import { neon } from '@netlify/neon';
 
 const sql = neon();
 
+// Halifax-local calendar date (YYYY-MM-DD) for an instant — defines "a day" for
+// the one-banker-match-per-day rule. Mirrors submitPrediction.js.
+const halifaxDay = (iso) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Halifax',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(iso));
+
 // Get flag URL from country code
 const getFlagUrl = (code) => {
   if (!code || code.trim() === '') return 'https://flagcdn.com/w80/white.png';
@@ -125,7 +135,10 @@ export const handler = async (event) => {
       home_flag,
       away_flag,
       kickoff_time,
+      is_banker_match,
     } = JSON.parse(event.body);
+
+    const bankerMatch = is_banker_match === true;
 
     if (!fixture_id || !home_team || !away_team || !kickoff_time) {
       return {
@@ -150,15 +163,37 @@ export const handler = async (event) => {
       storedAwayFlag = getFlagUrl(awayCodeForFlag);
     }
 
+    // One banker match per Halifax-local day. If this activation designates the
+    // banker, reject when another match (not this one) already holds it that day.
+    if (bankerMatch) {
+      const day = halifaxDay(kickoff_time);
+      const existing = await sql`
+        SELECT home_team, away_team, kickoff_time
+        FROM wc_matches
+        WHERE is_banker_match = TRUE AND fixture_id <> ${fixture_id}
+      `;
+      const clash = existing.find((m) => halifaxDay(m.kickoff_time) === day);
+      if (clash) {
+        return {
+          statusCode: 409,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            error: `Banker already set for this day on ${clash.home_team} vs ${clash.away_team}`,
+          }),
+        };
+      }
+    }
+
     await sql`
-      INSERT INTO wc_matches (fixture_id, home_team, away_team, home_code, away_code, home_flag, away_flag, kickoff_time, status, activated_at)
-      VALUES (${fixture_id}, ${home_team}, ${away_team}, ${home_code}, ${away_code}, ${storedHomeFlag}, ${storedAwayFlag}, ${kickoff_time}, 'active', NOW())
+      INSERT INTO wc_matches (fixture_id, home_team, away_team, home_code, away_code, home_flag, away_flag, kickoff_time, status, activated_at, is_banker_match)
+      VALUES (${fixture_id}, ${home_team}, ${away_team}, ${home_code}, ${away_code}, ${storedHomeFlag}, ${storedAwayFlag}, ${kickoff_time}, 'active', NOW(), ${bankerMatch})
       ON CONFLICT (fixture_id)
       DO UPDATE SET
         status = 'active',
         home_flag = ${storedHomeFlag},
         away_flag = ${storedAwayFlag},
-        activated_at = NOW()
+        activated_at = NOW(),
+        is_banker_match = ${bankerMatch}
     `;
 
     return {

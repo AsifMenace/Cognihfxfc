@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, RefreshCw, CheckCircle2, AlertCircle, Zap, Clock, Activity, ExternalLink } from 'lucide-react';
+import { Trophy, RefreshCw, CheckCircle2, AlertCircle, Zap, Clock, Activity, ExternalLink, Star } from 'lucide-react';
 
 interface Fixture {
   fixture_id: number;
@@ -29,6 +29,18 @@ interface ActiveMatch {
   live_fetched_at: string | null;
   final_home_goals: number | null;
   final_away_goals: number | null;
+  is_banker_match: boolean;
+}
+
+// Halifax-local calendar date (YYYY-MM-DD) — defines "a day" for the
+// one-banker-match-per-day rule. Mirrors the backend (activateWcMatch.js).
+function halifaxDay(iso: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Halifax',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(iso));
 }
 
 function FlagImg({ src, alt }: { src: string | null | undefined; alt: string }) {
@@ -63,6 +75,8 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [manualOpen, setManualOpen] = useState<number | null>(null);
   const [settingManual, setSettingManual] = useState<number | null>(null);
   const [settingLiveManual, setSettingLiveManual] = useState<number | null>(null);
+  // Activation modal — lets the admin designate one banker match per day.
+  const [activateModal, setActivateModal] = useState<{ fixture: Fixture; banker: boolean } | null>(null);
 
   useEffect(() => {
     if (!isAdmin) navigate('/admin-login');
@@ -110,7 +124,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     }
   };
 
-  const activateMatch = async (fixture: Fixture) => {
+  const activateMatch = async (fixture: Fixture, isBankerMatch: boolean) => {
     setActivating(fixture.fixture_id);
     setMessage(null);
     try {
@@ -126,11 +140,16 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           home_flag: fixture.home_flag,
           away_flag: fixture.away_flag,
           kickoff_time: fixture.kickoff_time,
+          is_banker_match: isBankerMatch,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Activation failed');
-      showMessage('success', `${fixture.home_team} vs ${fixture.away_team} activated`);
+      showMessage(
+        'success',
+        `${fixture.home_team} vs ${fixture.away_team} activated${isBankerMatch ? ' as Banker match' : ''}`
+      );
+      setActivateModal(null);
       fetchActiveMatches();
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : 'Activation failed');
@@ -264,6 +283,16 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
 
   const isActivated = (fixtureId: number) => activeMatches.some((m) => m.fixture_id === fixtureId);
 
+  // While the activation modal is open: the match (if any) that already holds the
+  // banker on that fixture's Halifax-local day. If set, the banker option is hidden.
+  const modalDayBanker = activateModal
+    ? activeMatches.find(
+        (m) =>
+          m.is_banker_match &&
+          halifaxDay(m.kickoff_time) === halifaxDay(activateModal.fixture.kickoff_time)
+      )
+    : undefined;
+
   if (!isAdmin) return null;
 
   return (
@@ -289,6 +318,105 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           </div>
         </div>
       </div>
+
+      {/* Activation modal — designate the day's banker match before activating */}
+      {activateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-700/60">
+              <h3 className="text-white font-bold text-base">Activate match</h3>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              {/* Teams */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <FlagImg src={activateModal.fixture.home_flag} alt={activateModal.fixture.home_team} />
+                  <span className="text-white font-semibold text-sm truncate">{activateModal.fixture.home_team}</span>
+                </div>
+                <span className="text-slate-500 font-black text-xs flex-shrink-0">VS</span>
+                <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                  <span className="text-white font-semibold text-sm truncate text-right">{activateModal.fixture.away_team}</span>
+                  <FlagImg src={activateModal.fixture.away_flag} alt={activateModal.fixture.away_team} />
+                </div>
+              </div>
+              <p className="text-slate-400 text-xs flex items-center gap-1.5">
+                <Clock size={11} />
+                {new Date(activateModal.fixture.kickoff_time).toLocaleString()}
+              </p>
+
+              {/* Banker toggle — hidden once the day already has a banker match */}
+              {modalDayBanker ? (
+                <div className="flex items-start gap-2 rounded-xl bg-slate-700/40 border border-slate-600/50 px-3 py-2.5 text-slate-400 text-xs">
+                  <Star size={14} className="flex-shrink-0 mt-0.5 text-slate-500" />
+                  Banker already set for this day on {modalDayBanker.home_team} vs{' '}
+                  {modalDayBanker.away_team}.
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActivateModal((s) => (s ? { ...s, banker: !s.banker } : s))}
+                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
+                      activateModal.banker
+                        ? 'bg-amber-500/15 border-amber-500/50'
+                        : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
+                    }`}
+                  >
+                    <Star
+                      size={18}
+                      className={`flex-shrink-0 ${activateModal.banker ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className={`block text-sm font-bold ${activateModal.banker ? 'text-amber-200' : 'text-slate-200'}`}>
+                        Make this the Banker match
+                      </span>
+                      <span className="block text-xs text-slate-400 mt-0.5">One banker match per day</span>
+                    </span>
+                    <span
+                      className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                        activateModal.banker ? 'bg-amber-500' : 'bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                          activateModal.banker ? 'left-[1.125rem]' : 'left-0.5'
+                        }`}
+                      />
+                    </span>
+                  </button>
+
+                  {activateModal.banker && (
+                    <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2.5 text-amber-300 text-xs">
+                      <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                      Once activated, the banker designation can&apos;t be changed for the day.
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="px-5 py-4 border-t border-slate-700/60 flex gap-2">
+              <button
+                onClick={() => setActivateModal(null)}
+                disabled={activating === activateModal.fixture.fixture_id}
+                className="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => activateMatch(activateModal.fixture, activateModal.banker)}
+                disabled={activating === activateModal.fixture.fixture_id}
+                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors text-sm"
+              >
+                {activating === activateModal.fixture.fixture_id
+                  ? 'Activating...'
+                  : activateModal.banker
+                    ? 'Activate as Banker'
+                    : 'Activate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto max-w-3xl px-4 pt-6 space-y-6">
         {/* Message */}
@@ -390,6 +518,12 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                             >
                               {m.status}
                             </span>
+                            {m.is_banker_match && (
+                              <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 flex items-center gap-1">
+                                <Star size={10} className="fill-amber-400" />
+                                Banker
+                              </span>
+                            )}
                             <span className="text-slate-400 text-xs flex items-center gap-1">
                               <Clock size={11} />
                               {new Date(m.kickoff_time).toLocaleString()}
@@ -632,7 +766,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                       </div>
                       {/* Activate button — own row, full width */}
                       <button
-                        onClick={() => !activated && activateMatch(fix)}
+                        onClick={() => !activated && setActivateModal({ fixture: fix, banker: false })}
                         disabled={activating === fix.fixture_id || activated}
                         className={`w-full py-2 text-xs font-bold rounded-lg transition-colors ${
                           activated
