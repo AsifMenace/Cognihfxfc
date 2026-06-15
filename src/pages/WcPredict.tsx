@@ -10,6 +10,7 @@ import {
   Share2,
   Flame,
   Star,
+  RefreshCw,
 } from 'lucide-react';
 
 interface Match {
@@ -866,6 +867,28 @@ const WcPredict: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
   const [sharing, setSharing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Force the latest deployed code, then reload (which also re-fetches all data).
+  // Friends keep the PWA open and miss new features after a deploy because the
+  // service worker serves cached code — this checks for a new SW, activates it,
+  // and reloads so they're guaranteed to get the newest version.
+  const hardRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          await reg.update();
+          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      }
+    } catch {
+      // Ignore — fall through to a plain reload regardless.
+    } finally {
+      window.location.reload();
+    }
+  }, []);
 
   const shareLeaderboard = useCallback(async () => {
     const top = leaderboard.slice(0, 8);
@@ -1179,12 +1202,25 @@ const WcPredict: React.FC = () => {
     <div className="min-h-screen bg-slate-900 pb-16">
       {/* Header */}
       <div className="bg-gradient-to-br from-green-900 via-slate-900 to-slate-900 border-b border-slate-700/60 px-4 py-6">
-        <div className="container mx-auto max-w-2xl text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Trophy size={22} className="text-amber-400" />
-            <h1 className="text-2xl font-bold text-white tracking-tight">FIFA World Cup 2026</h1>
+        <div className="container mx-auto max-w-2xl">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={hardRefresh}
+              disabled={refreshing}
+              title="Refresh — get the latest version and data"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:from-amber-500 active:to-amber-600 text-slate-900 text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-amber-500/40 ring-1 ring-amber-300/50 transition-all disabled:opacity-60 animate-pulse hover:animate-none"
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+              <span>{refreshing ? 'Refreshing…' : 'Refresh'}</span>
+            </button>
           </div>
-          <p className="text-slate-400 text-sm">Cogni HFX FC — Match Predictor</p>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Trophy size={22} className="text-amber-400" />
+              <h1 className="text-2xl font-bold text-white tracking-tight">FIFA World Cup 2026</h1>
+            </div>
+            <p className="text-slate-400 text-sm">Cogni HFX FC — Match Predictor</p>
+          </div>
         </div>
       </div>
 
