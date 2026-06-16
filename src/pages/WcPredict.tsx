@@ -10,6 +10,7 @@ import {
   Share2,
   Flame,
   Star,
+  RefreshCw,
 } from 'lucide-react';
 
 interface Match {
@@ -29,6 +30,7 @@ interface Match {
   live_fetched_at: string | null;
   final_home_goals: number | null;
   final_away_goals: number | null;
+  is_banker_match: boolean;
   predictions: Prediction[];
 }
 
@@ -64,17 +66,6 @@ interface PerfectDay {
 }
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
-
-// Halifax-local calendar date (YYYY-MM-DD) for an instant — defines "a day" for
-// the one-banker-per-day rule. Mirrors the backend (getWcPerfectDays.js).
-function halifaxDay(iso: string): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Halifax',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date(iso));
-}
 
 function FlagImg({
   src,
@@ -396,13 +387,10 @@ function ActiveMatchCard({
   match,
   selectedPlayer,
   onPredicted,
-  bankerUsedToday,
 }: {
   match: Match;
   selectedPlayer: number | null;
   onPredicted: () => void;
-  // The selected player already spent their banker on another game this day.
-  bankerUsedToday: boolean;
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
   const [banker, setBanker] = useState(false);
@@ -428,6 +416,8 @@ function ActiveMatchCard({
     const existing = match.predictions.find((p) => p.player_id === selectedPlayer);
     if (existing) {
       setSelectedPrediction(existing.prediction);
+      // Seed the banker toggle from the saved pick so an edit reflects reality.
+      setBanker(existing.is_banker);
       setSubmitted(true);
     } else {
       setSelectedPrediction(null);
@@ -485,6 +475,14 @@ function ActiveMatchCard({
         <Countdown kickoff={match.kickoff_time} onLock={() => setIsLocked(true)} />
       </div>
 
+      {/* Banker match badge — admin designated this as the day's banker */}
+      {match.is_banker_match && (
+        <div className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs font-bold tracking-wide">
+          <Star size={13} className="fill-amber-400 text-amber-400" />
+          BANKER MATCH · 2× points if correct · −1 if wrong
+        </div>
+      )}
+
       {/* Live score banner */}
       <LiveScoreBanner match={match} />
 
@@ -524,28 +522,40 @@ function ActiveMatchCard({
       {/* Prediction form — open matches only, and only until a pick is locked in */}
       {!isLocked && selectedPlayer && submitted && (
         <div className="px-6 pb-6 border-t border-slate-700/50 pt-4">
-          <div className="flex items-center gap-3 rounded-xl bg-green-600/10 border border-green-500/30 px-4 py-3">
-            <CheckCircle2 size={18} className="text-green-400 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-green-300 text-sm font-semibold flex items-center gap-1.5 flex-wrap">
-                Your prediction:{' '}
-                <span className="text-white">
-                  {selectedPrediction === 'home'
-                    ? match.home_team
-                    : selectedPrediction === 'away'
-                      ? match.away_team
-                      : 'Draw'}
-                </span>
-                {myPrediction?.is_banker && (
-                  <span className="inline-flex items-center gap-1 text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full text-xs font-bold">
-                    <BankerStar size={11} /> Banker
+          <div className="rounded-xl bg-green-600/10 border border-green-500/30 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 size={18} className="text-green-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-green-300 text-sm font-semibold flex items-center gap-1.5 flex-wrap">
+                  Your prediction:{' '}
+                  <span className="text-white">
+                    {selectedPrediction === 'home'
+                      ? match.home_team
+                      : selectedPrediction === 'away'
+                        ? match.away_team
+                        : 'Draw'}
                   </span>
-                )}
-              </p>
-              <p className="text-slate-500 text-xs mt-0.5">
-                Predictions are final and can&apos;t be changed.
-              </p>
+                  {myPrediction?.is_banker && (
+                    <span className="inline-flex items-center gap-1 text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full text-xs font-bold">
+                      <BankerStar size={11} /> Banker
+                    </span>
+                  )}
+                </p>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  You can change your pick until kickoff.
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSubmitted(false);
+                setError(null);
+              }}
+              className="mt-3 w-full py-2.5 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-semibold rounded-xl transition-colors text-sm"
+            >
+              Change pick
+            </button>
           </div>
         </div>
       )}
@@ -573,50 +583,46 @@ function ActiveMatchCard({
             })}
           </div>
 
-          {/* Banker — one per day, doubles a correct pick but stings if wrong */}
-          {selectedPrediction &&
-            (bankerUsedToday ? (
-              <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
-                <Star size={14} className="flex-shrink-0 text-slate-500" />
-                Banker already used for another game today — one per day.
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setBanker((b) => !b)}
-                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
-                  banker
-                    ? 'bg-amber-500/15 border-amber-500/50'
-                    : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
+          {/* Banker — only offered on the admin-designated banker match.
+             Shown as soon as the form is open so the choice is always visible;
+             opting in (toggle) is the player's call, default is off. */}
+          {match.is_banker_match && (
+            <button
+              type="button"
+              onClick={() => setBanker((b) => !b)}
+              className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
+                banker
+                  ? 'bg-amber-500/15 border-amber-500/50'
+                  : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
+              }`}
+            >
+              <Star
+                size={18}
+                className={`flex-shrink-0 ${banker ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`}
+              />
+              <span className="min-w-0 flex-1">
+                <span
+                  className={`block text-sm font-bold ${banker ? 'text-amber-200' : 'text-slate-200'}`}
+                >
+                  Use my Banker
+                </span>
+                <span className="block text-xs text-slate-400 mt-0.5">
+                  2× points if right · −1 if wrong
+                </span>
+              </span>
+              <span
+                className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                  banker ? 'bg-amber-500' : 'bg-slate-600'
                 }`}
               >
-                <Star
-                  size={18}
-                  className={`flex-shrink-0 ${banker ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`}
-                />
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={`block text-sm font-bold ${banker ? 'text-amber-200' : 'text-slate-200'}`}
-                  >
-                    Make this my Banker
-                  </span>
-                  <span className="block text-xs text-slate-400 mt-0.5">
-                    2× points if right · −1 if wrong · one per day
-                  </span>
-                </span>
                 <span
-                  className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
-                    banker ? 'bg-amber-500' : 'bg-slate-600'
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                    banker ? 'left-[1.125rem]' : 'left-0.5'
                   }`}
-                >
-                  <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
-                      banker ? 'left-[1.125rem]' : 'left-0.5'
-                    }`}
-                  />
-                </span>
-              </button>
-            ))}
+                />
+              </span>
+            </button>
+          )}
 
           {selectedPrediction && (
             <button
@@ -624,11 +630,25 @@ function ActiveMatchCard({
               disabled={submitting}
               className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 text-sm"
             >
-              {submitting ? 'Saving...' : 'Submit Prediction'}
+              {submitting ? 'Saving...' : myPrediction ? 'Save changes' : 'Submit Prediction'}
+            </button>
+          )}
+          {myPrediction && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedPrediction(myPrediction.prediction);
+                setBanker(myPrediction.is_banker);
+                setSubmitted(true);
+                setError(null);
+              }}
+              className="w-full py-2.5 bg-slate-700/60 hover:bg-slate-600 text-slate-200 font-semibold rounded-xl transition-colors text-sm"
+            >
+              Cancel
             </button>
           )}
           <p className="text-slate-500 text-xs text-center">
-            Choose carefully — a prediction can only be made once.
+            You can change your pick until kickoff.
           </p>
           {error && (
             <div className="flex items-center gap-2 text-red-400 text-sm">
@@ -847,6 +867,28 @@ const WcPredict: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
   const [sharing, setSharing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Force the latest deployed code, then reload (which also re-fetches all data).
+  // Friends keep the PWA open and miss new features after a deploy because the
+  // service worker serves cached code — this checks for a new SW, activates it,
+  // and reloads so they're guaranteed to get the newest version.
+  const hardRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          await reg.update();
+          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      }
+    } catch {
+      // Ignore — fall through to a plain reload regardless.
+    } finally {
+      window.location.reload();
+    }
+  }, []);
 
   const shareLeaderboard = useCallback(async () => {
     const top = leaderboard.slice(0, 8);
@@ -1156,29 +1198,29 @@ const WcPredict: React.FC = () => {
 
   const hasActiveMatches = activeMatches.length > 0;
 
-  // Halifax-local days on which the selected player has already placed a banker —
-  // used to lock the banker toggle on that day's other games (one per day).
-  const bankerDays = new Set<string>();
-  if (selectedPlayer) {
-    for (const m of matches) {
-      for (const p of m.predictions) {
-        if (p.player_id === selectedPlayer && p.is_banker) {
-          bankerDays.add(halifaxDay(m.kickoff_time));
-        }
-      }
-    }
-  }
-
   return (
     <div className="min-h-screen bg-slate-900 pb-16">
       {/* Header */}
       <div className="bg-gradient-to-br from-green-900 via-slate-900 to-slate-900 border-b border-slate-700/60 px-4 py-6">
-        <div className="container mx-auto max-w-2xl text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Trophy size={22} className="text-amber-400" />
-            <h1 className="text-2xl font-bold text-white tracking-tight">FIFA World Cup 2026</h1>
+        <div className="container mx-auto max-w-2xl">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={hardRefresh}
+              disabled={refreshing}
+              title="Refresh — get the latest version and data"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:from-amber-500 active:to-amber-600 text-slate-900 text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-amber-500/40 ring-1 ring-amber-300/50 transition-all disabled:opacity-60 animate-pulse hover:animate-none"
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+              <span>{refreshing ? 'Refreshing…' : 'Refresh'}</span>
+            </button>
           </div>
-          <p className="text-slate-400 text-sm">Cogni HFX FC — Match Predictor</p>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Trophy size={22} className="text-amber-400" />
+              <h1 className="text-2xl font-bold text-white tracking-tight">FIFA World Cup 2026</h1>
+            </div>
+            <p className="text-slate-400 text-sm">Cogni HFX FC — Match Predictor</p>
+          </div>
         </div>
       </div>
 
@@ -1228,7 +1270,6 @@ const WcPredict: React.FC = () => {
               match={match}
               selectedPlayer={selectedPlayer}
               onPredicted={fetchAll}
-              bankerUsedToday={bankerDays.has(halifaxDay(match.kickoff_time))}
             />
           ))
         )}

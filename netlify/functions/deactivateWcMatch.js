@@ -75,11 +75,12 @@ export const handler = async (event) => {
       };
     }
 
-    // No predictions exist, safe to deactivate
-    // Update match status to 'upcoming' instead of deleting
+    // No predictions exist, safe to deactivate.
+    // Update status to 'upcoming' and release any banker designation so the day's
+    // banker can be reassigned to another match (see activateWcMatch.js).
     await sql`
       UPDATE wc_matches
-      SET status = 'upcoming'
+      SET status = 'upcoming', is_banker_match = FALSE
       WHERE id = ${match_id}
     `;
 
