@@ -77,6 +77,9 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [settingLiveManual, setSettingLiveManual] = useState<number | null>(null);
   // Activation modal — lets the admin designate one banker match per day.
   const [activateModal, setActivateModal] = useState<{ fixture: Fixture; banker: boolean } | null>(null);
+  // Global banker mode: 'admin' (admin designates) or 'user' (players pick).
+  const [bankerMode, setBankerMode] = useState<'admin' | 'user'>('admin');
+  const [savingMode, setSavingMode] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) navigate('/admin-login');
@@ -97,10 +100,32 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
       const res = await fetch('/.netlify/functions/getActiveWcMatch');
       const data = await res.json();
       setActiveMatches(data.matches ?? []);
+      setBankerMode(data.banker_mode === 'user' ? 'user' : 'admin');
     } catch {
       // silent
     } finally {
       setLoadingActive(false);
+    }
+  };
+
+  const changeBankerMode = async (mode: 'admin' | 'user') => {
+    if (mode === bankerMode || savingMode) return;
+    setSavingMode(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/.netlify/functions/setWcBankerMode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update banker mode');
+      setBankerMode(mode);
+      showMessage('success', `Banker mode: ${mode === 'admin' ? 'Admin picks' : 'Players pick'}`);
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to update banker mode');
+    } finally {
+      setSavingMode(false);
     }
   };
 
@@ -344,8 +369,15 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                 {new Date(activateModal.fixture.kickoff_time).toLocaleString()}
               </p>
 
-              {/* Banker toggle — hidden once the day already has a banker match */}
-              {modalDayBanker ? (
+              {/* Banker designation — admin mode only; in user mode players pick
+                 their own banker so there's nothing to designate. Also hidden once
+                 the day already has a banker match. */}
+              {bankerMode === 'user' ? (
+                <div className="flex items-start gap-2 rounded-xl bg-slate-700/40 border border-slate-600/50 px-3 py-2.5 text-slate-400 text-xs">
+                  <Star size={14} className="flex-shrink-0 mt-0.5 text-slate-500" />
+                  Players pick their own banker (user mode) — no designation needed.
+                </div>
+              ) : modalDayBanker ? (
                 <div className="flex items-start gap-2 rounded-xl bg-slate-700/40 border border-slate-600/50 px-3 py-2.5 text-slate-400 text-xs">
                   <Star size={14} className="flex-shrink-0 mt-0.5 text-slate-500" />
                   Banker already set for this day on {modalDayBanker.home_team} vs{' '}
@@ -433,6 +465,48 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           </div>
         )}
 
+        {/* Banker mode switch */}
+        <div className="bg-slate-800 border border-slate-700/60 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-700/50 flex items-center gap-2">
+            <Star size={16} className="text-amber-400" />
+            <h2 className="text-white font-semibold text-sm">Banker Mode</h2>
+          </div>
+          <div className="px-5 py-4 space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { mode: 'admin' as const, title: 'Admin picks', desc: 'You designate one banker match per day.' },
+                { mode: 'user' as const, title: 'Players pick', desc: 'Each player banks any match, one per day.' },
+              ]).map(({ mode, title, desc }) => {
+                const active = bankerMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => changeBankerMode(mode)}
+                    disabled={savingMode}
+                    className={`flex flex-col items-start text-left rounded-xl px-4 py-3 border transition-colors disabled:opacity-60 ${
+                      active
+                        ? 'bg-amber-500/15 border-amber-500/50'
+                        : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className={`text-sm font-bold ${active ? 'text-amber-200' : 'text-slate-200'}`}>
+                        {title}
+                      </span>
+                      {active && <CheckCircle2 size={14} className="text-amber-400" />}
+                    </span>
+                    <span className="text-xs text-slate-400 mt-1 leading-snug">{desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-slate-500 text-xs">
+              Set the mode <span className="text-slate-400 font-medium">before activating</span> a day&apos;s
+              matches. Switching never changes past predictions or points.
+            </p>
+          </div>
+        </div>
+
         {/* Active Matches */}
         {(() => {
           const inProgress = activeMatches.filter((m) => m.status !== 'completed');
@@ -518,7 +592,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                             >
                               {m.status}
                             </span>
-                            {m.is_banker_match && (
+                            {bankerMode === 'admin' && m.is_banker_match && (
                               <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 flex items-center gap-1">
                                 <Star size={10} className="fill-amber-400" />
                                 Banker

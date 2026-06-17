@@ -101,6 +101,16 @@ export const handler = async (event) => {
   }
 
   try {
+    // Global banker mode — defaults to 'admin' if the settings row/table is absent
+    // (e.g. code deployed before the migration runs), preserving current behaviour.
+    let bankerMode = 'admin';
+    try {
+      const settings = await sql`SELECT banker_mode FROM wc_settings WHERE id = 1`;
+      if (settings.length && settings[0].banker_mode) bankerMode = settings[0].banker_mode;
+    } catch {
+      // wc_settings not present yet — keep the 'admin' default.
+    }
+
     const matches = await sql`
       SELECT * FROM wc_matches
       WHERE status IN ('active', 'locked', 'completed')
@@ -111,7 +121,7 @@ export const handler = async (event) => {
       return {
         statusCode: 200,
         headers: corsHeaders,
-        body: JSON.stringify({ matches: [] }),
+        body: JSON.stringify({ matches: [], banker_mode: bankerMode }),
       };
     }
 
@@ -176,7 +186,7 @@ export const handler = async (event) => {
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify({ matches: result }),
+      body: JSON.stringify({ matches: result, banker_mode: bankerMode }),
     };
   } catch (error) {
     return {

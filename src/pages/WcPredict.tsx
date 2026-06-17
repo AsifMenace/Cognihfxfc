@@ -67,6 +67,17 @@ interface PerfectDay {
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
+// Halifax-local calendar date (YYYY-MM-DD) — defines "a day" for the user-mode
+// one-banker-per-day rule. Mirrors the backend (getWcPerfectDays.js).
+function halifaxDay(iso: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Halifax',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(iso));
+}
+
 function FlagImg({
   src,
   alt,
@@ -387,10 +398,16 @@ function ActiveMatchCard({
   match,
   selectedPlayer,
   onPredicted,
+  bankerMode,
+  bankerUsedToday,
 }: {
   match: Match;
   selectedPlayer: number | null;
   onPredicted: () => void;
+  // 'admin' — banker only on the designated match; 'user' — any match, one/day.
+  bankerMode: 'admin' | 'user';
+  // User mode only: the player already bankered another game this Halifax day.
+  bankerUsedToday: boolean;
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
   const [banker, setBanker] = useState(false);
@@ -475,8 +492,8 @@ function ActiveMatchCard({
         <Countdown kickoff={match.kickoff_time} onLock={() => setIsLocked(true)} />
       </div>
 
-      {/* Banker match badge — admin designated this as the day's banker */}
-      {match.is_banker_match && (
+      {/* Banker match badge — admin designated this as the day's banker (admin mode only) */}
+      {bankerMode === 'admin' && match.is_banker_match && (
         <div className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs font-bold tracking-wide">
           <Star size={13} className="fill-amber-400 text-amber-400" />
           BANKER MATCH · 2× points if correct · −1 if wrong
@@ -583,46 +600,53 @@ function ActiveMatchCard({
             })}
           </div>
 
-          {/* Banker — only offered on the admin-designated banker match.
-             Shown as soon as the form is open so the choice is always visible;
-             opting in (toggle) is the player's call, default is off. */}
-          {match.is_banker_match && (
-            <button
-              type="button"
-              onClick={() => setBanker((b) => !b)}
-              className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
-                banker
-                  ? 'bg-amber-500/15 border-amber-500/50'
-                  : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
-              }`}
-            >
-              <Star
-                size={18}
-                className={`flex-shrink-0 ${banker ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`}
-              />
-              <span className="min-w-0 flex-1">
-                <span
-                  className={`block text-sm font-bold ${banker ? 'text-amber-200' : 'text-slate-200'}`}
-                >
-                  Use my Banker
-                </span>
-                <span className="block text-xs text-slate-400 mt-0.5">
-                  2× points if right · −1 if wrong
-                </span>
-              </span>
-              <span
-                className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
-                  banker ? 'bg-amber-500' : 'bg-slate-600'
+          {/* Banker toggle. Admin mode: only the designated match. User mode: any
+             match, but locked out if the player already bankered another game
+             today (one per day). Shown as soon as the form is open so the choice
+             is always visible; default is off. */}
+          {(bankerMode === 'user' || match.is_banker_match) &&
+            (bankerUsedToday ? (
+              <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
+                <Star size={14} className="flex-shrink-0 text-slate-500" />
+                Banker already used for another game today — one per day.
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setBanker((b) => !b)}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
+                  banker
+                    ? 'bg-amber-500/15 border-amber-500/50'
+                    : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
                 }`}
               >
-                <span
-                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
-                    banker ? 'left-[1.125rem]' : 'left-0.5'
-                  }`}
+                <Star
+                  size={18}
+                  className={`flex-shrink-0 ${banker ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`}
                 />
-              </span>
-            </button>
-          )}
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block text-sm font-bold ${banker ? 'text-amber-200' : 'text-slate-200'}`}
+                  >
+                    Use my Banker
+                  </span>
+                  <span className="block text-xs text-slate-400 mt-0.5">
+                    2× points if right · −1 if wrong{bankerMode === 'user' ? ' · one per day' : ''}
+                  </span>
+                </span>
+                <span
+                  className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                    banker ? 'bg-amber-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                      banker ? 'left-[1.125rem]' : 'left-0.5'
+                    }`}
+                  />
+                </span>
+              </button>
+            ))}
 
           {selectedPrediction && (
             <button
@@ -855,10 +879,63 @@ function PerfectDaysCard({ days }: { days: PerfectDay[] }) {
   );
 }
 
+// ─── Banker mode banner ───────────────────────────────────────────────────────
+
+// Big, eye-catching banner telling players how the Banker works today.
+function BankerModeBanner({ mode }: { mode: 'admin' | 'user' }) {
+  if (mode === 'user') {
+    return (
+      <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500/60 bg-gradient-to-r from-emerald-500/25 via-emerald-400/10 to-emerald-500/25 shadow-lg shadow-emerald-500/15">
+        <div className="absolute inset-0 pointer-events-none bg-emerald-400/10 animate-pulse" />
+        <div className="relative flex items-center gap-3 px-5 py-3.5">
+          <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/25 border border-emerald-400/50 text-2xl flex-shrink-0">
+            ⭐
+          </span>
+          <div className="min-w-0">
+            <p className="text-emerald-300 font-black text-sm uppercase tracking-wider flex flex-wrap items-center gap-2">
+              Your Banker, Your Call
+              <span className="text-[10px] font-bold bg-emerald-500/30 text-emerald-100 px-2 py-0.5 rounded-full normal-case tracking-normal">
+                Players pick
+              </span>
+            </p>
+            <p className="text-slate-200 text-xs mt-1 leading-snug">
+              Bank <span className="text-white font-semibold">any one match</span> today — 2× points if
+              right, −1 if wrong.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="relative rounded-2xl overflow-hidden border-2 border-amber-500/60 bg-gradient-to-r from-amber-500/25 via-amber-400/10 to-amber-500/25 shadow-lg shadow-amber-500/15">
+      <div className="absolute inset-0 pointer-events-none bg-amber-400/10 animate-pulse" />
+      <div className="relative flex items-center gap-3 px-5 py-3.5">
+        <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/25 border border-amber-400/50 text-2xl flex-shrink-0">
+          🏦
+        </span>
+        <div className="min-w-0">
+          <p className="text-amber-300 font-black text-sm uppercase tracking-wider flex flex-wrap items-center gap-2">
+            Banker Match Mode
+            <span className="text-[10px] font-bold bg-amber-500/30 text-amber-100 px-2 py-0.5 rounded-full normal-case tracking-normal">
+              Admin picks
+            </span>
+          </p>
+          <p className="text-slate-200 text-xs mt-1 leading-snug">
+            The admin marks <span className="text-white font-semibold">one Banker match</span> each day —
+            bank it for 2×, or −1 if it flops.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const WcPredict: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [bankerMode, setBankerMode] = useState<'admin' | 'user'>('admin');
   const [players, setPlayers] = useState<Player[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [perfectDays, setPerfectDays] = useState<PerfectDay[]>([]);
@@ -1162,6 +1239,7 @@ const WcPredict: React.FC = () => {
       const lbData = await lbRes.json();
       const perfectData = await perfectRes.json();
       setMatches(matchData.matches ?? []);
+      setBankerMode(matchData.banker_mode === 'user' ? 'user' : 'admin');
       setPlayers(playersData);
       setLeaderboard(lbData);
       setPerfectDays(perfectData.days ?? []);
@@ -1198,17 +1276,34 @@ const WcPredict: React.FC = () => {
 
   const hasActiveMatches = activeMatches.length > 0;
 
+  // User mode only: which match (if any) the selected player has bankered on each
+  // Halifax day. Used to lock the toggle on that day's OTHER games (one per day),
+  // while still allowing them to edit the banker on the match they chose.
+  const bankerMatchByDay = new Map<string, number>();
+  if (bankerMode === 'user' && selectedPlayer) {
+    for (const m of matches) {
+      for (const p of m.predictions) {
+        if (p.player_id === selectedPlayer && p.is_banker) {
+          bankerMatchByDay.set(halifaxDay(m.kickoff_time), m.id);
+        }
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 pb-16">
       {/* Header */}
       <div className="bg-gradient-to-br from-green-900 via-slate-900 to-slate-900 border-b border-slate-700/60 px-4 py-6">
         <div className="container mx-auto max-w-2xl">
-          <div className="flex justify-end mb-3">
+          <div className="flex items-center justify-end gap-2 mb-3">
+            <span className="text-amber-200/80 text-xs font-medium text-right leading-tight">
+              Tap to get today&apos;s mode &amp; latest version →
+            </span>
             <button
               onClick={hardRefresh}
               disabled={refreshing}
               title="Refresh — get the latest version and data"
-              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:from-amber-500 active:to-amber-600 text-slate-900 text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-amber-500/40 ring-1 ring-amber-300/50 transition-all disabled:opacity-60 animate-pulse hover:animate-none"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:from-amber-500 active:to-amber-600 text-slate-900 text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-amber-500/40 ring-1 ring-amber-300/50 transition-all disabled:opacity-60 animate-pulse hover:animate-none flex-shrink-0"
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
               <span>{refreshing ? 'Refreshing…' : 'Refresh'}</span>
@@ -1225,6 +1320,9 @@ const WcPredict: React.FC = () => {
       </div>
 
       <div className="container mx-auto max-w-2xl px-4 pt-6 space-y-6">
+
+        {/* Banker mode banner — tells players how the Banker works today */}
+        {hasActiveMatches && <BankerModeBanner mode={bankerMode} />}
 
         {/* Player selector — only when there are active matches to predict */}
         {hasActiveMatches && (
@@ -1270,6 +1368,12 @@ const WcPredict: React.FC = () => {
               match={match}
               selectedPlayer={selectedPlayer}
               onPredicted={fetchAll}
+              bankerMode={bankerMode}
+              bankerUsedToday={
+                bankerMode === 'user' &&
+                bankerMatchByDay.has(halifaxDay(match.kickoff_time)) &&
+                bankerMatchByDay.get(halifaxDay(match.kickoff_time)) !== match.id
+              }
             />
           ))
         )}
