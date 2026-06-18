@@ -392,6 +392,66 @@ function PredictionsList({
   );
 }
 
+// ─── Bankers summary ──────────────────────────────────────────────────────────
+
+// At-a-glance "who bankered this match" panel — separate from the full
+// predictions list. Shown on locked and completed cards. On completed matches it
+// also shows each banker's +2 / −1 result.
+function BankersSummary({ match }: { match: Match }) {
+  const [open, setOpen] = useState(false);
+  const bankers = match.predictions.filter((p) => p.is_banker);
+  const isCompleted = match.status === 'completed';
+  const pickLabel = (val: string) =>
+    val === 'home' ? match.home_team : val === 'away' ? match.away_team : 'Draw';
+
+  if (bankers.length === 0) {
+    return (
+      <div className="px-5 py-3 border-t border-slate-700/50">
+        <p className="text-slate-500 text-xs flex items-center gap-1.5">
+          <Star size={12} className="text-slate-600" />
+          No bankers on this match.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-5 py-3 border-t border-slate-700/50">
+      <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 overflow-hidden">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-4 py-2 hover:bg-amber-500/5 transition-colors"
+        >
+          <span className="flex items-center gap-1.5">
+            <Star size={13} className="fill-amber-400 text-amber-400" />
+            <span className="text-amber-300 text-xs font-bold uppercase tracking-wider">Bankers</span>
+            <span className="text-amber-400/70 text-xs">({bankers.length})</span>
+          </span>
+          {open ? (
+            <ChevronUp size={14} className="text-amber-400/70" />
+          ) : (
+            <ChevronDown size={14} className="text-amber-400/70" />
+          )}
+        </button>
+        {open && (
+          <div className="divide-y divide-amber-500/10 border-t border-amber-500/20">
+            {bankers.map((b) => (
+              <div key={b.player_id} className="flex items-center gap-3 px-4 py-2.5">
+                <PlayerAvatar photo={b.player_photo} name={b.player_name} size={7} />
+                <span className="text-white text-sm font-medium flex-1 min-w-0 truncate">
+                  {b.player_name}
+                </span>
+                <span className="text-xs text-slate-300">{pickLabel(b.prediction)}</span>
+                {isCompleted && <PointsBadge points={b.points} />}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Active / Locked match card ───────────────────────────────────────────────
 
 function ActiveMatchCard({
@@ -696,7 +756,8 @@ function ActiveMatchCard({
         </div>
       )}
 
-      {/* Predictions list — visible after lock, open by default */}
+      {/* Bankers + predictions list — visible after lock */}
+      {isLocked && <BankersSummary match={match} />}
       {isLocked && (
         <PredictionsList predictions={match.predictions} match={match} defaultOpen={true} />
       )}
@@ -777,8 +838,54 @@ function CompletedMatchCard({ match }: { match: Match }) {
         </span>
       </div>
 
+      {/* Bankers summary — at a glance, always visible */}
+      <BankersSummary match={match} />
+
       {/* Predictions — collapsed by default */}
       <PredictionsList predictions={match.predictions} match={match} defaultOpen={false} />
+    </div>
+  );
+}
+
+// ─── Completed matches, grouped & collapsed by kickoff day ─────────────────────
+
+function CompletedDayGroup({
+  day,
+  matches,
+  defaultOpen = false,
+}: {
+  day: string;
+  matches: Match[];
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="rounded-2xl bg-slate-800/40 border border-slate-700/40 overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-800/60 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <span className="text-white text-sm font-semibold">{formatDayLabel(day)}</span>
+          <span className="text-slate-500 text-xs">
+            {matches.length} {matches.length === 1 ? 'match' : 'matches'}
+          </span>
+        </span>
+        {open ? (
+          <ChevronUp size={16} className="text-slate-500" />
+        ) : (
+          <ChevronDown size={16} className="text-slate-500" />
+        )}
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3 pt-1 space-y-3">
+          {matches.map((m) => (
+            <CompletedMatchCard key={m.id} match={m} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -842,7 +949,7 @@ function PerfectDayRow({ day, defaultOpen = false }: { day: PerfectDay; defaultO
 }
 
 function PerfectDaysCard({ days }: { days: PerfectDay[] }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   if (days.length === 0) return null;
 
@@ -869,8 +976,8 @@ function PerfectDaysCard({ days }: { days: PerfectDay[] }) {
           </p>
 
           <div className="px-4 py-4 space-y-3">
-            {days.map((d, i) => (
-              <PerfectDayRow key={d.day} day={d} defaultOpen={i === 0} />
+            {days.map((d) => (
+              <PerfectDayRow key={d.day} day={d} defaultOpen={false} />
             ))}
           </div>
         </>
@@ -1274,6 +1381,23 @@ const WcPredict: React.FC = () => {
     .filter((m) => m.status === 'completed')
     .sort((a, b) => new Date(b.kickoff_time).getTime() - new Date(a.kickoff_time).getTime());
 
+  // Group completed matches by Halifax kickoff day (most recent day first, since
+  // completedMatches is already sorted DESC).
+  const completedByDay: { day: string; matches: Match[] }[] = [];
+  {
+    const index = new Map<string, Match[]>();
+    for (const m of completedMatches) {
+      const day = halifaxDay(m.kickoff_time);
+      let arr = index.get(day);
+      if (!arr) {
+        arr = [];
+        index.set(day, arr);
+        completedByDay.push({ day, matches: arr });
+      }
+      arr.push(m);
+    }
+  }
+
   const hasActiveMatches = activeMatches.length > 0;
 
   // User mode only: which match (if any) the selected player has bankered on each
@@ -1531,7 +1655,7 @@ const WcPredict: React.FC = () => {
         {/* Perfect Predictors — trivia of the day */}
         <PerfectDaysCard days={perfectDays} />
 
-        {/* Completed matches section */}
+        {/* Completed matches — grouped by kickoff day, collapsed by default */}
         {completedMatches.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
@@ -1541,8 +1665,8 @@ const WcPredict: React.FC = () => {
               </span>
               <div className="h-px flex-1 bg-slate-700/60" />
             </div>
-            {completedMatches.map((match) => (
-              <CompletedMatchCard key={match.id} match={match} />
+            {completedByDay.map((g) => (
+              <CompletedDayGroup key={g.day} day={g.day} matches={g.matches} />
             ))}
           </div>
         )}
