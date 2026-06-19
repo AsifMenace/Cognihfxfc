@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, RefreshCw, CheckCircle2, AlertCircle, Zap, Clock, Activity, ExternalLink, Star } from 'lucide-react';
+import { Trophy, RefreshCw, CheckCircle2, AlertCircle, Zap, Clock, Activity, ExternalLink, Star, Lightbulb } from 'lucide-react';
 
 interface Fixture {
   fixture_id: number;
@@ -30,6 +30,19 @@ interface ActiveMatch {
   final_home_goals: number | null;
   final_away_goals: number | null;
   is_banker_match: boolean;
+  trivia_question: string | null;
+  trivia_options: string | null; // JSON array string
+  trivia_answer: number | null; // null = unset, -1 = none, >=0 = correct index
+}
+
+function parseTriviaOptions(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.map((o) => String(o)) : [];
+  } catch {
+    return [];
+  }
 }
 
 // Halifax-local calendar date (YYYY-MM-DD) — defines "a day" for the
@@ -57,6 +70,70 @@ function FlagImg({ src, alt }: { src: string | null | undefined; alt: string }) 
   );
 }
 
+// Lets the admin set the correct bonus-trivia option after the match (or "None of
+// the options" when the outcome isn't listed). Re-settable.
+function TriviaAnswerControl({
+  match,
+  saving,
+  onSetAnswer,
+}: {
+  match: ActiveMatch;
+  saving: boolean;
+  onSetAnswer: (matchId: number, answerIndex: number) => void;
+}) {
+  if (!match.trivia_question) return null;
+  const options = parseTriviaOptions(match.trivia_options);
+  const current = match.trivia_answer; // null = unset, -1 = none, >=0 = index
+
+  return (
+    <div className="rounded-xl bg-sky-500/10 border border-sky-500/30 px-3 py-2.5 space-y-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Lightbulb size={14} className="text-sky-400 flex-shrink-0" />
+        <span className="text-sky-300 text-xs font-bold">Bonus:</span>
+        <span className="text-slate-300 text-xs">{match.trivia_question}</span>
+      </div>
+      <p className="text-slate-400 text-xs">Set correct answer:</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt, i) => (
+          <button
+            key={i}
+            type="button"
+            disabled={saving}
+            onClick={() => onSetAnswer(match.id, i)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors disabled:opacity-50 ${
+              current === i
+                ? 'bg-sky-500/30 border-sky-400/60 text-sky-100'
+                : 'bg-slate-700/50 border-slate-600/50 text-slate-300 hover:border-slate-500'
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => onSetAnswer(match.id, -1)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors disabled:opacity-50 ${
+            current === -1
+              ? 'bg-red-500/25 border-red-400/60 text-red-200'
+              : 'bg-slate-700/50 border-slate-600/50 text-slate-400 hover:border-slate-500'
+          }`}
+        >
+          None of the options
+        </button>
+      </div>
+      {current != null && (
+        <p className="text-xs text-slate-400">
+          Current:{' '}
+          <span className="text-sky-200 font-semibold">
+            {current === -1 ? 'None of the options' : (options[current] ?? '—')}
+          </span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const navigate = useNavigate();
 
@@ -75,11 +152,17 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [manualOpen, setManualOpen] = useState<number | null>(null);
   const [settingManual, setSettingManual] = useState<number | null>(null);
   const [settingLiveManual, setSettingLiveManual] = useState<number | null>(null);
-  // Activation modal — lets the admin designate one banker match per day.
-  const [activateModal, setActivateModal] = useState<{ fixture: Fixture; banker: boolean } | null>(null);
+  // Activation modal — designate the banker match and set optional bonus trivia.
+  const [activateModal, setActivateModal] = useState<{
+    fixture: Fixture;
+    banker: boolean;
+    triviaQuestion: string;
+    triviaOptions: string[];
+  } | null>(null);
   // Global banker mode: 'admin' (admin designates) or 'user' (players pick).
   const [bankerMode, setBankerMode] = useState<'admin' | 'user'>('admin');
   const [savingMode, setSavingMode] = useState(false);
+  const [settingTrivia, setSettingTrivia] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isAdmin) navigate('/admin-login');
@@ -149,9 +232,18 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     }
   };
 
-  const activateMatch = async (fixture: Fixture, isBankerMatch: boolean) => {
+  const activateMatch = async (
+    fixture: Fixture,
+    isBankerMatch: boolean,
+    triviaQuestion: string,
+    triviaOptions: string[]
+  ) => {
     setActivating(fixture.fixture_id);
     setMessage(null);
+    // Only send trivia if there's a question and at least 2 non-empty options.
+    const q = triviaQuestion.trim();
+    const opts = triviaOptions.map((o) => o.trim()).filter((o) => o.length);
+    const sendTrivia = q.length > 0 && opts.length >= 2;
     try {
       const res = await fetch('/.netlify/functions/activateWcMatch', {
         method: 'POST',
@@ -166,13 +258,15 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           away_flag: fixture.away_flag,
           kickoff_time: fixture.kickoff_time,
           is_banker_match: isBankerMatch,
+          trivia_question: sendTrivia ? q : null,
+          trivia_options: sendTrivia ? opts : null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Activation failed');
       showMessage(
         'success',
-        `${fixture.home_team} vs ${fixture.away_team} activated${isBankerMatch ? ' as Banker match' : ''}`
+        `${fixture.home_team} vs ${fixture.away_team} activated${isBankerMatch ? ' as Banker match' : ''}${sendTrivia ? ' with bonus trivia' : ''}`
       );
       setActivateModal(null);
       fetchActiveMatches();
@@ -180,6 +274,26 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
       showMessage('error', err instanceof Error ? err.message : 'Activation failed');
     } finally {
       setActivating(null);
+    }
+  };
+
+  const setTriviaAnswer = async (matchId: number, answerIndex: number) => {
+    setSettingTrivia(matchId);
+    setMessage(null);
+    try {
+      const res = await fetch('/.netlify/functions/setWcTriviaResult', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match_id: matchId, answer_index: answerIndex }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to set trivia answer');
+      showMessage('success', data.message || 'Trivia answer set');
+      fetchActiveMatches();
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to set trivia answer');
+    } finally {
+      setSettingTrivia(null);
     }
   };
 
@@ -425,6 +539,79 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                   )}
                 </>
               )}
+
+              {/* Optional bonus trivia (multiple choice) — set at activation only */}
+              <div className="rounded-xl bg-sky-500/10 border border-sky-500/30 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Lightbulb size={15} className="text-sky-400" />
+                  <span className="text-sky-300 text-xs font-bold uppercase tracking-wider">
+                    Bonus question
+                  </span>
+                  <span className="text-slate-500 text-xs">· optional</span>
+                </div>
+                <input
+                  type="text"
+                  value={activateModal.triviaQuestion}
+                  onChange={(e) =>
+                    setActivateModal((s) => (s ? { ...s, triviaQuestion: e.target.value } : s))
+                  }
+                  placeholder="e.g. How many goals will Messi score?"
+                  className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <div className="space-y-2">
+                  {activateModal.triviaOptions.map((opt, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) =>
+                          setActivateModal((s) => {
+                            if (!s) return s;
+                            const next = [...s.triviaOptions];
+                            next[i] = e.target.value;
+                            return { ...s, triviaOptions: next };
+                          })
+                        }
+                        placeholder={`Option ${i + 1}`}
+                        className="flex-1 bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      />
+                      {activateModal.triviaOptions.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActivateModal((s) =>
+                              s
+                                ? { ...s, triviaOptions: s.triviaOptions.filter((_, j) => j !== i) }
+                                : s
+                            )
+                          }
+                          className="text-slate-400 hover:text-red-400 text-sm px-2 py-2 flex-shrink-0"
+                          title="Remove option"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {activateModal.triviaOptions.length < 4 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActivateModal((s) =>
+                        s ? { ...s, triviaOptions: [...s.triviaOptions, ''] } : s
+                      )
+                    }
+                    className="text-sky-300 text-xs font-semibold hover:text-sky-200"
+                  >
+                    + Add option
+                  </button>
+                )}
+                <p className="text-slate-500 text-[11px] leading-snug">
+                  Leave blank for no trivia. Tip: use ranges like &quot;3+&quot; and add a
+                  &quot;Neither&quot; option to cover all outcomes. Can&apos;t be edited after activation.
+                </p>
+              </div>
             </div>
             <div className="px-5 py-4 border-t border-slate-700/60 flex gap-2">
               <button
@@ -435,7 +622,14 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                 Cancel
               </button>
               <button
-                onClick={() => activateMatch(activateModal.fixture, activateModal.banker)}
+                onClick={() =>
+                  activateMatch(
+                    activateModal.fixture,
+                    activateModal.banker,
+                    activateModal.triviaQuestion,
+                    activateModal.triviaOptions
+                  )
+                }
                 disabled={activating === activateModal.fixture.fixture_id}
                 className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors text-sm"
               >
@@ -715,6 +909,15 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                               </div>
                             </div>
                           )}
+
+                          {/* Bonus trivia answer — settable once the match is locked */}
+                          {m.status === 'locked' && m.trivia_question && (
+                            <TriviaAnswerControl
+                              match={m}
+                              saving={settingTrivia === m.id}
+                              onSetAnswer={setTriviaAnswer}
+                            />
+                          )}
                         </div>
                       ))
                     )}
@@ -768,6 +971,14 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                                       Winner: {m.result === 'home' ? m.home_team : m.result === 'away' ? m.away_team : 'Draw'}
                                     </span>
                                   </div>
+                                )}
+                                {/* Bonus trivia answer — set/correct after the match */}
+                                {m.trivia_question && (
+                                  <TriviaAnswerControl
+                                    match={m}
+                                    saving={settingTrivia === m.id}
+                                    onSetAnswer={setTriviaAnswer}
+                                  />
                                 )}
                               </div>
                             ))}
@@ -840,7 +1051,15 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                       </div>
                       {/* Activate button — own row, full width */}
                       <button
-                        onClick={() => !activated && setActivateModal({ fixture: fix, banker: false })}
+                        onClick={() =>
+                          !activated &&
+                          setActivateModal({
+                            fixture: fix,
+                            banker: false,
+                            triviaQuestion: '',
+                            triviaOptions: ['', ''],
+                          })
+                        }
                         disabled={activating === fix.fixture_id || activated}
                         className={`w-full py-2 text-xs font-bold rounded-lg transition-colors ${
                           activated

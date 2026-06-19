@@ -32,8 +32,15 @@ export const handler = async (event) => {
   }
 
   try {
-    const { match_id, player_id, prediction } = JSON.parse(event.body);
-    const is_banker = JSON.parse(event.body).is_banker === true;
+    const body = JSON.parse(event.body);
+    const { match_id, player_id, prediction } = body;
+    const is_banker = body.is_banker === true;
+    // Optional trivia guess — a 0-based option index, or null if unanswered.
+    let triviaGuess = null;
+    if (body.trivia_guess !== undefined && body.trivia_guess !== null && body.trivia_guess !== '') {
+      const g = parseInt(body.trivia_guess, 10);
+      if (!isNaN(g) && g >= 0) triviaGuess = g;
+    }
 
     if (!match_id || !player_id || !prediction) {
       return {
@@ -136,13 +143,26 @@ export const handler = async (event) => {
       }
     }
 
+    // Only keep the trivia guess if this match actually has options and the index
+    // is in range; otherwise store null (unanswered / not applicable).
+    let validTriviaGuess = null;
+    if (triviaGuess !== null && match.trivia_options) {
+      try {
+        const opts = JSON.parse(match.trivia_options);
+        if (Array.isArray(opts) && triviaGuess < opts.length) validTriviaGuess = triviaGuess;
+      } catch {
+        validTriviaGuess = null;
+      }
+    }
+
     // Upsert — predictions can be changed until the match locks (kickoff guard
-    // above). Re-submitting overwrites the pick and the banker flag.
+    // above). Re-submitting overwrites the pick, banker flag and trivia guess.
+    // trivia_points is left untouched (awarded later by setWcTriviaResult).
     await sql`
-      INSERT INTO wc_predictions (match_id, player_id, prediction, is_banker)
-      VALUES (${match_id}, ${player_id}, ${prediction}, ${is_banker})
+      INSERT INTO wc_predictions (match_id, player_id, prediction, is_banker, trivia_guess)
+      VALUES (${match_id}, ${player_id}, ${prediction}, ${is_banker}, ${validTriviaGuess})
       ON CONFLICT (match_id, player_id)
-      DO UPDATE SET prediction = ${prediction}, is_banker = ${is_banker}
+      DO UPDATE SET prediction = ${prediction}, is_banker = ${is_banker}, trivia_guess = ${validTriviaGuess}
     `;
 
     return {
