@@ -136,9 +136,25 @@ export const handler = async (event) => {
       away_flag,
       kickoff_time,
       is_banker_match,
+      trivia_question,
+      trivia_options,
     } = JSON.parse(event.body);
 
     const bankerMatch = is_banker_match === true;
+
+    // Optional bonus trivia — only stored when there's a question and ≥2 options.
+    let triviaQuestion = null;
+    let triviaOptions = null;
+    {
+      const q = typeof trivia_question === 'string' ? trivia_question.trim() : '';
+      const opts = Array.isArray(trivia_options)
+        ? trivia_options.map((o) => String(o).trim()).filter((o) => o.length)
+        : [];
+      if (q && opts.length >= 2) {
+        triviaQuestion = q;
+        triviaOptions = JSON.stringify(opts);
+      }
+    }
 
     if (!fixture_id || !home_team || !away_team || !kickoff_time) {
       return {
@@ -185,15 +201,17 @@ export const handler = async (event) => {
     }
 
     await sql`
-      INSERT INTO wc_matches (fixture_id, home_team, away_team, home_code, away_code, home_flag, away_flag, kickoff_time, status, activated_at, is_banker_match)
-      VALUES (${fixture_id}, ${home_team}, ${away_team}, ${home_code}, ${away_code}, ${storedHomeFlag}, ${storedAwayFlag}, ${kickoff_time}, 'active', NOW(), ${bankerMatch})
+      INSERT INTO wc_matches (fixture_id, home_team, away_team, home_code, away_code, home_flag, away_flag, kickoff_time, status, activated_at, is_banker_match, trivia_question, trivia_options)
+      VALUES (${fixture_id}, ${home_team}, ${away_team}, ${home_code}, ${away_code}, ${storedHomeFlag}, ${storedAwayFlag}, ${kickoff_time}, 'active', NOW(), ${bankerMatch}, ${triviaQuestion}, ${triviaOptions})
       ON CONFLICT (fixture_id)
       DO UPDATE SET
         status = 'active',
         home_flag = ${storedHomeFlag},
         away_flag = ${storedAwayFlag},
         activated_at = NOW(),
-        is_banker_match = ${bankerMatch}
+        is_banker_match = ${bankerMatch},
+        trivia_question = ${triviaQuestion},
+        trivia_options = ${triviaOptions}
     `;
 
     return {

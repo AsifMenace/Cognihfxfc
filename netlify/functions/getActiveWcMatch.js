@@ -143,6 +143,8 @@ export const handler = async (event) => {
         wp.prediction,
         wp.points,
         wp.is_banker,
+        wp.trivia_guess,
+        wp.trivia_points,
         p.name AS player_name,
         p.photo AS player_photo
       FROM wc_predictions wp

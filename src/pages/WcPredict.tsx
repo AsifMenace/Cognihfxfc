@@ -11,6 +11,7 @@ import {
   Flame,
   Star,
   RefreshCw,
+  Lightbulb,
 } from 'lucide-react';
 
 interface Match {
@@ -31,6 +32,9 @@ interface Match {
   final_home_goals: number | null;
   final_away_goals: number | null;
   is_banker_match: boolean;
+  trivia_question: string | null;
+  trivia_options: string | null; // JSON array string, e.g. '["0","1","2","3+"]'
+  trivia_answer: number | null; // correct index; null = unset, -1 = none of the options
   predictions: Prediction[];
 }
 
@@ -42,6 +46,8 @@ interface Prediction {
   prediction: string;
   points: number;
   is_banker: boolean;
+  trivia_guess: number | null;
+  trivia_points: number;
 }
 
 interface Player {
@@ -76,6 +82,17 @@ function halifaxDay(iso: string): string {
     month: '2-digit',
     day: '2-digit',
   }).format(new Date(iso));
+}
+
+// Parse a match's stored trivia options (JSON array string) into a list.
+function parseTriviaOptions(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.map((o) => String(o)) : [];
+  } catch {
+    return [];
+  }
 }
 
 function FlagImg({
@@ -452,6 +469,89 @@ function BankersSummary({ match }: { match: Match }) {
   );
 }
 
+// ─── Bonus trivia summary ─────────────────────────────────────────────────────
+
+// Collapsible "bonus question" recap — shown on locked & completed cards. Lists
+// each player's pick; once the admin sets the answer, the correct option is
+// highlighted and winners show +1.
+function TriviaSummary({ match }: { match: Match }) {
+  const [open, setOpen] = useState(false);
+  if (!match.trivia_question) return null;
+
+  const options = parseTriviaOptions(match.trivia_options);
+  const answer = match.trivia_answer; // null = unset, -1 = none, >=0 = index
+  const resulted = answer !== null;
+  const answerLabel =
+    answer === null
+      ? 'Awaiting result'
+      : answer === -1
+        ? 'None of the options'
+        : (options[answer] ?? '—');
+
+  const answered = match.predictions.filter((p) => p.trivia_guess !== null);
+
+  return (
+    <div className="px-5 py-3 border-t border-slate-700/50">
+      <div className="rounded-xl bg-sky-500/10 border border-sky-500/30 overflow-hidden">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="w-full flex items-center justify-between gap-2 px-4 py-2 hover:bg-sky-500/5 transition-colors"
+        >
+          <span className="flex items-center gap-1.5 min-w-0">
+            <Lightbulb size={13} className="text-sky-400 flex-shrink-0" />
+            <span className="text-sky-300 text-xs font-bold uppercase tracking-wider flex-shrink-0">
+              Bonus
+            </span>
+            <span className="text-slate-300 text-xs truncate normal-case font-normal tracking-normal">
+              {match.trivia_question}
+            </span>
+          </span>
+          {open ? (
+            <ChevronUp size={14} className="text-sky-400/70 flex-shrink-0" />
+          ) : (
+            <ChevronDown size={14} className="text-sky-400/70 flex-shrink-0" />
+          )}
+        </button>
+        {open && (
+          <div className="border-t border-sky-500/20">
+            <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap">
+              <span className="text-slate-400 text-xs">Answer:</span>
+              <span
+                className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  resulted ? 'bg-sky-500/20 text-sky-200' : 'bg-slate-700/60 text-slate-400'
+                }`}
+              >
+                {answerLabel}
+              </span>
+            </div>
+            {answered.length === 0 ? (
+              <p className="text-slate-500 text-xs px-4 pb-3">No one answered the bonus.</p>
+            ) : (
+              <div className="divide-y divide-sky-500/10">
+                {answered.map((p) => {
+                  const won = resulted && answer !== null && answer >= 0 && p.trivia_guess === answer;
+                  return (
+                    <div key={p.player_id} className="flex items-center gap-3 px-4 py-2.5">
+                      <PlayerAvatar photo={p.player_photo} name={p.player_name} size={7} />
+                      <span className="text-white text-sm font-medium flex-1 min-w-0 truncate">
+                        {p.player_name}
+                      </span>
+                      <span className="text-xs text-slate-300">
+                        {options[p.trivia_guess as number] ?? '—'}
+                      </span>
+                      {won && <PointsBadge points={1} />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Active / Locked match card ───────────────────────────────────────────────
 
 function ActiveMatchCard({
@@ -471,12 +571,16 @@ function ActiveMatchCard({
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
   const [banker, setBanker] = useState(false);
+  const [triviaGuess, setTriviaGuess] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(
     match.status === 'locked' || new Date(match.kickoff_time) <= new Date()
   );
+
+  const triviaOptions = parseTriviaOptions(match.trivia_options);
+  const hasTrivia = !!match.trivia_question && triviaOptions.length >= 2;
 
   // The selected player's existing prediction for this match, if any.
   const myPrediction = selectedPlayer
@@ -488,18 +592,22 @@ function ActiveMatchCard({
       setSelectedPrediction(null);
       setSubmitted(false);
       setBanker(false);
+      setTriviaGuess(null);
       return;
     }
     const existing = match.predictions.find((p) => p.player_id === selectedPlayer);
     if (existing) {
       setSelectedPrediction(existing.prediction);
-      // Seed the banker toggle from the saved pick so an edit reflects reality.
+      // Seed the banker toggle and trivia guess from the saved pick so an edit
+      // reflects reality.
       setBanker(existing.is_banker);
+      setTriviaGuess(existing.trivia_guess);
       setSubmitted(true);
     } else {
       setSelectedPrediction(null);
       setSubmitted(false);
       setBanker(false);
+      setTriviaGuess(null);
     }
   }, [selectedPlayer, match.predictions]);
 
@@ -516,6 +624,7 @@ function ActiveMatchCard({
           player_id: selectedPlayer,
           prediction: selectedPrediction,
           is_banker: banker,
+          trivia_guess: hasTrivia ? triviaGuess : null,
         }),
       });
       const data = await res.json();
@@ -708,6 +817,42 @@ function ActiveMatchCard({
               </button>
             ))}
 
+          {/* Bonus trivia — optional multiple-choice question for this match */}
+          {hasTrivia && (
+            <div className="rounded-xl bg-sky-500/10 border border-sky-500/30 px-4 py-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Lightbulb size={15} className="text-sky-400 flex-shrink-0" />
+                <span className="text-sky-300 text-xs font-bold uppercase tracking-wider">
+                  Bonus +1
+                </span>
+                <span className="text-slate-500 text-xs">· optional</span>
+              </div>
+              <p className="text-white text-sm font-medium mb-2.5">{match.trivia_question}</p>
+              <div className="flex flex-wrap gap-2">
+                {triviaOptions.map((opt, i) => {
+                  const chosen = triviaGuess === i;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setTriviaGuess((g) => (g === i ? null : i))}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                        chosen
+                          ? 'bg-sky-500/25 border-sky-400/60 text-sky-100'
+                          : 'bg-slate-700/40 border-slate-600/50 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-slate-500 text-[11px] mt-2">
+                {triviaGuess === null ? 'Tap an option to guess — or skip it.' : 'Tap again to clear.'}
+              </p>
+            </div>
+          )}
+
           {selectedPrediction && (
             <button
               onClick={handleSubmit}
@@ -723,6 +868,7 @@ function ActiveMatchCard({
               onClick={() => {
                 setSelectedPrediction(myPrediction.prediction);
                 setBanker(myPrediction.is_banker);
+                setTriviaGuess(myPrediction.trivia_guess);
                 setSubmitted(true);
                 setError(null);
               }}
@@ -756,8 +902,9 @@ function ActiveMatchCard({
         </div>
       )}
 
-      {/* Bankers + predictions list — visible after lock */}
+      {/* Bankers + bonus + predictions list — visible after lock */}
       {isLocked && <BankersSummary match={match} />}
+      {isLocked && <TriviaSummary match={match} />}
       {isLocked && (
         <PredictionsList predictions={match.predictions} match={match} defaultOpen={true} />
       )}
@@ -838,8 +985,9 @@ function CompletedMatchCard({ match }: { match: Match }) {
         </span>
       </div>
 
-      {/* Bankers summary — at a glance, always visible */}
+      {/* Bankers + bonus summaries */}
       <BankersSummary match={match} />
+      <TriviaSummary match={match} />
 
       {/* Predictions — collapsed by default */}
       <PredictionsList predictions={match.predictions} match={match} defaultOpen={false} />
