@@ -36,6 +36,11 @@ interface ActiveMatch {
   cronjob_id: string | null; // auto-fetch cron job id; null = not scheduled
 }
 
+// Minutes after kickoff that auto-fetch first polls. Keep in sync with
+// INITIAL_OFFSET_MINUTES in netlify/functions/autoFetchWcResult.js — controls
+// when the "Schedule Auto-Fetch" button stops being offered.
+const AUTOFETCH_OFFSET_MIN = 126;
+
 function parseTriviaOptions(raw: string | null): string[] {
   if (!raw) return [];
   try {
@@ -829,7 +834,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                           {/* Action buttons */}
                           <div className="flex gap-2 flex-wrap">
                             {!m.cronjob_id &&
-                              new Date(m.kickoff_time).getTime() + 110 * 60 * 1000 > Date.now() && (
+                              new Date(m.kickoff_time).getTime() + AUTOFETCH_OFFSET_MIN * 60 * 1000 > Date.now() && (
                               <button
                                 onClick={() => scheduleCron(m.id)}
                                 disabled={schedulingCron === m.id}

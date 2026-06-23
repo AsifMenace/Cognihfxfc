@@ -3,13 +3,24 @@ import { neon } from '@netlify/neon';
 const sql = neon();
 
 const CANONICAL = {
-  czechia: 'czech', 'czech republic': 'czech', 'south korea': 'korea',
-  'korea republic': 'korea', "côte d'ivoire": 'ivorycoast', "cote d'ivoire": 'ivorycoast',
-  'ivory coast': 'ivorycoast', 'bosnia and herzegovina': 'bosnia',
-  'bosnia & herzegovina': 'bosnia', 'united states': 'usa', usa: 'usa',
-  'trinidad & tobago': 'trinidadtobago', 'trinidad and tobago': 'trinidadtobago',
-  'north macedonia': 'macedonia', 'republic of ireland': 'ireland',
-  'new zealand': 'newzealand', 'saudi arabia': 'saudiarabia', 'south africa': 'southafrica',
+  czechia: 'czech',
+  'czech republic': 'czech',
+  'south korea': 'korea',
+  'korea republic': 'korea',
+  "côte d'ivoire": 'ivorycoast',
+  "cote d'ivoire": 'ivorycoast',
+  'ivory coast': 'ivorycoast',
+  'bosnia and herzegovina': 'bosnia',
+  'bosnia & herzegovina': 'bosnia',
+  'united states': 'usa',
+  usa: 'usa',
+  'trinidad & tobago': 'trinidadtobago',
+  'trinidad and tobago': 'trinidadtobago',
+  'north macedonia': 'macedonia',
+  'republic of ireland': 'ireland',
+  'new zealand': 'newzealand',
+  'saudi arabia': 'saudiarabia',
+  'south africa': 'southafrica',
 };
 
 const toCanonical = (name) => {
@@ -34,7 +45,8 @@ async function fetchFromApiFootball(match) {
   ]);
   const [data1, data2] = await Promise.all([res1.json(), res2.json()]);
 
-  const apiError = (d) => (d.errors && Object.keys(d.errors).length ? Object.values(d.errors)[0] : null);
+  const apiError = (d) =>
+    d.errors && Object.keys(d.errors).length ? Object.values(d.errors)[0] : null;
   const err = apiError(data1) || apiError(data2);
   if (err) throw new Error(err);
 
@@ -90,7 +102,12 @@ export async function scheduleJob(matchId, atTime) {
       },
     },
   };
-  console.log('[scheduleJob] CRONJOB_API_KEY set:', !!process.env.CRONJOB_API_KEY, 'SITE_URL:', baseUrl);
+  console.log(
+    '[scheduleJob] CRONJOB_API_KEY set:',
+    !!process.env.CRONJOB_API_KEY,
+    'SITE_URL:',
+    baseUrl
+  );
   console.log('[scheduleJob] sending payload:', JSON.stringify(payload));
   const res = await fetch('https://api.cron-job.org/jobs', {
     method: 'PUT',
@@ -116,10 +133,13 @@ export async function cancelJob(jobId) {
   }).catch(() => {});
 }
 
-// Start polling 110 min after kickoff, retry every 10 min, give up after 3 hours
-const INITIAL_OFFSET_MINUTES = 110;
+// Start polling 126 min after kickoff (empirically when finals are published),
+// retry every 10 min, give up after 3.5 hours (covers extra time + penalties).
+// Exported so activateWcMatch / scheduleWcCron schedule the first poll at the
+// same offset instead of hardcoding their own.
+export const INITIAL_OFFSET_MINUTES = 126;
 const RETRY_INTERVAL_MINUTES = 10;
-const MAX_WINDOW_MINUTES = 180;
+const MAX_WINDOW_MINUTES = 210;
 
 export const handler = async (event) => {
   const { secret, match_id } = event.queryStringParameters || {};
@@ -148,6 +168,23 @@ export const handler = async (event) => {
     await cancelJob(match.cronjob_id);
     await sql`UPDATE wc_matches SET cronjob_id = NULL WHERE id = ${match_id}`;
     return { statusCode: 200, body: 'Retry window exceeded — use manual entry' };
+  }
+
+  // Lower bound: if we fire BEFORE the polling window (kickoff + INITIAL_OFFSET),
+  // this is an early/manual invocation. Don't enter the 10-min retry loop (the
+  // match hasn't happened) — reschedule once to the proper first-poll time and
+  // exit. Without this, an early fire loops every 10 min until kickoff + 180.
+  if (minutesSinceKickoff < INITIAL_OFFSET_MINUTES) {
+    await cancelJob(match.cronjob_id);
+    const firstPoll = new Date(new Date(match.kickoff_time).getTime() + INITIAL_OFFSET_MINUTES * 60000);
+    try {
+      const newJobId = await scheduleJob(match_id, firstPoll);
+      await sql`UPDATE wc_matches SET cronjob_id = ${String(newJobId)} WHERE id = ${match_id}`;
+      return { statusCode: 200, body: JSON.stringify({ message: 'Before polling window — rescheduled to kickoff+offset', next: firstPoll }) };
+    } catch {
+      await sql`UPDATE wc_matches SET cronjob_id = NULL WHERE id = ${match_id}`;
+      return { statusCode: 200, body: 'Before polling window — reschedule failed' };
+    }
   }
 
   // Try primary API, fall back to secondary
@@ -184,7 +221,10 @@ export const handler = async (event) => {
       WHERE match_id = ${match_id}
     `;
     await cancelJob(match.cronjob_id);
-    return { statusCode: 200, body: JSON.stringify({ message: 'Result applied', result, homeGoals, awayGoals }) };
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Result applied', result, homeGoals, awayGoals }),
+    };
   }
 
   // Match not finished yet — delete this job and reschedule for +10 min
@@ -193,7 +233,10 @@ export const handler = async (event) => {
   try {
     const newJobId = await scheduleJob(match_id, nextFetch);
     await sql`UPDATE wc_matches SET cronjob_id = ${String(newJobId)} WHERE id = ${match_id}`;
-    return { statusCode: 200, body: JSON.stringify({ message: 'Not finished, rescheduled', next: nextFetch }) };
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Not finished, rescheduled', next: nextFetch }),
+    };
   } catch {
     await sql`UPDATE wc_matches SET cronjob_id = NULL WHERE id = ${match_id}`;
     return { statusCode: 200, body: 'Not finished — reschedule failed, use manual entry' };

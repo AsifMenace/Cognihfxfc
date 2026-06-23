@@ -1,5 +1,5 @@
 import { neon } from '@netlify/neon';
-import { scheduleJob, cancelJob } from './autoFetchWcResult.js';
+import { scheduleJob, cancelJob, INITIAL_OFFSET_MINUTES } from './autoFetchWcResult.js';
 
 const sql = neon();
 
@@ -38,13 +38,13 @@ export const handler = async (event) => {
       return { statusCode: 409, headers: corsHeaders, body: JSON.stringify({ error: 'Match is already completed' }) };
     }
 
-    // Auto-fetch fires 110 min after kickoff — only schedulable if still future.
-    const fetchAt = new Date(new Date(match.kickoff_time).getTime() + 110 * 60 * 1000);
+    // Auto-fetch fires INITIAL_OFFSET_MINUTES after kickoff — only schedulable if still future.
+    const fetchAt = new Date(new Date(match.kickoff_time).getTime() + INITIAL_OFFSET_MINUTES * 60 * 1000);
     if (fetchAt <= new Date()) {
       return {
         statusCode: 400,
         headers: corsHeaders,
-        body: JSON.stringify({ error: 'Auto-fetch time (kickoff + 110 min) has already passed — use manual entry' }),
+        body: JSON.stringify({ error: `Auto-fetch time (kickoff + ${INITIAL_OFFSET_MINUTES} min) has already passed — use manual entry` }),
       };
     }
 
