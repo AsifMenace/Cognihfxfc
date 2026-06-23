@@ -44,7 +44,8 @@ export const handler = async (event) => {
         skill,
         address,
         has_car AS "hasCar",
-        contact
+        contact,
+        runner
       FROM players
       WHERE id = ${id}
       LIMIT 1
