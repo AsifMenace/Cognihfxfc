@@ -29,7 +29,8 @@ const toCanonical = (name) => {
 };
 
 const AF_SCORED_STATUSES = new Set(['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE', 'FT', 'AET', 'PEN', 'AWD']);
-const FD_SCORED_STATUSES = new Set(['IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT', 'FINISHED', 'AWARDED']);
+// football-data.org reports in-play matches as 'LIVE' (and sometimes 'IN_PLAY'); include both.
+const FD_SCORED_STATUSES = new Set(['LIVE', 'IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT', 'FINISHED', 'AWARDED']);
 
 // ── api-football.com ──────────────────────────────────────────────────────────
 async function fetchLiveFromApiFootball(match) {
