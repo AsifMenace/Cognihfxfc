@@ -1,4 +1,5 @@
 import { neon } from '@netlify/neon';
+import { scheduleJob, cancelJob } from './autoFetchWcResult.js';
 
 const sql = neon();
 
@@ -200,7 +201,7 @@ export const handler = async (event) => {
       }
     }
 
-    await sql`
+    const [saved] = await sql`
       INSERT INTO wc_matches (fixture_id, home_team, away_team, home_code, away_code, home_flag, away_flag, kickoff_time, status, activated_at, is_banker_match, trivia_question, trivia_options)
       VALUES (${fixture_id}, ${home_team}, ${away_team}, ${home_code}, ${away_code}, ${storedHomeFlag}, ${storedAwayFlag}, ${kickoff_time}, 'active', NOW(), ${bankerMatch}, ${triviaQuestion}, ${triviaOptions})
       ON CONFLICT (fixture_id)
@@ -212,12 +213,35 @@ export const handler = async (event) => {
         is_banker_match = ${bankerMatch},
         trivia_question = ${triviaQuestion},
         trivia_options = ${triviaOptions}
+      RETURNING id, cronjob_id
     `;
+
+    // Cancel any previously scheduled fetch job for this match (e.g. re-activation)
+    if (saved.cronjob_id) {
+      await cancelJob(saved.cronjob_id);
+      await sql`UPDATE wc_matches SET cronjob_id = NULL WHERE id = ${saved.id}`;
+    }
+
+    // Schedule auto-fetch 110 min after kickoff if that time is still in the future
+    const fetchAt = new Date(new Date(kickoff_time).getTime() + 110 * 60 * 1000);
+    let scheduling = null;
+    if (fetchAt > new Date()) {
+      try {
+        const jobId = await scheduleJob(saved.id, fetchAt);
+        await sql`UPDATE wc_matches SET cronjob_id = ${String(jobId)} WHERE id = ${saved.id}`;
+        scheduling = { ok: true, jobId, fetchAt };
+      } catch (e) {
+        scheduling = { ok: false, error: e.message };
+      }
+    } else {
+      scheduling = { ok: false, error: 'fetchAt is in the past — kickoff may have already passed' };
+    }
+    console.log('[activateWcMatch] scheduling result:', JSON.stringify(scheduling));
 
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify({ message: 'Match activated successfully' }),
+      body: JSON.stringify({ message: 'Match activated successfully', scheduling }),
     };
   } catch (error) {
     return {

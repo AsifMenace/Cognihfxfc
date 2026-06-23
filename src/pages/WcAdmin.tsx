@@ -33,6 +33,7 @@ interface ActiveMatch {
   trivia_question: string | null;
   trivia_options: string | null; // JSON array string
   trivia_answer: number | null; // null = unset, -1 = none, >=0 = correct index
+  cronjob_id: string | null; // auto-fetch cron job id; null = not scheduled
 }
 
 function parseTriviaOptions(raw: string | null): string[] {
@@ -145,6 +146,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [fetchingResult, setFetchingResult] = useState<number | null>(null);
   const [fetchingLive, setFetchingLive] = useState<number | null>(null);
   const [deactivating, setDeactivating] = useState<number | null>(null);
+  const [schedulingCron, setSchedulingCron] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
   const [completedExpanded, setCompletedExpanded] = useState(false);
@@ -264,9 +266,13 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Activation failed');
+      const schedFailed = data.scheduling?.ok === false;
+      const schedMsg = schedFailed
+        ? ` — ⚠️ auto-fetch NOT scheduled (${data.scheduling.error}). Enter the result manually.`
+        : '';
       showMessage(
-        'success',
-        `${fixture.home_team} vs ${fixture.away_team} activated${isBankerMatch ? ' as Banker match' : ''}${sendTrivia ? ' with bonus trivia' : ''}`
+        schedFailed ? 'error' : 'success',
+        `${fixture.home_team} vs ${fixture.away_team} activated${isBankerMatch ? ' as Banker match' : ''}${sendTrivia ? ' with bonus trivia' : ''}${schedMsg}`
       );
       setActivateModal(null);
       fetchActiveMatches();
@@ -359,6 +365,28 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
       showMessage('error', err instanceof Error ? err.message : 'Failed to deactivate match');
     } finally {
       setDeactivating(null);
+    }
+  };
+
+  // Backfill / retry the auto-fetch cron for an already-active match without
+  // re-activating (predictions untouched).
+  const scheduleCron = async (matchId: number) => {
+    setSchedulingCron(matchId);
+    setMessage(null);
+    try {
+      const res = await fetch('/.netlify/functions/scheduleWcCron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match_id: matchId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to schedule auto-fetch');
+      showMessage('success', `Auto-fetch scheduled (job ${data.jobId})`);
+      fetchActiveMatches();
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to schedule auto-fetch');
+    } finally {
+      setSchedulingCron(null);
     }
   };
 
@@ -800,6 +828,18 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
 
                           {/* Action buttons */}
                           <div className="flex gap-2 flex-wrap">
+                            {!m.cronjob_id &&
+                              new Date(m.kickoff_time).getTime() + 110 * 60 * 1000 > Date.now() && (
+                              <button
+                                onClick={() => scheduleCron(m.id)}
+                                disabled={schedulingCron === m.id}
+                                title="Schedule automatic result fetch (kickoff + 110 min)"
+                                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2 min-w-[110px]"
+                              >
+                                <Clock size={14} className={schedulingCron === m.id ? 'animate-pulse' : ''} />
+                                {schedulingCron === m.id ? 'Scheduling...' : 'Schedule Auto-Fetch'}
+                              </button>
+                            )}
                             {m.status === 'locked' && (
                               <button
                                 onClick={() => fetchLiveScore(m.id, m.home_team, m.away_team)}
