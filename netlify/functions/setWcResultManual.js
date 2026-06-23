@@ -1,4 +1,5 @@
 import { neon } from '@netlify/neon';
+import { cancelJob } from './autoFetchWcResult.js';
 
 const sql = neon();
 
@@ -71,7 +72,8 @@ export const handler = async (event) => {
       SET result = ${result},
           status = 'completed',
           final_home_goals = ${hg},
-          final_away_goals = ${ag}
+          final_away_goals = ${ag},
+          cronjob_id = NULL
       WHERE id = ${match_id}
     `;
 
@@ -83,6 +85,9 @@ export const handler = async (event) => {
       END
       WHERE match_id = ${match_id}
     `;
+
+    // Cancel the pending auto-fetch cron job now that the result is set manually.
+    await cancelJob(match.cronjob_id);
 
     return {
       statusCode: 200,

@@ -1,4 +1,5 @@
 import { neon } from '@netlify/neon';
+import { cancelJob } from './autoFetchWcResult.js';
 
 const sql = neon();
 
@@ -34,7 +35,7 @@ export const handler = async (event) => {
 
     // Check if this match exists
     const matches = await sql`
-      SELECT id, status, home_team, away_team
+      SELECT id, status, home_team, away_team, cronjob_id
       FROM wc_matches
       WHERE id = ${match_id}
     `;
@@ -76,11 +77,15 @@ export const handler = async (event) => {
     }
 
     // No predictions exist, safe to deactivate.
-    // Update status to 'upcoming' and release any banker designation so the day's
-    // banker can be reassigned to another match (see activateWcMatch.js).
+    // Cancel any scheduled auto-fetch job, then update status to 'upcoming' and
+    // release any banker designation so the day's banker can be reassigned to
+    // another match (see activateWcMatch.js).
+    if (match.cronjob_id) {
+      await cancelJob(match.cronjob_id);
+    }
     await sql`
       UPDATE wc_matches
-      SET status = 'upcoming', is_banker_match = FALSE
+      SET status = 'upcoming', is_banker_match = FALSE, cronjob_id = NULL
       WHERE id = ${match_id}
     `;
 
