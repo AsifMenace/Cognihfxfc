@@ -982,32 +982,76 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 {/* Assists */}
                 <div>
                   <label className="block text-sm font-bold text-gray-300 mb-1">ASSISTS</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={assistsCount}
-                    onChange={(e) => setAssistsCount(e.target.value)}
-                    placeholder="0"
-                    className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
-                  />
+                  <div className="flex items-stretch gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAssistsCount((c) => String(Math.max(0, (parseInt(c || '0') || 0) - 1)))}
+                      className="px-4 bg-slate-600 hover:bg-slate-500 text-white font-black text-lg rounded-lg transition-colors select-none"
+                      aria-label="Decrease assists"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      value={assistsCount}
+                      onChange={(e) => setAssistsCount(e.target.value)}
+                      placeholder="0"
+                      className="w-full px-4 py-2 bg-slate-700 text-white text-center rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setAssistsCount((c) => String((parseInt(c || '0') || 0) + 1))}
+                      className="px-4 bg-slate-600 hover:bg-slate-500 text-white font-black text-lg rounded-lg transition-colors select-none"
+                      aria-label="Increase assists"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
 
                 {/* Saves */}
                 <div>
                   <label className="block text-sm font-bold text-gray-300 mb-1">SAVES</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={savesCount}
-                    onChange={(e) => setSavesCount(e.target.value)}
-                    placeholder="0"
-                    disabled={!selectedStatsPlayerId || !isGoalkeeper(selectedStatsPlayerId)}
-                    className={`w-full px-4 py-2 rounded-lg border focus:border-yellow-500 focus:outline-none transition-all ${
-                      selectedStatsPlayerId && !isGoalkeeper(selectedStatsPlayerId)
-                        ? 'bg-slate-800 text-gray-500 border-slate-600 cursor-not-allowed'
-                        : 'bg-slate-700 text-white border-slate-600'
-                    }`}
-                  />
+                  {(() => {
+                    const savesDisabled =
+                      !selectedStatsPlayerId || !isGoalkeeper(selectedStatsPlayerId);
+                    return (
+                      <div className="flex items-stretch gap-2">
+                        <button
+                          type="button"
+                          disabled={savesDisabled}
+                          onClick={() => setSavesCount((c) => String(Math.max(0, (parseInt(c || '0') || 0) - 1)))}
+                          className="px-4 bg-slate-600 hover:bg-slate-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-lg rounded-lg transition-colors select-none"
+                          aria-label="Decrease saves"
+                        >
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          value={savesCount}
+                          onChange={(e) => setSavesCount(e.target.value)}
+                          placeholder="0"
+                          disabled={savesDisabled}
+                          className={`w-full px-4 py-2 text-center rounded-lg border focus:border-yellow-500 focus:outline-none transition-all ${
+                            savesDisabled
+                              ? 'bg-slate-800 text-gray-500 border-slate-600 cursor-not-allowed'
+                              : 'bg-slate-700 text-white border-slate-600'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          disabled={savesDisabled}
+                          onClick={() => setSavesCount((c) => String((parseInt(c || '0') || 0) + 1))}
+                          className="px-4 bg-slate-600 hover:bg-slate-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-lg rounded-lg transition-colors select-none"
+                          aria-label="Increase saves"
+                        >
+                          +
+                        </button>
+                      </div>
+                    );
+                  })()}
                   {selectedStatsPlayerId && !isGoalkeeper(selectedStatsPlayerId) && (
                     <p className="text-xs text-gray-500 mt-1">Saves only for goalkeepers</p>
                   )}
