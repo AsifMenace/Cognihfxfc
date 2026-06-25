@@ -67,6 +67,31 @@ interface MatchStat {
   saves: number;
 }
 
+function shareLineupText(match: Match): string {
+  const kickoff = parseMatchDateTime(match);
+  const dayStr = kickoff.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const timeStr = kickoff.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  const fixture =
+    match.home_team_name && match.away_team_name
+      ? `${match.home_team_name} vs ${match.away_team_name}`
+      : match.opponent_name || match.opponent || match.competition;
+  return (
+    `⚽ COGNI HFX FC\n` +
+    `📅 ${dayStr}\n` +
+    `⏰ ${timeStr}\n` +
+    `📍 ${match.venue}${fixture ? ` · ${fixture}` : ''}\n\n` +
+    `Let’s go ‼️🤘🏻`
+  );
+}
+
 const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -464,7 +489,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       const blob = await res.blob();
       const file = new File([blob], `lineup-${match?.id}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Match Lineup' });
+        await navigator.share({
+          files: [file],
+          text: match ? shareLineupText(match) : undefined,
+        });
       } else {
         const a = document.createElement('a');
         a.href = dataUrl;
