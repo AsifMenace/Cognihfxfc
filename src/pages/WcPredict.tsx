@@ -1231,9 +1231,11 @@ function buildStandingsHistory(matches: Match[]): { days: string[]; series: StdS
   }
 
   const totals = new Map<number, number>();
+  const corrects = new Map<number, number>();
   const seriesPts = new Map<number, StdDayPoint[]>();
   for (const id of roster.keys()) {
     totals.set(id, 0);
+    corrects.set(id, 0);
     seriesPts.set(id, []);
   }
 
@@ -1245,10 +1247,17 @@ function buildStandingsHistory(matches: Match[]): { days: string[]; series: StdS
           p.player_id,
           totals.get(p.player_id)! + (p.points || 0) + (p.trivia_points || 0)
         );
+        // Match the leaderboard's "correct" definition: a match pick worth > 0
+        // (trivia points don't count toward correctness).
+        if ((p.points || 0) > 0) corrects.set(p.player_id, corrects.get(p.player_id)! + 1);
       }
+    // Same ordering as getWcLeaderboard: total desc, correct desc, name asc.
     const ranked = [...roster.keys()].sort((a, b) => {
-      const diff = totals.get(b)! - totals.get(a)!;
-      return diff !== 0 ? diff : roster.get(a)!.name.localeCompare(roster.get(b)!.name);
+      const dt = totals.get(b)! - totals.get(a)!;
+      if (dt !== 0) return dt;
+      const dc = corrects.get(b)! - corrects.get(a)!;
+      if (dc !== 0) return dc;
+      return roster.get(a)!.name.localeCompare(roster.get(b)!.name);
     });
     ranked.forEach((id, idx) => seriesPts.get(id)!.push({ total: totals.get(id)!, rank: idx + 1 }));
   }
@@ -1276,10 +1285,16 @@ function StandingsTracker({
   matches: Match[];
   selectedPlayer: number | null;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [view, setView] = useState<'rank' | 'points'>('rank');
   const [highlightId, setHighlightId] = useState<number | null>(null);
   const { days, series } = useMemo(() => buildStandingsHistory(matches), [matches]);
+
+  // Follow the predict-page name dropdown: picking your name lights up your line
+  // automatically. The chart's own selector can still override for exploration.
+  useEffect(() => {
+    if (selectedPlayer) setHighlightId(selectedPlayer);
+  }, [selectedPlayer]);
 
   // Needs at least two matchdays and two players to tell a story.
   if (days.length < 2 || series.length < 2) return null;
@@ -1331,6 +1346,31 @@ function StandingsTracker({
 
   const pathFor = (s: StdSeries) => s.points.map((dp, i) => `${xFor(i)},${yFor(dp)}`).join(' ');
   const labelStep = Math.max(1, Math.ceil(days.length / 7));
+
+  // Y-axis reference ticks (with gridlines).
+  const yTicks: { y: number; label: string }[] = [];
+  if (view === 'rank') {
+    const step = N <= 6 ? 1 : N <= 12 ? 2 : N <= 25 ? 5 : 10;
+    const ranks = new Set<number>([1, N]);
+    for (let r = step; r < N; r += step) ranks.add(r);
+    [...ranks]
+      .sort((a, b) => a - b)
+      .forEach((r) =>
+        yTicks.push({
+          y: padT + (N === 1 ? innerH / 2 : ((r - 1) * innerH) / (N - 1)),
+          label: r === 1 ? '1st' : `#${r}`,
+        })
+      );
+  } else {
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+      const val = Math.round(maxT - (i * (maxT - minT)) / steps);
+      yTicks.push({
+        y: padT + innerH * (1 - (val - minT) / (maxT - minT)),
+        label: String(val),
+      });
+    }
+  }
 
   return (
     <div className="bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
@@ -1395,6 +1435,24 @@ function StandingsTracker({
 
           {/* Chart */}
           <svg viewBox={`0 0 ${VBW} ${VBH}`} className="w-full">
+            {/* Y reference gridlines + labels */}
+            {yTicks.map((t, i) => (
+              <g key={`tick-${i}`}>
+                <line
+                  x1={padL}
+                  y1={t.y}
+                  x2={padL + innerW}
+                  y2={t.y}
+                  stroke="#334155"
+                  strokeOpacity={0.45}
+                  strokeWidth={1}
+                />
+                <text x={padL - 6} y={t.y + 3} fontSize={9} fill="#64748b" textAnchor="end">
+                  {t.label}
+                </text>
+              </g>
+            ))}
+
             {/* Faint pack */}
             {series
               .filter((s) => s.id !== highlight && !top3.includes(s.id))
@@ -1457,26 +1515,6 @@ function StandingsTracker({
               ) : null
             )}
 
-            {/* Y hints */}
-            {view === 'rank' ? (
-              <>
-                <text x={6} y={padT + 8} fontSize={10} fill="#64748b">
-                  1st
-                </text>
-                <text x={6} y={padT + innerH} fontSize={10} fill="#64748b">
-                  #{N}
-                </text>
-              </>
-            ) : (
-              <>
-                <text x={6} y={padT + 8} fontSize={10} fill="#64748b">
-                  {maxT}
-                </text>
-                <text x={6} y={padT + innerH} fontSize={10} fill="#64748b">
-                  {minT}
-                </text>
-              </>
-            )}
           </svg>
 
           {/* Legend */}
@@ -1938,6 +1976,9 @@ const WcPredict: React.FC = () => {
           </div>
         )}
 
+        {/* Standings Tracker — your journey, right where you predict */}
+        <StandingsTracker matches={matches} selectedPlayer={selectedPlayer} />
+
         {/* Active / locked match cards */}
         {activeMatches.length === 0 && completedMatches.length === 0 ? (
           <div className="bg-slate-800 border border-slate-700/60 rounded-2xl p-10 text-center">
@@ -2122,9 +2163,6 @@ const WcPredict: React.FC = () => {
             )}
           </div>
         )}
-
-        {/* Standings Tracker — how positions/points moved over matchdays */}
-        <StandingsTracker matches={matches} selectedPlayer={selectedPlayer} />
 
         {/* Perfect Predictors — trivia of the day */}
         <PerfectDaysCard days={perfectDays} />
