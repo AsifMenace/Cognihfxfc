@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Trophy,
   Clock,
@@ -12,6 +12,7 @@ import {
   Star,
   RefreshCw,
   Lightbulb,
+  TrendingUp,
 } from 'lucide-react';
 
 interface Match {
@@ -906,7 +907,7 @@ function ActiveMatchCard({
       {isLocked && <BankersSummary match={match} />}
       {isLocked && <TriviaSummary match={match} />}
       {isLocked && (
-        <PredictionsList predictions={match.predictions} match={match} defaultOpen={true} />
+        <PredictionsList predictions={match.predictions} match={match} defaultOpen={false} />
       )}
     </div>
   );
@@ -1051,6 +1052,12 @@ function formatDayLabel(day: string): string {
   });
 }
 
+// Compact "Mon D" label for chart axes.
+function formatDayShort(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 function PerfectDayRow({ day, defaultOpen = false }: { day: PerfectDay; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -1186,6 +1193,310 @@ function BankerModeBanner({ mode }: { mode: 'admin' | 'user' }) {
   );
 }
 
+// ─── Standings Tracker (rank/points over matchdays) ───────────────────────────
+
+type StdDayPoint = { total: number; rank: number };
+type StdSeries = {
+  id: number;
+  name: string;
+  photo?: string;
+  points: StdDayPoint[];
+  finalTotal: number;
+  finalRank: number;
+};
+
+// Reconstruct each player's cumulative total and rank after every completed
+// matchday — built entirely from the predictions already loaded (points +
+// trivia_points), ordered by kickoff. No backend needed.
+function buildStandingsHistory(matches: Match[]): { days: string[]; series: StdSeries[] } {
+  const completed = matches
+    .filter((m) => m.status === 'completed')
+    .sort((a, b) => new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime());
+
+  const roster = new Map<number, { name: string; photo?: string }>();
+  for (const m of completed)
+    for (const p of m.predictions)
+      if (!roster.has(p.player_id))
+        roster.set(p.player_id, { name: p.player_name, photo: p.player_photo });
+
+  const dayOrder: string[] = [];
+  const byDay = new Map<string, Match[]>();
+  for (const m of completed) {
+    const d = halifaxDay(m.kickoff_time);
+    if (!byDay.has(d)) {
+      byDay.set(d, []);
+      dayOrder.push(d);
+    }
+    byDay.get(d)!.push(m);
+  }
+
+  const totals = new Map<number, number>();
+  const seriesPts = new Map<number, StdDayPoint[]>();
+  for (const id of roster.keys()) {
+    totals.set(id, 0);
+    seriesPts.set(id, []);
+  }
+
+  for (const day of dayOrder) {
+    for (const m of byDay.get(day)!)
+      for (const p of m.predictions) {
+        if (!totals.has(p.player_id)) continue;
+        totals.set(
+          p.player_id,
+          totals.get(p.player_id)! + (p.points || 0) + (p.trivia_points || 0)
+        );
+      }
+    const ranked = [...roster.keys()].sort((a, b) => {
+      const diff = totals.get(b)! - totals.get(a)!;
+      return diff !== 0 ? diff : roster.get(a)!.name.localeCompare(roster.get(b)!.name);
+    });
+    ranked.forEach((id, idx) => seriesPts.get(id)!.push({ total: totals.get(id)!, rank: idx + 1 }));
+  }
+
+  const series: StdSeries[] = [...roster.entries()].map(([id, info]) => {
+    const pts = seriesPts.get(id)!;
+    const last = pts[pts.length - 1];
+    return {
+      id,
+      name: info.name,
+      photo: info.photo,
+      points: pts,
+      finalTotal: last?.total ?? 0,
+      finalRank: last?.rank ?? roster.size,
+    };
+  });
+
+  return { days: dayOrder, series };
+}
+
+function StandingsTracker({
+  matches,
+  selectedPlayer,
+}: {
+  matches: Match[];
+  selectedPlayer: number | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<'rank' | 'points'>('rank');
+  const [highlightId, setHighlightId] = useState<number | null>(null);
+  const { days, series } = useMemo(() => buildStandingsHistory(matches), [matches]);
+
+  // Needs at least two matchdays and two players to tell a story.
+  if (days.length < 2 || series.length < 2) return null;
+
+  const N = series.length;
+  const byRank = [...series].sort((a, b) => a.finalRank - b.finalRank);
+  const leaderId = byRank[0].id;
+  const top3 = byRank.slice(0, 3).map((s) => s.id);
+  const medal = ['#fbbf24', '#cbd5e1', '#fb923c'];
+
+  const highlight =
+    highlightId !== null && series.some((s) => s.id === highlightId)
+      ? highlightId
+      : selectedPlayer && series.some((s) => s.id === selectedPlayer)
+        ? selectedPlayer
+        : leaderId;
+  const hSeries = series.find((s) => s.id === highlight)!;
+  const hFirst = hSeries.points[0];
+  const hLast = hSeries.points[hSeries.points.length - 1];
+
+  // Geometry
+  const VBW = 680;
+  const VBH = 280;
+  const padL = 32;
+  const padR = 80;
+  const padT = 16;
+  const padB = 30;
+  const innerW = VBW - padL - padR;
+  const innerH = VBH - padT - padB;
+  const xFor = (i: number) =>
+    padL + (days.length === 1 ? innerW / 2 : (i * innerW) / (days.length - 1));
+
+  let minT = Infinity;
+  let maxT = -Infinity;
+  for (const s of series)
+    for (const dp of s.points) {
+      if (dp.total < minT) minT = dp.total;
+      if (dp.total > maxT) maxT = dp.total;
+    }
+  if (minT === maxT) {
+    minT -= 1;
+    maxT += 1;
+  }
+
+  const yFor = (dp: StdDayPoint) =>
+    view === 'rank'
+      ? padT + (N === 1 ? innerH / 2 : ((dp.rank - 1) * innerH) / (N - 1))
+      : padT + innerH * (1 - (dp.total - minT) / (maxT - minT));
+
+  const pathFor = (s: StdSeries) => s.points.map((dp, i) => `${xFor(i)},${yFor(dp)}`).join(' ');
+  const labelStep = Math.max(1, Math.ceil(days.length / 7));
+
+  return (
+    <div className="bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-2 px-5 py-4 border-b border-slate-700/40 bg-gradient-to-r from-slate-800 to-sky-950/40"
+      >
+        <TrendingUp size={18} className="text-sky-400" />
+        <h3 className="text-white font-bold tracking-wide">Standings Tracker</h3>
+        {open ? (
+          <ChevronUp size={14} className="text-slate-500 ml-auto" />
+        ) : (
+          <ChevronDown size={14} className="text-slate-500 ml-auto" />
+        )}
+      </button>
+
+      {open && (
+        <div className="p-4 space-y-3">
+          {/* Controls */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="inline-flex rounded-xl bg-slate-700/40 border border-slate-600/40 p-0.5">
+              {(['rank', 'points'] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    view === v ? 'bg-sky-500/30 text-sky-100' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {v === 'rank' ? 'Positions' : 'Points'}
+                </button>
+              ))}
+            </div>
+            <select
+              value={String(highlight)}
+              onChange={(e) => setHighlightId(Number(e.target.value))}
+              className="bg-slate-700 border border-slate-600 text-white text-xs rounded-lg px-2 py-1.5 max-w-[55%] focus:outline-none focus:ring-2 focus:ring-sky-500"
+            >
+              {byRank.map((s) => (
+                <option key={s.id} value={String(s.id)}>
+                  #{s.finalRank} {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Highlighted player's journey */}
+          <p className="text-xs text-slate-400">
+            <span className="text-sky-300 font-semibold">{hSeries.name}</span>{' '}
+            {view === 'rank' ? (
+              <>
+                moved from <span className="text-white font-bold">#{hFirst.rank}</span> to{' '}
+                <span className="text-white font-bold">#{hLast.rank}</span>
+              </>
+            ) : (
+              <>
+                from <span className="text-white font-bold">{hFirst.total}</span> to{' '}
+                <span className="text-white font-bold">{hLast.total}</span> pts
+              </>
+            )}
+          </p>
+
+          {/* Chart */}
+          <svg viewBox={`0 0 ${VBW} ${VBH}`} className="w-full">
+            {/* Faint pack */}
+            {series
+              .filter((s) => s.id !== highlight && !top3.includes(s.id))
+              .map((s) => (
+                <polyline
+                  key={s.id}
+                  points={pathFor(s)}
+                  fill="none"
+                  stroke="#64748b"
+                  strokeOpacity={0.16}
+                  strokeWidth={1}
+                />
+              ))}
+            {/* Top 3 tinted */}
+            {top3
+              .filter((id) => id !== highlight)
+              .map((id) => {
+                const s = series.find((x) => x.id === id)!;
+                const ci = byRank.findIndex((x) => x.id === id);
+                return (
+                  <polyline
+                    key={id}
+                    points={pathFor(s)}
+                    fill="none"
+                    stroke={medal[ci]}
+                    strokeOpacity={0.5}
+                    strokeWidth={1.5}
+                  />
+                );
+              })}
+            {/* Highlighted player */}
+            <polyline points={pathFor(hSeries)} fill="none" stroke="#38bdf8" strokeWidth={2.5} />
+            {hSeries.points.map((dp, i) => (
+              <circle key={i} cx={xFor(i)} cy={yFor(dp)} r={2.5} fill="#38bdf8" />
+            ))}
+            <circle cx={xFor(days.length - 1)} cy={yFor(hLast)} r={4} fill="#38bdf8" />
+            <text
+              x={xFor(days.length - 1) + 8}
+              y={yFor(hLast) + 4}
+              fontSize={12}
+              fontWeight={700}
+              fill="#e0f2fe"
+            >
+              {hSeries.name.split(' ')[0]}
+            </text>
+
+            {/* X labels */}
+            {days.map((d, i) =>
+              i % labelStep === 0 || i === days.length - 1 ? (
+                <text
+                  key={d}
+                  x={xFor(i)}
+                  y={VBH - 10}
+                  fontSize={10}
+                  fill="#64748b"
+                  textAnchor="middle"
+                >
+                  {formatDayShort(d)}
+                </text>
+              ) : null
+            )}
+
+            {/* Y hints */}
+            {view === 'rank' ? (
+              <>
+                <text x={6} y={padT + 8} fontSize={10} fill="#64748b">
+                  1st
+                </text>
+                <text x={6} y={padT + innerH} fontSize={10} fill="#64748b">
+                  #{N}
+                </text>
+              </>
+            ) : (
+              <>
+                <text x={6} y={padT + 8} fontSize={10} fill="#64748b">
+                  {maxT}
+                </text>
+                <text x={6} y={padT + innerH} fontSize={10} fill="#64748b">
+                  {minT}
+                </text>
+              </>
+            )}
+          </svg>
+
+          {/* Legend */}
+          <div className="flex items-center gap-3 flex-wrap text-[11px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-0.5 inline-block bg-sky-400" /> You / selected
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-0.5 inline-block" style={{ background: '#fbbf24' }} /> Top 3
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-0.5 inline-block bg-slate-500/50" /> Others
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const WcPredict: React.FC = () => {
@@ -1198,6 +1509,7 @@ const WcPredict: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
+  const [showChasers, setShowChasers] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -1765,11 +2077,21 @@ const WcPredict: React.FC = () => {
                 {/* Ranks 4+ */}
                 {leaderboard.length > 3 && (
                   <div className="px-4 pb-4 pt-1">
-                    <div className="flex items-center gap-3 px-1 py-2 mb-1">
+                    <button
+                      onClick={() => setShowChasers((s) => !s)}
+                      className="w-full flex items-center gap-3 px-1 py-2 mb-1"
+                    >
                       <div className="h-px flex-1 bg-slate-700/50" />
-                      <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">Chasing the podium</span>
+                      <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest flex items-center gap-1.5">
+                        Chasing the podium
+                        <span className="text-slate-600 normal-case tracking-normal">
+                          ({leaderboard.length - 3})
+                        </span>
+                        {showChasers ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      </span>
                       <div className="h-px flex-1 bg-slate-700/50" />
-                    </div>
+                    </button>
+                    {showChasers && (
                     <div className="space-y-2">
                       {leaderboard.slice(3).map((entry, idx) => (
                         <div
@@ -1793,12 +2115,16 @@ const WcPredict: React.FC = () => {
                         </div>
                       ))}
                     </div>
+                    )}
                   </div>
                 )}
               </>
             )}
           </div>
         )}
+
+        {/* Standings Tracker — how positions/points moved over matchdays */}
+        <StandingsTracker matches={matches} selectedPlayer={selectedPlayer} />
 
         {/* Perfect Predictors — trivia of the day */}
         <PerfectDaysCard days={perfectDays} />
