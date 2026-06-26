@@ -345,9 +345,31 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
             </Link>
             <Link
               to="/predict"
-              className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white font-black text-lg md:text-xl rounded-full hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-green-500/50 animate-pulse hover:animate-none"
+              className="group relative w-full sm:w-auto inline-flex justify-center items-center gap-3 px-9 py-4 rounded-full overflow-hidden text-white font-black text-lg md:text-xl shadow-2xl ring-2 ring-white/20 hover:ring-white/40 hover:scale-110 transition-all duration-300 hover:shadow-emerald-500/50 bg-[length:200%_200%] bg-gradient-to-r from-emerald-600 via-green-500 to-yellow-400 animate-[gradient_4s_ease_infinite]"
             >
-              🌎 WORLD CUP PREDICTOR
+              {/* shine sweep */}
+              <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+              {/* confetti burst on hover */}
+              <span className="pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full bg-yellow-300 opacity-0 group-hover:opacity-100 group-hover:animate-[confetti1_0.7s_ease-out]" />
+              <span className="pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full bg-emerald-300 opacity-0 group-hover:opacity-100 group-hover:animate-[confetti2_0.7s_ease-out]" />
+              <span className="pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full bg-red-400 opacity-0 group-hover:opacity-100 group-hover:animate-[confetti3_0.8s_ease-out]" />
+              <span className="pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full bg-sky-300 opacity-0 group-hover:opacity-100 group-hover:animate-[confetti4_0.8s_ease-out]" />
+              <span className="pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full bg-white opacity-0 group-hover:opacity-100 group-hover:animate-[confetti5_0.6s_ease-out]" />
+              {/* spinning soccer ball */}
+              <span className="text-2xl drop-shadow-md transition-transform duration-500 group-hover:rotate-[360deg]">
+                ⚽
+              </span>
+              <span className="relative tracking-wide drop-shadow-sm">
+                WORLD CUP PREDICTOR
+              </span>
+              {/* host-nation flags */}
+              <span className="relative text-base md:text-lg leading-none drop-shadow-sm transition-transform duration-300 group-hover:scale-125">
+                🇺🇸🇨🇦🇲🇽
+              </span>
+              {/* 2026 badge */}
+              <span className="relative ml-1 px-2 py-0.5 rounded-full bg-black/30 text-yellow-200 text-xs md:text-sm font-extrabold tracking-widest border border-yellow-300/40">
+                '26
+              </span>
             </Link>
           </div>
         </motion.div>
