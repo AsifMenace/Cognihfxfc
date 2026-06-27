@@ -2,11 +2,11 @@ import { neon } from "@netlify/neon";
 
 const sql = neon();
 
-// Halifax-local calendar date (YYYY-MM-DD) for an instant — defines "a day" for
+// Official game day (US Eastern) calendar date (YYYY-MM-DD) for an instant — defines "a day" for
 // the user-mode one-banker-per-day rule. Mirrors getWcPerfectDays.js.
-const halifaxDay = (iso) =>
+const gameDay = (iso) =>
   new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Halifax",
+    timeZone: "America/New_York",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -116,10 +116,10 @@ export const handler = async (event) => {
           };
         }
       } else {
-        // User mode: banker any match, but at most one per Halifax-local day.
+        // User mode: banker any match, but at most one per game day.
         // Exclude this match so re-submitting/editing the same pick doesn't clash
         // with its own existing banker row.
-        const matchDay = halifaxDay(match.kickoff_time);
+        const matchDay = gameDay(match.kickoff_time);
         const existingBankers = await sql`
           SELECT m.kickoff_time
           FROM wc_predictions wp
@@ -129,7 +129,7 @@ export const handler = async (event) => {
             AND wp.match_id <> ${match_id}
         `;
         const clash = existingBankers.some(
-          (b) => halifaxDay(b.kickoff_time) === matchDay
+          (b) => gameDay(b.kickoff_time) === matchDay
         );
         if (clash) {
           return {

@@ -2,13 +2,13 @@ import { neon } from '@netlify/neon';
 
 const sql = neon();
 
-// Halifax-local calendar date (YYYY-MM-DD) for an instant. en-CA gives an
+// Official game day (US Eastern) calendar date (YYYY-MM-DD) for an instant. en-CA gives an
 // ISO-style date that sorts lexicographically. kickoff_time is an ISO-UTC
 // string (football-data utcDate), so new Date() parses it to the right instant
 // regardless of how the column round-trips.
-const halifaxDay = (iso) =>
+const gameDay = (iso) =>
   new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Halifax',
+    timeZone: 'America/New_York',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -47,10 +47,10 @@ export const handler = async (event) => {
       JOIN players p ON p.id = wp.player_id
     `;
 
-    // Group matches by Halifax-local day.
+    // Group matches by game day.
     const dayMatches = new Map(); // day -> [{ id, status, result }]
     for (const m of matches) {
-      const day = halifaxDay(m.kickoff_time);
+      const day = gameDay(m.kickoff_time);
       if (!dayMatches.has(day)) dayMatches.set(day, []);
       dayMatches.get(day).push(m);
     }

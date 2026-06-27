@@ -277,8 +277,8 @@ export const handler = async (event) => {
     const dateParam = event.queryStringParameters?.date;
     const date = dateParam || new Date().toISOString().split('T')[0];
 
-    // Halifax is UTC-4 (ADT) in summer. Convert each match UTC time to Halifax
-    // local date and keep only matches whose local date matches the requested date.
+    // Group by official game day (US Eastern), matching gameDay() used everywhere
+    // else. Pull the requested day plus the next UTC day, then filter by ET date.
     const datePlusOne = new Date(date + 'T00:00:00Z');
     datePlusOne.setUTCDate(datePlusOne.getUTCDate() + 1);
     const dateTo = datePlusOne.toISOString().split('T')[0];
@@ -295,14 +295,17 @@ export const handler = async (event) => {
 
     const data = await res.json();
 
-    const HALIFAX_OFFSET_MS = -4 * 60 * 60 * 1000;
+    // DST-safe: en-CA in America/New_York yields a YYYY-MM-DD ET calendar date.
+    const gameDay = (iso) =>
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date(iso));
 
     const matches = (data.matches || [])
-      .filter((m) => {
-        const localDate = new Date(new Date(m.utcDate).getTime() + HALIFAX_OFFSET_MS);
-        const localDateStr = localDate.toISOString().split('T')[0];
-        return localDateStr === date;
-      })
+      .filter((m) => gameDay(m.utcDate) === date)
       .map((m) => {
         const homeTeamTla = m.homeTeam?.tla || '';
         const awayTeamTla = m.awayTeam?.tla || '';

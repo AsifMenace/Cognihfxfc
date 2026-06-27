@@ -67,18 +67,18 @@ interface LeaderboardEntry {
 }
 
 interface PerfectDay {
-  day: string; // YYYY-MM-DD (Halifax local)
+  day: string; // YYYY-MM-DD (game day, US Eastern)
   game_count: number;
   perfect_players: { player_id: number; player_name: string; player_photo: string }[];
 }
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
-// Halifax-local calendar date (YYYY-MM-DD) — defines "a day" for the user-mode
+// Official game day (US Eastern) calendar date (YYYY-MM-DD) — defines "a day" for the user-mode
 // one-banker-per-day rule. Mirrors the backend (getWcPerfectDays.js).
-function halifaxDay(iso: string): string {
+function gameDay(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Halifax',
+    timeZone: 'America/New_York',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -567,7 +567,7 @@ function ActiveMatchCard({
   onPredicted: () => void;
   // 'admin' — banker only on the designated match; 'user' — any match, one/day.
   bankerMode: 'admin' | 'user';
-  // User mode only: the player already bankered another game this Halifax day.
+  // User mode only: the player already bankered another game this game day.
   bankerUsedToday: boolean;
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
@@ -772,13 +772,13 @@ function ActiveMatchCard({
 
           {/* Banker toggle. Admin mode: only the designated match. User mode: any
              match, but locked out if the player already bankered another game
-             today (one per day). Shown as soon as the form is open so the choice
-             is always visible; default is off. */}
+             on the same game day (one per game day). Shown as soon as the form is
+             open so the choice is always visible; default is off. */}
           {(bankerMode === 'user' || match.is_banker_match) &&
             (bankerUsedToday ? (
               <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
                 <Star size={14} className="flex-shrink-0 text-slate-500" />
-                Banker already used for another game today — one per day.
+                Banker already used for another game this game day — one per game day.
               </div>
             ) : (
               <button
@@ -801,7 +801,7 @@ function ActiveMatchCard({
                     Use my Banker
                   </span>
                   <span className="block text-xs text-slate-400 mt-0.5">
-                    2× points if right · −1 if wrong{bankerMode === 'user' ? ' · one per day' : ''}
+                    2× points if right · −1 if wrong{bankerMode === 'user' ? ' · one per game day' : ''}
                   </span>
                 </span>
                 <span
@@ -1041,7 +1041,7 @@ function CompletedDayGroup({
 
 // ─── Perfect Predictors (trivia of the day) ───────────────────────────────────
 
-// "YYYY-MM-DD" is a Halifax-local calendar date. Parse the parts directly so the
+// "YYYY-MM-DD" is a Official game day (US Eastern) calendar date. Parse the parts directly so the
 // label doesn't drift by a day in the viewer's own timezone.
 function formatDayLabel(day: string): string {
   const [y, m, d] = day.split('-').map(Number);
@@ -1161,8 +1161,8 @@ function BankerModeBanner({ mode }: { mode: 'admin' | 'user' }) {
               </span>
             </p>
             <p className="text-slate-200 text-xs mt-1 leading-snug">
-              Bank <span className="text-white font-semibold">any one match</span> today — 2× points if
-              right, −1 if wrong.
+              Bank <span className="text-white font-semibold">any one match per game day</span> — 2× points
+              if right, −1 if wrong. Game days follow the official schedule (US Eastern).
             </p>
           </div>
         </div>
@@ -1222,7 +1222,7 @@ function buildStandingsHistory(matches: Match[]): { days: string[]; series: StdS
   const dayOrder: string[] = [];
   const byDay = new Map<string, Match[]>();
   for (const m of completed) {
-    const d = halifaxDay(m.kickoff_time);
+    const d = gameDay(m.kickoff_time);
     if (!byDay.has(d)) {
       byDay.set(d, []);
       dayOrder.push(d);
@@ -1879,13 +1879,13 @@ const WcPredict: React.FC = () => {
     .filter((m) => m.status === 'completed')
     .sort((a, b) => new Date(b.kickoff_time).getTime() - new Date(a.kickoff_time).getTime());
 
-  // Group completed matches by Halifax kickoff day (most recent day first, since
+  // Group completed matches by game day (most recent day first, since
   // completedMatches is already sorted DESC).
   const completedByDay: { day: string; matches: Match[] }[] = [];
   {
     const index = new Map<string, Match[]>();
     for (const m of completedMatches) {
-      const day = halifaxDay(m.kickoff_time);
+      const day = gameDay(m.kickoff_time);
       let arr = index.get(day);
       if (!arr) {
         arr = [];
@@ -1899,14 +1899,14 @@ const WcPredict: React.FC = () => {
   const hasActiveMatches = activeMatches.length > 0;
 
   // User mode only: which match (if any) the selected player has bankered on each
-  // Halifax day. Used to lock the toggle on that day's OTHER games (one per day),
+  // game day. Used to lock the toggle on that day's OTHER games (one per day),
   // while still allowing them to edit the banker on the match they chose.
   const bankerMatchByDay = new Map<string, number>();
   if (bankerMode === 'user' && selectedPlayer) {
     for (const m of matches) {
       for (const p of m.predictions) {
         if (p.player_id === selectedPlayer && p.is_banker) {
-          bankerMatchByDay.set(halifaxDay(m.kickoff_time), m.id);
+          bankerMatchByDay.set(gameDay(m.kickoff_time), m.id);
         }
       }
     }
@@ -1996,8 +1996,8 @@ const WcPredict: React.FC = () => {
               bankerMode={bankerMode}
               bankerUsedToday={
                 bankerMode === 'user' &&
-                bankerMatchByDay.has(halifaxDay(match.kickoff_time)) &&
-                bankerMatchByDay.get(halifaxDay(match.kickoff_time)) !== match.id
+                bankerMatchByDay.has(gameDay(match.kickoff_time)) &&
+                bankerMatchByDay.get(gameDay(match.kickoff_time)) !== match.id
               }
             />
           ))

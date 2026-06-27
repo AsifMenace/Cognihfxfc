@@ -51,11 +51,11 @@ function parseTriviaOptions(raw: string | null): string[] {
   }
 }
 
-// Halifax-local calendar date (YYYY-MM-DD) — defines "a day" for the
+// Official game day (US Eastern) calendar date (YYYY-MM-DD) — defines "a day" for the
 // one-banker-match-per-day rule. Mirrors the backend (activateWcMatch.js).
-function halifaxDay(iso: string): string {
+function gameDay(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Halifax',
+    timeZone: 'America/New_York',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -460,12 +460,12 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const isActivated = (fixtureId: number) => activeMatches.some((m) => m.fixture_id === fixtureId);
 
   // While the activation modal is open: the match (if any) that already holds the
-  // banker on that fixture's Halifax-local day. If set, the banker option is hidden.
+  // banker on that fixture's game day. If set, the banker option is hidden.
   const modalDayBanker = activateModal
     ? activeMatches.find(
         (m) =>
           m.is_banker_match &&
-          halifaxDay(m.kickoff_time) === halifaxDay(activateModal.fixture.kickoff_time)
+          gameDay(m.kickoff_time) === gameDay(activateModal.fixture.kickoff_time)
       )
     : undefined;
 
