@@ -423,7 +423,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     }
   };
 
-  const setResultManually = async (matchId: number) => {
+  const setResultManually = async (matchId: number, override = false) => {
     const form = manualForm[matchId];
     if (!form) return;
     const hg = parseInt(form.home, 10);
@@ -432,13 +432,17 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
       showMessage('error', 'Enter valid non-negative scores for both teams.');
       return;
     }
+    // Overriding a finished result recomputes everyone's points for this match.
+    if (override && !window.confirm('Correct this finished result? It recomputes everyone’s points for this match.')) {
+      return;
+    }
     setSettingManual(matchId);
     setMessage(null);
     try {
       const res = await fetch('/.netlify/functions/setWcResultManual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ match_id: matchId, home_goals: hg, away_goals: ag }),
+        body: JSON.stringify({ match_id: matchId, home_goals: hg, away_goals: ag, override }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to set result');
@@ -1025,6 +1029,79 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                                     onSetAnswer={setTriviaAnswer}
                                   />
                                 )}
+
+                                {/* Correct a finished result (e.g. wrong API score) */}
+                                <div className="pt-1">
+                                  <button
+                                    onClick={() => {
+                                      if (manualOpen === m.id) {
+                                        setManualOpen(null);
+                                        return;
+                                      }
+                                      setManualOpen(m.id);
+                                      setManualForm((prev) => ({
+                                        ...prev,
+                                        [m.id]: {
+                                          home: m.final_home_goals !== null ? String(m.final_home_goals) : '',
+                                          away: m.final_away_goals !== null ? String(m.final_away_goals) : '',
+                                        },
+                                      }));
+                                    }}
+                                    className="text-xs font-semibold text-amber-300 hover:text-amber-200"
+                                  >
+                                    {manualOpen === m.id ? 'Cancel' : '✎ Correct result'}
+                                  </button>
+
+                                  {manualOpen === m.id && (
+                                    <div className="mt-2 bg-slate-900/60 border border-slate-600/60 rounded-xl p-3 space-y-3">
+                                      <p className="text-slate-400 text-xs">Enter the correct final score:</p>
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                                          <label className="text-slate-400 text-xs truncate">{m.home_team}</label>
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={manualForm[m.id]?.home ?? ''}
+                                            onChange={(e) =>
+                                              setManualForm((prev) => ({
+                                                ...prev,
+                                                [m.id]: { home: e.target.value, away: prev[m.id]?.away ?? '' },
+                                              }))
+                                            }
+                                            className="w-full bg-slate-700 border border-slate-600 text-white text-center text-lg font-bold rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                          />
+                                        </div>
+                                        <span className="text-slate-500 font-black text-lg mt-5 flex-shrink-0">–</span>
+                                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                                          <label className="text-slate-400 text-xs truncate text-right">{m.away_team}</label>
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={manualForm[m.id]?.away ?? ''}
+                                            onChange={(e) =>
+                                              setManualForm((prev) => ({
+                                                ...prev,
+                                                [m.id]: { home: prev[m.id]?.home ?? '', away: e.target.value },
+                                              }))
+                                            }
+                                            className="w-full bg-slate-700 border border-slate-600 text-white text-center text-lg font-bold rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                          />
+                                        </div>
+                                      </div>
+                                      <button
+                                        onClick={() => setResultManually(m.id, true)}
+                                        disabled={
+                                          settingManual === m.id ||
+                                          !manualForm[m.id]?.home ||
+                                          !manualForm[m.id]?.away
+                                        }
+                                        className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm"
+                                      >
+                                        {settingManual === m.id ? 'Saving...' : 'Save correction & re-score'}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             ))}
                           </div>

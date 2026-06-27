@@ -23,7 +23,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { match_id, home_goals, away_goals } = JSON.parse(event.body);
+    const { match_id, home_goals, away_goals, override } = JSON.parse(event.body);
 
     if (!match_id || home_goals === undefined || away_goals === undefined) {
       return {
@@ -54,11 +54,14 @@ export const handler = async (event) => {
     }
 
     const match = matches[0];
-    if (match.status === 'completed') {
+    // A completed match can only be re-scored with an explicit override (used to
+    // correct a wrong API/manual result). The point recompute below is a full,
+    // idempotent re-score of the match, so overriding is safe.
+    if (match.status === 'completed' && override !== true) {
       return {
         statusCode: 409,
         headers: corsHeaders,
-        body: JSON.stringify({ error: 'Match is already completed. Cannot override.' }),
+        body: JSON.stringify({ error: 'Match is already completed. Pass override to correct it.' }),
       };
     }
 
