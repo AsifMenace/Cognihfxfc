@@ -3,11 +3,11 @@ import { scheduleJob, cancelJob, INITIAL_OFFSET_MINUTES } from './autoFetchWcRes
 
 const sql = neon();
 
-// Halifax-local calendar date (YYYY-MM-DD) for an instant — defines "a day" for
+// Official game day (US Eastern) calendar date (YYYY-MM-DD) for an instant — defines "a day" for
 // the one-banker-match-per-day rule. Mirrors submitPrediction.js.
-const halifaxDay = (iso) =>
+const gameDay = (iso) =>
   new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Halifax',
+    timeZone: 'America/New_York',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -180,16 +180,16 @@ export const handler = async (event) => {
       storedAwayFlag = getFlagUrl(awayCodeForFlag);
     }
 
-    // One banker match per Halifax-local day. If this activation designates the
+    // One banker match per game day. If this activation designates the
     // banker, reject when another match (not this one) already holds it that day.
     if (bankerMatch) {
-      const day = halifaxDay(kickoff_time);
+      const day = gameDay(kickoff_time);
       const existing = await sql`
         SELECT home_team, away_team, kickoff_time
         FROM wc_matches
         WHERE is_banker_match = TRUE AND fixture_id <> ${fixture_id}
       `;
-      const clash = existing.find((m) => halifaxDay(m.kickoff_time) === day);
+      const clash = existing.find((m) => gameDay(m.kickoff_time) === day);
       if (clash) {
         return {
           statusCode: 409,
