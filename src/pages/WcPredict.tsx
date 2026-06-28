@@ -1357,7 +1357,7 @@ function BankerModeBanner({ mode }: { mode: 'admin' | 'user' }) {
           </p>
           <p className="text-slate-200 text-xs mt-1 leading-snug">
             The admin marks <span className="text-white font-semibold">one Banker match</span> each day —
-            bank it for 2×, or −1 if it flops.
+            bank it for 2×, or −2 if it flops.
           </p>
         </div>
       </div>
