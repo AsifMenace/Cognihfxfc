@@ -97,7 +97,7 @@ export const handler = async (event) => {
         UPDATE wc_predictions
         SET points = CASE
           WHEN predicted_winner = ${result} THEN (CASE WHEN is_banker THEN 2 ELSE 1 END)
-          ELSE (CASE WHEN is_banker THEN -1 ELSE 0 END)
+          ELSE (CASE WHEN is_banker THEN -2 ELSE 0 END)
         END
         WHERE match_id = ${match_id}
       `;
