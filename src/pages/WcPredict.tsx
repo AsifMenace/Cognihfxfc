@@ -284,10 +284,10 @@ function PointsBadge({ points }: { points: number }) {
   );
 }
 
-// Star marking a banker pick (2× points, −1 if wrong).
+// Star marking a banker pick (2× points, −2 if wrong in knockout).
 function BankerStar({ size = 12 }: { size?: number }) {
   return (
-    <span title="Banker · 2× points (−1 if wrong)" className="inline-flex items-center">
+    <span title="Banker · 2× points if correct · −2 if wrong (knockout)" className="inline-flex items-center">
       <Star size={size} className="text-amber-400 fill-amber-400" />
     </span>
   );
@@ -760,7 +760,7 @@ function ActiveMatchCard({
       {bankerMode === 'admin' && match.is_banker_match && (
         <div className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs font-bold tracking-wide">
           <Star size={13} className="fill-amber-400 text-amber-400" />
-          BANKER MATCH · 2× points if correct · −1 if wrong
+          BANKER MATCH · 2× points if correct · {match.is_knockout ? '−2' : '−1'} if wrong
         </div>
       )}
 
@@ -965,7 +965,7 @@ function ActiveMatchCard({
                     Use my Banker
                   </span>
                   <span className="block text-xs text-slate-400 mt-0.5">
-                    2× points if right · −1 if wrong{bankerMode === 'user' ? ' · one per game day' : ''}
+                    2× points if right · {match.is_knockout ? '−2' : '−1'} if wrong{bankerMode === 'user' ? ' · one per game day' : ''}
                   </span>
                 </span>
                 <span
@@ -1334,7 +1334,7 @@ function BankerModeBanner({ mode }: { mode: 'admin' | 'user' }) {
             </p>
             <p className="text-slate-200 text-xs mt-1 leading-snug">
               Bank <span className="text-white font-semibold">any one match per game day</span> — 2× points
-              if right, −1 if wrong. Game days follow the official schedule (US Eastern).
+              if right, −2 if wrong. Game days follow the official schedule (US Eastern).
             </p>
           </div>
         </div>
