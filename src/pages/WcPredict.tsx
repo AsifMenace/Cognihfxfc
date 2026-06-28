@@ -855,19 +855,24 @@ function ActiveMatchCard({
             // ── Knockout: scoreline + winner ──────────────────────────────
             <div className="space-y-3">
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider text-center">Predict the score</p>
-              <div className="flex items-center gap-3">
+              <div className="flex items-end gap-4">
                 {/* Home goals */}
-                <div className="flex-1 flex items-center justify-center gap-3">
-                  <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
-                  <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedHomeGoals ?? '?'}</span>
-                  <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                <div className="flex-1 flex flex-col items-center gap-1.5">
+                  <span className="text-slate-400 text-xs font-medium text-center truncate w-full">{match.home_team}</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
+                    <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedHomeGoals ?? 0}</span>
+                    <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                  </div>
                 </div>
-                <span className="text-slate-500 font-black text-2xl flex-shrink-0">–</span>
                 {/* Away goals */}
-                <div className="flex-1 flex items-center justify-center gap-3">
-                  <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
-                  <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedAwayGoals ?? '?'}</span>
-                  <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                <div className="flex-1 flex flex-col items-center gap-1.5">
+                  <span className="text-slate-400 text-xs font-medium text-center truncate w-full">{match.away_team}</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
+                    <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedAwayGoals ?? 0}</span>
+                    <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                  </div>
                 </div>
               </div>
               {/* Winner — auto-locked for non-equal score, required picker for equal (pens) */}
