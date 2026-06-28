@@ -501,7 +501,8 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
 
       {/* Activation modal — designate the day's banker match before activating */}
       {activateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70">
+          <div className="flex min-h-full items-center justify-center px-4 py-6">
           <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
             <div className="px-5 py-4 border-b border-slate-700/60">
               <h3 className="text-white font-bold text-base">Activate match</h3>
@@ -713,6 +714,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                     : 'Activate'}
               </button>
             </div>
+          </div>
           </div>
         </div>
       )}
