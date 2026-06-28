@@ -284,10 +284,10 @@ function PointsBadge({ points }: { points: number }) {
   );
 }
 
-// Star marking a banker pick (2× points, −1 if wrong).
+// Star marking a banker pick (2× points, −2 if wrong in knockout).
 function BankerStar({ size = 12 }: { size?: number }) {
   return (
-    <span title="Banker · 2× points (−1 if wrong)" className="inline-flex items-center">
+    <span title="Banker · 2× points if correct · −2 if wrong (knockout)" className="inline-flex items-center">
       <Star size={size} className="text-amber-400 fill-amber-400" />
     </span>
   );
@@ -760,7 +760,7 @@ function ActiveMatchCard({
       {bankerMode === 'admin' && match.is_banker_match && (
         <div className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs font-bold tracking-wide">
           <Star size={13} className="fill-amber-400 text-amber-400" />
-          BANKER MATCH · 2× points if correct · −1 if wrong
+          BANKER MATCH · 2× points if correct · {match.is_knockout ? '−2' : '−1'} if wrong
         </div>
       )}
 
@@ -854,19 +854,27 @@ function ActiveMatchCard({
           {match.is_knockout ? (
             // ── Knockout: scoreline + winner ──────────────────────────────
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
+              <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider text-center">Predict the score</p>
+              <div className="flex items-end">
                 {/* Home goals */}
-                <div className="flex-1 flex items-center justify-center gap-3">
-                  <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
-                  <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedHomeGoals ?? '?'}</span>
-                  <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                <div className="flex-1 flex flex-col items-center gap-1.5">
+                  <span className="text-slate-400 text-xs font-medium text-center truncate w-full">{match.home_team}</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
+                    <span className={`font-black text-3xl w-8 text-center tabular-nums select-none ${predictedHomeGoals !== null ? 'text-white' : 'text-slate-600'}`}>{predictedHomeGoals ?? 0}</span>
+                    <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                  </div>
                 </div>
-                <span className="text-slate-500 font-black text-2xl flex-shrink-0">–</span>
+                {/* Divider */}
+                <div className="w-px bg-slate-700 self-stretch mx-3" />
                 {/* Away goals */}
-                <div className="flex-1 flex items-center justify-center gap-3">
-                  <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
-                  <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedAwayGoals ?? '?'}</span>
-                  <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                <div className="flex-1 flex flex-col items-center gap-1.5">
+                  <span className="text-slate-400 text-xs font-medium text-center truncate w-full">{match.away_team}</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
+                    <span className={`font-black text-3xl w-8 text-center tabular-nums select-none ${predictedAwayGoals !== null ? 'text-white' : 'text-slate-600'}`}>{predictedAwayGoals ?? 0}</span>
+                    <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                  </div>
                 </div>
               </div>
               {/* Winner — auto-locked for non-equal score, required picker for equal (pens) */}
@@ -957,7 +965,7 @@ function ActiveMatchCard({
                     Use my Banker
                   </span>
                   <span className="block text-xs text-slate-400 mt-0.5">
-                    2× points if right · −1 if wrong{bankerMode === 'user' ? ' · one per game day' : ''}
+                    2× points if right · {match.is_knockout ? '−2' : '−1'} if wrong{bankerMode === 'user' ? ' · one per game day' : ''}
                   </span>
                 </span>
                 <span
@@ -1326,7 +1334,7 @@ function BankerModeBanner({ mode }: { mode: 'admin' | 'user' }) {
             </p>
             <p className="text-slate-200 text-xs mt-1 leading-snug">
               Bank <span className="text-white font-semibold">any one match per game day</span> — 2× points
-              if right, −1 if wrong. Game days follow the official schedule (US Eastern).
+              if right, −2 if wrong. Game days follow the official schedule (US Eastern).
             </p>
           </div>
         </div>
