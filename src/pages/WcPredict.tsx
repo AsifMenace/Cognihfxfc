@@ -387,10 +387,15 @@ function PredictionsList({
                 {activeVoters.map((pred) => (
                   <div key={pred.player_id} className="flex items-center gap-3 px-4 py-2.5">
                     <PlayerAvatar photo={pred.player_photo} name={pred.player_name} size={7} />
-                    <span className="text-white text-sm font-medium flex-1 flex items-center gap-1.5">
-                      {pred.player_name}
+                    <span className="text-white text-sm font-medium flex-1 flex items-center gap-1.5 min-w-0">
+                      <span className="truncate">{pred.player_name}</span>
                       {pred.is_banker && <BankerStar />}
                     </span>
+                    {match.is_knockout && pred.predicted_home_goals != null && (
+                      <span className="text-slate-400 text-xs tabular-nums shrink-0">
+                        {pred.predicted_home_goals}–{pred.predicted_away_goals}
+                      </span>
+                    )}
                     {isCompleted && <PointsBadge points={activePick === 'score' ? (pred.score_points || 0) : pred.points} />}
                   </div>
                 ))}
