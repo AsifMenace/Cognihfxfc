@@ -367,7 +367,8 @@ function PredictionsList({
                   : 'bg-teal-500/10 border-teal-500/30 text-teal-200 hover:border-teal-400/50'
               }`}
             >
-              <span className="leading-tight font-black tabular-nums">
+              <span className="leading-tight">Perfect</span>
+              <span className={`text-[10px] tabular-nums leading-tight ${activePick === 'score' ? 'text-slate-300' : 'text-teal-300/70'}`}>
                 {match.final_home_goals}–{match.final_away_goals}
               </span>
               <span className={`text-base font-black leading-none ${activePick === 'score' ? 'text-green-300' : 'text-teal-300'}`}>
