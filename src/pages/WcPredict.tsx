@@ -617,8 +617,8 @@ function ActiveMatchCard({
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
   // Knockout-specific prediction state
-  const [predictedHomeGoals, setPredictedHomeGoals] = useState<number | null>(null);
-  const [predictedAwayGoals, setPredictedAwayGoals] = useState<number | null>(null);
+  const [predictedHomeGoals, setPredictedHomeGoals] = useState<number | null>(0);
+  const [predictedAwayGoals, setPredictedAwayGoals] = useState<number | null>(0);
   const [predictedWinner, setPredictedWinner] = useState<'home' | 'away' | null>(null);
   const [banker, setBanker] = useState(false);
   const [triviaGuess, setTriviaGuess] = useState<number | null>(null);
@@ -854,6 +854,7 @@ function ActiveMatchCard({
           {match.is_knockout ? (
             // ── Knockout: scoreline + winner ──────────────────────────────
             <div className="space-y-3">
+              <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider text-center">Predict the score</p>
               <div className="flex items-center gap-3">
                 {/* Home goals */}
                 <div className="flex-1 flex items-center justify-center gap-3">
