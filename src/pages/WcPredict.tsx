@@ -33,6 +33,7 @@ interface Match {
   final_home_goals: number | null;
   final_away_goals: number | null;
   is_banker_match: boolean;
+  is_knockout: boolean;
   trivia_question: string | null;
   trivia_options: string | null; // JSON array string, e.g. '["0","1","2","3+"]'
   trivia_answer: number | null; // correct index; null = unset, -1 = none of the options
@@ -46,9 +47,14 @@ interface Prediction {
   player_photo: string;
   prediction: string;
   points: number;
+  score_points: number;
   is_banker: boolean;
   trivia_guess: number | null;
   trivia_points: number;
+  // Knockout-only fields (null for group stage predictions)
+  predicted_home_goals: number | null;
+  predicted_away_goals: number | null;
+  predicted_winner: string | null;
 }
 
 interface Player {
@@ -297,26 +303,33 @@ function PredictionsList({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const [activePick, setActivePick] = useState<'home' | 'draw' | 'away' | null>(null);
+  const [activePick, setActivePick] = useState<'home' | 'draw' | 'away' | 'score' | null>(null);
 
   if (predictions.length === 0) return null;
 
   const isCompleted = match.status === 'completed';
-  const picks = [
-    { val: 'home' as const, label: match.home_team },
-    { val: 'draw' as const, label: 'Draw' },
-    { val: 'away' as const, label: match.away_team },
-  ];
+  // For knockout, prediction column stores the winner ('home'/'away'). No draw tab.
+  const picks = match.is_knockout
+    ? [
+        { val: 'home' as const, label: match.home_team },
+        { val: 'away' as const, label: match.away_team },
+      ]
+    : [
+        { val: 'home' as const, label: match.home_team },
+        { val: 'draw' as const, label: 'Draw' },
+        { val: 'away' as const, label: match.away_team },
+      ];
   const votersFor = (val: 'home' | 'draw' | 'away') =>
     predictions.filter((p) => p.prediction === val);
-  const activeVoters = activePick ? votersFor(activePick) : [];
-  const activeLabel = picks.find((p) => p.val === activePick)?.label ?? '';
+  const scorerVoters = predictions.filter((p) => (p.score_points ?? 0) > 0);
+  const activeVoters = activePick === 'score' ? scorerVoters : activePick ? votersFor(activePick) : [];
+  const activeLabel = activePick === 'score' ? 'the exact score' : picks.find((p) => p.val === activePick)?.label ?? '';
 
   return (
     <div className="border-t border-slate-700/50">
       {/* Vote breakdown — tap a side to see who picked it */}
       <div className="px-5 pt-3 pb-1">
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${match.is_knockout && isCompleted ? 'grid-cols-3' : match.is_knockout ? 'grid-cols-2' : 'grid-cols-3'}`}>
           {picks.map(({ val, label }) => {
             const count = votersFor(val).length;
             const active = activePick === val;
@@ -344,6 +357,25 @@ function PredictionsList({
               </button>
             );
           })}
+          {/* Exact scoreline filter — knockout completed only */}
+          {match.is_knockout && isCompleted && (
+            <button
+              onClick={() => setActivePick((p) => (p === 'score' ? null : 'score'))}
+              className={`flex flex-col items-center gap-0.5 py-2 px-2 rounded-xl border text-xs font-semibold transition-colors ${
+                activePick === 'score'
+                  ? 'bg-green-600/20 border-green-500/50 text-white'
+                  : 'bg-teal-500/10 border-teal-500/30 text-teal-200 hover:border-teal-400/50'
+              }`}
+            >
+              <span className="leading-tight">🎯 Exact ⚽</span>
+              <span className={`text-[10px] tabular-nums leading-tight ${activePick === 'score' ? 'text-slate-300' : 'text-teal-300/70'}`}>
+                {match.final_home_goals}–{match.final_away_goals}
+              </span>
+              <span className={`text-base font-black leading-none ${activePick === 'score' ? 'text-green-300' : 'text-teal-300'}`}>
+                {scorerVoters.length}
+              </span>
+            </button>
+          )}
         </div>
 
         {activePick && (
@@ -355,11 +387,16 @@ function PredictionsList({
                 {activeVoters.map((pred) => (
                   <div key={pred.player_id} className="flex items-center gap-3 px-4 py-2.5">
                     <PlayerAvatar photo={pred.player_photo} name={pred.player_name} size={7} />
-                    <span className="text-white text-sm font-medium flex-1 flex items-center gap-1.5">
-                      {pred.player_name}
+                    <span className="text-white text-sm font-medium flex-1 flex items-center gap-1.5 min-w-0">
+                      <span className="truncate">{pred.player_name}</span>
                       {pred.is_banker && <BankerStar />}
                     </span>
-                    {isCompleted && <PointsBadge points={pred.points} />}
+                    {match.is_knockout && pred.predicted_home_goals != null && (
+                      <span className="text-slate-400 text-xs tabular-nums shrink-0">
+                        {pred.predicted_home_goals}–{pred.predicted_away_goals}
+                      </span>
+                    )}
+                    {isCompleted && <PointsBadge points={activePick === 'score' ? (pred.score_points || 0) : pred.points} />}
                   </div>
                 ))}
               </div>
@@ -394,14 +431,16 @@ function PredictionsList({
                 {pred.player_name}
                 {pred.is_banker && <BankerStar />}
               </span>
-              <span className="text-xs text-slate-400">
-                {pred.prediction === 'home'
-                  ? match.home_team
-                  : pred.prediction === 'away'
-                    ? match.away_team
-                    : 'Draw'}
+              <span className="text-xs text-slate-400 text-right">
+                {match.is_knockout && pred.predicted_home_goals !== null
+                  ? `${pred.predicted_home_goals}–${pred.predicted_away_goals}${pred.predicted_winner ? ` · ${pred.predicted_winner === 'home' ? match.home_team : match.away_team}` : ''}`
+                  : pred.prediction === 'home'
+                    ? match.home_team
+                    : pred.prediction === 'away'
+                      ? match.away_team
+                      : 'Draw'}
               </span>
-              {isCompleted && <PointsBadge points={pred.points} />}
+              {isCompleted && <PointsBadge points={(pred.points || 0) + (pred.score_points || 0)} />}
             </div>
           ))}
         </div>
@@ -419,8 +458,14 @@ function BankersSummary({ match }: { match: Match }) {
   const [open, setOpen] = useState(false);
   const bankers = match.predictions.filter((p) => p.is_banker);
   const isCompleted = match.status === 'completed';
-  const pickLabel = (val: string) =>
-    val === 'home' ? match.home_team : val === 'away' ? match.away_team : 'Draw';
+  const pickLabel = (b: Prediction) =>
+    match.is_knockout && b.predicted_home_goals !== null
+      ? `${b.predicted_home_goals}–${b.predicted_away_goals}${b.predicted_winner ? ` · ${b.predicted_winner === 'home' ? match.home_team : match.away_team}` : ''}`
+      : b.prediction === 'home'
+        ? match.home_team
+        : b.prediction === 'away'
+          ? match.away_team
+          : 'Draw';
 
   if (bankers.length === 0) {
     return (
@@ -459,7 +504,7 @@ function BankersSummary({ match }: { match: Match }) {
                 <span className="text-white text-sm font-medium flex-1 min-w-0 truncate">
                   {b.player_name}
                 </span>
-                <span className="text-xs text-slate-300">{pickLabel(b.prediction)}</span>
+                <span className="text-xs text-slate-300">{pickLabel(b)}</span>
                 {isCompleted && <PointsBadge points={b.points} />}
               </div>
             ))}
@@ -571,6 +616,10 @@ function ActiveMatchCard({
   bankerUsedToday: boolean;
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
+  // Knockout-specific prediction state
+  const [predictedHomeGoals, setPredictedHomeGoals] = useState<number | null>(null);
+  const [predictedAwayGoals, setPredictedAwayGoals] = useState<number | null>(null);
+  const [predictedWinner, setPredictedWinner] = useState<'home' | 'away' | null>(null);
   const [banker, setBanker] = useState(false);
   const [triviaGuess, setTriviaGuess] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -591,6 +640,9 @@ function ActiveMatchCard({
   useEffect(() => {
     if (!selectedPlayer) {
       setSelectedPrediction(null);
+      setPredictedHomeGoals(null);
+      setPredictedAwayGoals(null);
+      setPredictedWinner(null);
       setSubmitted(false);
       setBanker(false);
       setTriviaGuess(null);
@@ -598,35 +650,77 @@ function ActiveMatchCard({
     }
     const existing = match.predictions.find((p) => p.player_id === selectedPlayer);
     if (existing) {
-      setSelectedPrediction(existing.prediction);
-      // Seed the banker toggle and trivia guess from the saved pick so an edit
-      // reflects reality.
+      if (match.is_knockout) {
+        setPredictedHomeGoals(existing.predicted_home_goals ?? null);
+        setPredictedAwayGoals(existing.predicted_away_goals ?? null);
+        setPredictedWinner((existing.predicted_winner ?? null) as 'home' | 'away' | null);
+      } else {
+        setSelectedPrediction(existing.prediction);
+      }
       setBanker(existing.is_banker);
       setTriviaGuess(existing.trivia_guess);
       setSubmitted(true);
     } else {
       setSelectedPrediction(null);
+      setPredictedHomeGoals(null);
+      setPredictedAwayGoals(null);
+      setPredictedWinner(null);
       setSubmitted(false);
       setBanker(false);
       setTriviaGuess(null);
     }
-  }, [selectedPlayer, match.predictions]);
+  }, [selectedPlayer, match.predictions, match.is_knockout]);
+
+  const handleHomeGoalsChange = (newVal: number) => {
+    const clamped = Math.max(0, Math.min(15, newVal));
+    setPredictedHomeGoals(clamped);
+    if (predictedAwayGoals !== null) {
+      if (clamped > predictedAwayGoals) setPredictedWinner('home');
+      else if (clamped < predictedAwayGoals) setPredictedWinner('away');
+      else setPredictedWinner(null);
+    }
+  };
+
+  const handleAwayGoalsChange = (newVal: number) => {
+    const clamped = Math.max(0, Math.min(15, newVal));
+    setPredictedAwayGoals(clamped);
+    if (predictedHomeGoals !== null) {
+      if (predictedHomeGoals > clamped) setPredictedWinner('home');
+      else if (predictedHomeGoals < clamped) setPredictedWinner('away');
+      else setPredictedWinner(null);
+    }
+  };
 
   const handleSubmit = async () => {
-    if (!selectedPlayer || !selectedPrediction) return;
+    if (match.is_knockout) {
+      if (predictedHomeGoals === null || predictedAwayGoals === null || !predictedWinner) return;
+    } else {
+      if (!selectedPlayer || !selectedPrediction) return;
+    }
     setSubmitting(true);
     setError(null);
     try {
+      const payload = match.is_knockout
+        ? {
+            match_id: match.id,
+            player_id: selectedPlayer,
+            predicted_home_goals: predictedHomeGoals,
+            predicted_away_goals: predictedAwayGoals,
+            predicted_winner: predictedWinner,
+            is_banker: banker,
+            trivia_guess: hasTrivia ? triviaGuess : null,
+          }
+        : {
+            match_id: match.id,
+            player_id: selectedPlayer,
+            prediction: selectedPrediction,
+            is_banker: banker,
+            trivia_guess: hasTrivia ? triviaGuess : null,
+          };
       const res = await fetch('/.netlify/functions/submitPrediction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          match_id: match.id,
-          player_id: selectedPlayer,
-          prediction: selectedPrediction,
-          is_banker: banker,
-          trivia_guess: hasTrivia ? triviaGuess : null,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
@@ -715,13 +809,21 @@ function ActiveMatchCard({
               <div className="min-w-0">
                 <p className="text-green-300 text-sm font-semibold flex items-center gap-1.5 flex-wrap">
                   Your prediction:{' '}
-                  <span className="text-white">
-                    {selectedPrediction === 'home'
-                      ? match.home_team
-                      : selectedPrediction === 'away'
-                        ? match.away_team
-                        : 'Draw'}
-                  </span>
+                  {match.is_knockout ? (
+                    <span className="text-white">
+                      {match.home_team} {myPrediction?.predicted_home_goals ?? '?'}–{myPrediction?.predicted_away_goals ?? '?'} {match.away_team}
+                      {' · '}
+                      {myPrediction?.predicted_winner === 'home' ? match.home_team : match.away_team} to advance
+                    </span>
+                  ) : (
+                    <span className="text-white">
+                      {selectedPrediction === 'home'
+                        ? match.home_team
+                        : selectedPrediction === 'away'
+                          ? match.away_team
+                          : 'Draw'}
+                    </span>
+                  )}
                   {myPrediction?.is_banker && (
                     <span className="inline-flex items-center gap-1 text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full text-xs font-bold">
                       <BankerStar size={11} /> Banker
@@ -749,26 +851,80 @@ function ActiveMatchCard({
 
       {!isLocked && selectedPlayer && !submitted && (
         <div className="px-6 pb-6 space-y-3 border-t border-slate-700/50 pt-4">
-          <div className="grid grid-cols-3 gap-2">
-            {(['home', 'draw', 'away'] as const).map((val) => {
-              const label =
-                val === 'home' ? match.home_team : val === 'away' ? match.away_team : 'Draw';
-              const isSelected = selectedPrediction === val;
-              return (
-                <button
-                  key={val}
-                  onClick={() => setSelectedPrediction(val)}
-                  className={`py-3 px-2 rounded-xl text-xs font-bold transition-all duration-200 border ${
-                    isSelected
-                      ? 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-600/30'
-                      : 'bg-slate-700 border-slate-600 text-slate-300 hover:border-slate-500 hover:text-white'
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+          {match.is_knockout ? (
+            // ── Knockout: scoreline + winner ──────────────────────────────
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                {/* Home goals */}
+                <div className="flex-1 flex items-center justify-center gap-3">
+                  <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
+                  <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedHomeGoals ?? '?'}</span>
+                  <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                </div>
+                <span className="text-slate-500 font-black text-2xl flex-shrink-0">–</span>
+                {/* Away goals */}
+                <div className="flex-1 flex items-center justify-center gap-3">
+                  <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
+                  <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedAwayGoals ?? '?'}</span>
+                  <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
+                </div>
+              </div>
+              {/* Winner — auto-locked for non-equal score, required picker for equal (pens) */}
+              {predictedHomeGoals !== null && predictedAwayGoals !== null && (
+                predictedHomeGoals !== predictedAwayGoals ? (
+                  <div className="flex items-center gap-2 rounded-xl bg-slate-700/40 border border-slate-600/50 px-4 py-2.5">
+                    <CheckCircle2 size={14} className="text-slate-400 flex-shrink-0" />
+                    <span className="text-slate-300 text-sm">
+                      Advances: <span className="text-white font-semibold">{predictedWinner === 'home' ? match.home_team : match.away_team}</span>
+                    </span>
+                    <span className="ml-auto text-slate-600 text-xs">auto</span>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 space-y-2">
+                    <p className="text-amber-300 text-xs font-bold uppercase tracking-wider">Who advances on penalties?</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['home', 'away'] as const).map((side) => (
+                        <button
+                          key={side}
+                          type="button"
+                          onClick={() => setPredictedWinner(side)}
+                          className={`py-2 px-3 rounded-xl text-sm font-bold border transition-colors ${
+                            predictedWinner === side
+                              ? 'bg-amber-500/25 border-amber-400/60 text-amber-100'
+                              : 'bg-slate-700/60 border-slate-600/50 text-slate-300 hover:border-slate-500'
+                          }`}
+                        >
+                          {side === 'home' ? match.home_team : match.away_team}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          ) : (
+            // ── Group stage: 3-button pick ─────────────────────────────────
+            <div className="grid grid-cols-3 gap-2">
+              {(['home', 'draw', 'away'] as const).map((val) => {
+                const label =
+                  val === 'home' ? match.home_team : val === 'away' ? match.away_team : 'Draw';
+                const isSelected = selectedPrediction === val;
+                return (
+                  <button
+                    key={val}
+                    onClick={() => setSelectedPrediction(val)}
+                    className={`py-3 px-2 rounded-xl text-xs font-bold transition-all duration-200 border ${
+                      isSelected
+                        ? 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-600/30'
+                        : 'bg-slate-700 border-slate-600 text-slate-300 hover:border-slate-500 hover:text-white'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Banker toggle. Admin mode: only the designated match. User mode: any
              match, but locked out if the player already bankered another game
@@ -854,7 +1010,9 @@ function ActiveMatchCard({
             </div>
           )}
 
-          {selectedPrediction && (
+          {(match.is_knockout
+            ? predictedHomeGoals !== null && predictedAwayGoals !== null && predictedWinner !== null
+            : !!selectedPrediction) && (
             <button
               onClick={handleSubmit}
               disabled={submitting}
@@ -867,7 +1025,13 @@ function ActiveMatchCard({
             <button
               type="button"
               onClick={() => {
-                setSelectedPrediction(myPrediction.prediction);
+                if (match.is_knockout) {
+                  setPredictedHomeGoals(myPrediction.predicted_home_goals ?? null);
+                  setPredictedAwayGoals(myPrediction.predicted_away_goals ?? null);
+                  setPredictedWinner((myPrediction.predicted_winner ?? null) as 'home' | 'away' | null);
+                } else {
+                  setSelectedPrediction(myPrediction.prediction);
+                }
                 setBanker(myPrediction.is_banker);
                 setTriviaGuess(myPrediction.trivia_guess);
                 setSubmitted(true);
@@ -1245,7 +1409,7 @@ function buildStandingsHistory(matches: Match[]): { days: string[]; series: StdS
         if (!totals.has(p.player_id)) continue;
         totals.set(
           p.player_id,
-          totals.get(p.player_id)! + (p.points || 0) + (p.trivia_points || 0)
+          totals.get(p.player_id)! + (p.points || 0) + (p.score_points || 0) + (p.trivia_points || 0)
         );
         // Match the leaderboard's "correct" definition: a match pick worth > 0
         // (trivia points don't count toward correctness).

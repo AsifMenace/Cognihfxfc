@@ -33,7 +33,7 @@ export const handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body);
-    const { match_id, player_id, prediction } = body;
+    const { match_id, player_id } = body;
     const is_banker = body.is_banker === true;
     // Optional trivia guess — a 0-based option index, or null if unanswered.
     let triviaGuess = null;
@@ -42,19 +42,11 @@ export const handler = async (event) => {
       if (!isNaN(g) && g >= 0) triviaGuess = g;
     }
 
-    if (!match_id || !player_id || !prediction) {
+    if (!match_id || !player_id) {
       return {
         statusCode: 400,
         headers: corsHeaders,
         body: JSON.stringify({ error: "Missing required fields" }),
-      };
-    }
-
-    if (!["home", "draw", "away"].includes(prediction)) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: "Invalid prediction value" }),
       };
     }
 
@@ -155,15 +147,76 @@ export const handler = async (event) => {
       }
     }
 
-    // Upsert — predictions can be changed until the match locks (kickoff guard
-    // above). Re-submitting overwrites the pick, banker flag and trivia guess.
-    // trivia_points is left untouched (awarded later by setWcTriviaResult).
-    await sql`
-      INSERT INTO wc_predictions (match_id, player_id, prediction, is_banker, trivia_guess)
-      VALUES (${match_id}, ${player_id}, ${prediction}, ${is_banker}, ${validTriviaGuess})
-      ON CONFLICT (match_id, player_id)
-      DO UPDATE SET prediction = ${prediction}, is_banker = ${is_banker}, trivia_guess = ${validTriviaGuess}
-    `;
+    if (match.is_knockout) {
+      // Knockout round: scoreline + winner prediction
+      const predictedHomeGoals = parseInt(body.predicted_home_goals, 10);
+      const predictedAwayGoals = parseInt(body.predicted_away_goals, 10);
+      const predictedWinner = body.predicted_winner;
+
+      if (isNaN(predictedHomeGoals) || isNaN(predictedAwayGoals) || predictedHomeGoals < 0 || predictedAwayGoals < 0) {
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'predicted_home_goals and predicted_away_goals must be non-negative integers' }),
+        };
+      }
+      if (!['home', 'away'].includes(predictedWinner)) {
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'predicted_winner must be home or away' }),
+        };
+      }
+      // Server-side guard: non-equal score must have winner match the leading team
+      if (predictedHomeGoals !== predictedAwayGoals) {
+        const expectedWinner = predictedHomeGoals > predictedAwayGoals ? 'home' : 'away';
+        if (predictedWinner !== expectedWinner) {
+          return {
+            statusCode: 400,
+            headers: corsHeaders,
+            body: JSON.stringify({ error: 'predicted_winner must match the leading team in the score' }),
+          };
+        }
+      }
+
+      await sql`
+        INSERT INTO wc_predictions (match_id, player_id, prediction, predicted_home_goals, predicted_away_goals, predicted_winner, is_banker, trivia_guess)
+        VALUES (${match_id}, ${player_id}, ${predictedWinner}, ${predictedHomeGoals}, ${predictedAwayGoals}, ${predictedWinner}, ${is_banker}, ${validTriviaGuess})
+        ON CONFLICT (match_id, player_id) DO UPDATE SET
+          prediction = ${predictedWinner},
+          predicted_home_goals = ${predictedHomeGoals},
+          predicted_away_goals = ${predictedAwayGoals},
+          predicted_winner = ${predictedWinner},
+          is_banker = ${is_banker},
+          trivia_guess = ${validTriviaGuess}
+      `;
+    } else {
+      // Group stage: home / draw / away prediction
+      const { prediction } = body;
+      if (!prediction) {
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: "Missing required fields" }),
+        };
+      }
+      if (!["home", "draw", "away"].includes(prediction)) {
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: "Invalid prediction value" }),
+        };
+      }
+      // Upsert — predictions can be changed until the match locks (kickoff guard
+      // above). Re-submitting overwrites the pick, banker flag and trivia guess.
+      // trivia_points is left untouched (awarded later by setWcTriviaResult).
+      await sql`
+        INSERT INTO wc_predictions (match_id, player_id, prediction, is_banker, trivia_guess)
+        VALUES (${match_id}, ${player_id}, ${prediction}, ${is_banker}, ${validTriviaGuess})
+        ON CONFLICT (match_id, player_id)
+        DO UPDATE SET prediction = ${prediction}, is_banker = ${is_banker}, trivia_guess = ${validTriviaGuess}
+      `;
+    }
 
     return {
       statusCode: 200,

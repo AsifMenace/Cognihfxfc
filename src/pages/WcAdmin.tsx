@@ -30,6 +30,7 @@ interface ActiveMatch {
   final_home_goals: number | null;
   final_away_goals: number | null;
   is_banker_match: boolean;
+  is_knockout: boolean;
   trivia_question: string | null;
   trivia_options: string | null; // JSON array string
   trivia_answer: number | null; // null = unset, -1 = none, >=0 = correct index
@@ -155,7 +156,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
   const [completedExpanded, setCompletedExpanded] = useState(false);
-  const [manualForm, setManualForm] = useState<{ [matchId: number]: { home: string; away: string } }>({});
+  const [manualForm, setManualForm] = useState<{ [matchId: number]: { home: string; away: string; penaltyWinner?: 'home' | 'away' } }>({});
   const [manualOpen, setManualOpen] = useState<number | null>(null);
   const [settingManual, setSettingManual] = useState<number | null>(null);
   const [settingLiveManual, setSettingLiveManual] = useState<number | null>(null);
@@ -163,6 +164,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [activateModal, setActivateModal] = useState<{
     fixture: Fixture;
     banker: boolean;
+    isKnockout: boolean;
     triviaQuestion: string;
     triviaOptions: string[];
   } | null>(null);
@@ -242,6 +244,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const activateMatch = async (
     fixture: Fixture,
     isBankerMatch: boolean,
+    isKnockout: boolean,
     triviaQuestion: string,
     triviaOptions: string[]
   ) => {
@@ -265,6 +268,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           away_flag: fixture.away_flag,
           kickoff_time: fixture.kickoff_time,
           is_banker_match: isBankerMatch,
+          is_knockout: isKnockout,
           trivia_question: sendTrivia ? q : null,
           trivia_options: sendTrivia ? opts : null,
         }),
@@ -442,7 +446,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
       const res = await fetch('/.netlify/functions/setWcResultManual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ match_id: matchId, home_goals: hg, away_goals: ag, override }),
+        body: JSON.stringify({ match_id: matchId, home_goals: hg, away_goals: ag, penalty_winner: form.penaltyWinner ?? null, override }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to set result');
@@ -497,7 +501,8 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
 
       {/* Activation modal — designate the day's banker match before activating */}
       {activateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70">
+          <div className="flex min-h-full items-center justify-center px-4 py-6">
           <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
             <div className="px-5 py-4 border-b border-slate-700/60">
               <h3 className="text-white font-bold text-base">Activate match</h3>
@@ -576,6 +581,37 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                   )}
                 </>
               )}
+
+              {/* Knockout toggle — pre-checked for Round of 32 onwards */}
+              <button
+                type="button"
+                onClick={() => setActivateModal((s) => (s ? { ...s, isKnockout: !s.isKnockout } : s))}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
+                  activateModal.isKnockout
+                    ? 'bg-green-500/15 border-green-500/50'
+                    : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
+                }`}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className={`block text-sm font-bold ${activateModal.isKnockout ? 'text-green-200' : 'text-slate-200'}`}>
+                    Knockout match
+                  </span>
+                  <span className="block text-xs text-slate-400 mt-0.5">
+                    Scoreline prediction · +5 exact score · +1 winner
+                  </span>
+                </span>
+                <span
+                  className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                    activateModal.isKnockout ? 'bg-green-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                      activateModal.isKnockout ? 'left-[1.125rem]' : 'left-0.5'
+                    }`}
+                  />
+                </span>
+              </button>
 
               {/* Optional bonus trivia (multiple choice) — set at activation only */}
               <div className="rounded-xl bg-sky-500/10 border border-sky-500/30 px-4 py-3 space-y-2">
@@ -663,6 +699,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                   activateMatch(
                     activateModal.fixture,
                     activateModal.banker,
+                    activateModal.isKnockout,
                     activateModal.triviaQuestion,
                     activateModal.triviaOptions
                   )
@@ -677,6 +714,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                     : 'Activate'}
               </button>
             </div>
+          </div>
           </div>
         </div>
       )}
@@ -930,6 +968,27 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                                   />
                                 </div>
                               </div>
+                              {/* Penalty winner picker — knockout only, equal scores */}
+                              {m.is_knockout &&
+                                manualForm[m.id]?.home !== '' && manualForm[m.id]?.away !== '' &&
+                                !isNaN(parseInt(manualForm[m.id]?.home ?? '')) &&
+                                parseInt(manualForm[m.id]?.home ?? '') === parseInt(manualForm[m.id]?.away ?? '') && (
+                                <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 space-y-2">
+                                  <p className="text-amber-300 text-xs font-bold uppercase tracking-wider">Who advanced on penalties?</p>
+                                  <div className="flex gap-2">
+                                    {(['home', 'away'] as const).map((side) => (
+                                      <button
+                                        key={side}
+                                        type="button"
+                                        onClick={() => setManualForm((prev) => ({ ...prev, [m.id]: { ...prev[m.id], penaltyWinner: side } }))}
+                                        className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-colors ${manualForm[m.id]?.penaltyWinner === side ? 'bg-amber-500 border-amber-400 text-white' : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'}`}
+                                      >
+                                        {side === 'home' ? m.home_team : m.away_team}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => setLiveScoreManually(m.id)}
@@ -949,7 +1008,10 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                                     settingManual === m.id ||
                                     settingLiveManual === m.id ||
                                     !manualForm[m.id]?.home ||
-                                    !manualForm[m.id]?.away
+                                    !manualForm[m.id]?.away ||
+                                    (m.is_knockout &&
+                                      parseInt(manualForm[m.id]?.home ?? '') === parseInt(manualForm[m.id]?.away ?? '') &&
+                                      !manualForm[m.id]?.penaltyWinner)
                                   }
                                   className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm"
                                 >
@@ -1088,12 +1150,36 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                                           />
                                         </div>
                                       </div>
+                                      {/* Penalty winner picker — knockout only, equal scores */}
+                                      {m.is_knockout &&
+                                        manualForm[m.id]?.home !== '' && manualForm[m.id]?.away !== '' &&
+                                        !isNaN(parseInt(manualForm[m.id]?.home ?? '')) &&
+                                        parseInt(manualForm[m.id]?.home ?? '') === parseInt(manualForm[m.id]?.away ?? '') && (
+                                        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 space-y-2">
+                                          <p className="text-amber-300 text-xs font-bold uppercase tracking-wider">Who advanced on penalties?</p>
+                                          <div className="flex gap-2">
+                                            {(['home', 'away'] as const).map((side) => (
+                                              <button
+                                                key={side}
+                                                type="button"
+                                                onClick={() => setManualForm((prev) => ({ ...prev, [m.id]: { ...prev[m.id], penaltyWinner: side } }))}
+                                                className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-colors ${manualForm[m.id]?.penaltyWinner === side ? 'bg-amber-500 border-amber-400 text-white' : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'}`}
+                                              >
+                                                {side === 'home' ? m.home_team : m.away_team}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                       <button
                                         onClick={() => setResultManually(m.id, true)}
                                         disabled={
                                           settingManual === m.id ||
                                           !manualForm[m.id]?.home ||
-                                          !manualForm[m.id]?.away
+                                          !manualForm[m.id]?.away ||
+                                          (m.is_knockout &&
+                                            parseInt(manualForm[m.id]?.home ?? '') === parseInt(manualForm[m.id]?.away ?? '') &&
+                                            !manualForm[m.id]?.penaltyWinner)
                                         }
                                         className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm"
                                       >
@@ -1178,6 +1264,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                           setActivateModal({
                             fixture: fix,
                             banker: false,
+                            isKnockout: true,
                             triviaQuestion: '',
                             triviaOptions: ['', ''],
                           })

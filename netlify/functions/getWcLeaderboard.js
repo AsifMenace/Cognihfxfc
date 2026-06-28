@@ -19,7 +19,7 @@ export const handler = async (event) => {
         p.id AS player_id,
         p.name AS player_name,
         p.photo AS player_photo,
-        COALESCE(SUM(wp.points), 0) + COALESCE(SUM(wp.trivia_points), 0) AS total_points,
+        COALESCE(SUM(wp.points), 0) + COALESCE(SUM(wp.score_points), 0) + COALESCE(SUM(wp.trivia_points), 0) AS total_points,
         COUNT(wp.id) AS predictions_made,
         COUNT(CASE WHEN wp.points > 0 THEN 1 END) AS correct_predictions
       FROM players p

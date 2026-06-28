@@ -139,9 +139,12 @@ export const handler = async (event) => {
       is_banker_match,
       trivia_question,
       trivia_options,
+      is_knockout,
     } = JSON.parse(event.body);
 
     const bankerMatch = is_banker_match === true;
+    // Default true — all new matches are knockout. Admin can uncheck for any non-knockout match.
+    const isKnockout = is_knockout !== false;
 
     // Optional bonus trivia — only stored when there's a question and ≥2 options.
     let triviaQuestion = null;
@@ -202,8 +205,8 @@ export const handler = async (event) => {
     }
 
     const [saved] = await sql`
-      INSERT INTO wc_matches (fixture_id, home_team, away_team, home_code, away_code, home_flag, away_flag, kickoff_time, status, activated_at, is_banker_match, trivia_question, trivia_options)
-      VALUES (${fixture_id}, ${home_team}, ${away_team}, ${home_code}, ${away_code}, ${storedHomeFlag}, ${storedAwayFlag}, ${kickoff_time}, 'active', NOW(), ${bankerMatch}, ${triviaQuestion}, ${triviaOptions})
+      INSERT INTO wc_matches (fixture_id, home_team, away_team, home_code, away_code, home_flag, away_flag, kickoff_time, status, activated_at, is_banker_match, trivia_question, trivia_options, is_knockout)
+      VALUES (${fixture_id}, ${home_team}, ${away_team}, ${home_code}, ${away_code}, ${storedHomeFlag}, ${storedAwayFlag}, ${kickoff_time}, 'active', NOW(), ${bankerMatch}, ${triviaQuestion}, ${triviaOptions}, ${isKnockout})
       ON CONFLICT (fixture_id)
       DO UPDATE SET
         status = 'active',
@@ -212,7 +215,8 @@ export const handler = async (event) => {
         activated_at = NOW(),
         is_banker_match = ${bankerMatch},
         trivia_question = ${triviaQuestion},
-        trivia_options = ${triviaOptions}
+        trivia_options = ${triviaOptions},
+        is_knockout = ${isKnockout}
       RETURNING id, cronjob_id
     `;
 
