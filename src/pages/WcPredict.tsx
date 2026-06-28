@@ -425,9 +425,9 @@ function PredictionsList({
                 {pred.player_name}
                 {pred.is_banker && <BankerStar />}
               </span>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-400 text-right">
                 {match.is_knockout && pred.predicted_home_goals !== null
-                  ? `${pred.predicted_home_goals}–${pred.predicted_away_goals}`
+                  ? `${pred.predicted_home_goals}–${pred.predicted_away_goals}${pred.predicted_winner ? ` · ${pred.predicted_winner === 'home' ? match.home_team : match.away_team}` : ''}`
                   : pred.prediction === 'home'
                     ? match.home_team
                     : pred.prediction === 'away'
@@ -454,7 +454,7 @@ function BankersSummary({ match }: { match: Match }) {
   const isCompleted = match.status === 'completed';
   const pickLabel = (b: Prediction) =>
     match.is_knockout && b.predicted_home_goals !== null
-      ? `${b.predicted_home_goals}–${b.predicted_away_goals}`
+      ? `${b.predicted_home_goals}–${b.predicted_away_goals}${b.predicted_winner ? ` · ${b.predicted_winner === 'home' ? match.home_team : match.away_team}` : ''}`
       : b.prediction === 'home'
         ? match.home_team
         : b.prediction === 'away'
