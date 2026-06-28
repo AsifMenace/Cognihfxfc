@@ -617,8 +617,8 @@ function ActiveMatchCard({
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
   // Knockout-specific prediction state
-  const [predictedHomeGoals, setPredictedHomeGoals] = useState<number | null>(0);
-  const [predictedAwayGoals, setPredictedAwayGoals] = useState<number | null>(0);
+  const [predictedHomeGoals, setPredictedHomeGoals] = useState<number | null>(null);
+  const [predictedAwayGoals, setPredictedAwayGoals] = useState<number | null>(null);
   const [predictedWinner, setPredictedWinner] = useState<'home' | 'away' | null>(null);
   const [banker, setBanker] = useState(false);
   const [triviaGuess, setTriviaGuess] = useState<number | null>(null);
@@ -640,8 +640,8 @@ function ActiveMatchCard({
   useEffect(() => {
     if (!selectedPlayer) {
       setSelectedPrediction(null);
-      setPredictedHomeGoals(0);
-      setPredictedAwayGoals(0);
+      setPredictedHomeGoals(null);
+      setPredictedAwayGoals(null);
       setPredictedWinner(null);
       setSubmitted(false);
       setBanker(false);
@@ -651,8 +651,8 @@ function ActiveMatchCard({
     const existing = match.predictions.find((p) => p.player_id === selectedPlayer);
     if (existing) {
       if (match.is_knockout) {
-        setPredictedHomeGoals(existing.predicted_home_goals ?? 0);
-        setPredictedAwayGoals(existing.predicted_away_goals ?? 0);
+        setPredictedHomeGoals(existing.predicted_home_goals ?? null);
+        setPredictedAwayGoals(existing.predicted_away_goals ?? null);
         setPredictedWinner((existing.predicted_winner ?? null) as 'home' | 'away' | null);
       } else {
         setSelectedPrediction(existing.prediction);
@@ -662,8 +662,8 @@ function ActiveMatchCard({
       setSubmitted(true);
     } else {
       setSelectedPrediction(null);
-      setPredictedHomeGoals(0);
-      setPredictedAwayGoals(0);
+      setPredictedHomeGoals(null);
+      setPredictedAwayGoals(null);
       setPredictedWinner(null);
       setSubmitted(false);
       setBanker(false);
@@ -855,22 +855,24 @@ function ActiveMatchCard({
             // ── Knockout: scoreline + winner ──────────────────────────────
             <div className="space-y-3">
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider text-center">Predict the score</p>
-              <div className="flex items-end gap-4">
+              <div className="flex items-end">
                 {/* Home goals */}
                 <div className="flex-1 flex flex-col items-center gap-1.5">
                   <span className="text-slate-400 text-xs font-medium text-center truncate w-full">{match.home_team}</span>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
-                    <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedHomeGoals ?? 0}</span>
+                    <span className={`font-black text-3xl w-8 text-center tabular-nums select-none ${predictedHomeGoals !== null ? 'text-white' : 'text-slate-600'}`}>{predictedHomeGoals ?? 0}</span>
                     <button type="button" onClick={() => handleHomeGoalsChange((predictedHomeGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
                   </div>
                 </div>
+                {/* Divider */}
+                <div className="w-px bg-slate-700 self-stretch mx-3" />
                 {/* Away goals */}
                 <div className="flex-1 flex flex-col items-center gap-1.5">
                   <span className="text-slate-400 text-xs font-medium text-center truncate w-full">{match.away_team}</span>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? 0) - 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">−</button>
-                    <span className="text-white font-black text-3xl w-8 text-center tabular-nums select-none">{predictedAwayGoals ?? 0}</span>
+                    <span className={`font-black text-3xl w-8 text-center tabular-nums select-none ${predictedAwayGoals !== null ? 'text-white' : 'text-slate-600'}`}>{predictedAwayGoals ?? 0}</span>
                     <button type="button" onClick={() => handleAwayGoalsChange((predictedAwayGoals ?? -1) + 1)} className="w-9 h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xl flex items-center justify-center border border-slate-600 transition-colors">+</button>
                   </div>
                 </div>
