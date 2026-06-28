@@ -391,7 +391,7 @@ function PredictionsList({
                       {pred.player_name}
                       {pred.is_banker && <BankerStar />}
                     </span>
-                    {isCompleted && <PointsBadge points={pred.points} />}
+                    {isCompleted && <PointsBadge points={activePick === 'score' ? (pred.score_points || 0) : pred.points} />}
                   </div>
                 ))}
               </div>
