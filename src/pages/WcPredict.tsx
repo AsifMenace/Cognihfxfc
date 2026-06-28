@@ -303,7 +303,7 @@ function PredictionsList({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const [activePick, setActivePick] = useState<'home' | 'draw' | 'away' | null>(null);
+  const [activePick, setActivePick] = useState<'home' | 'draw' | 'away' | 'score' | null>(null);
 
   if (predictions.length === 0) return null;
 
@@ -321,14 +321,15 @@ function PredictionsList({
       ];
   const votersFor = (val: 'home' | 'draw' | 'away') =>
     predictions.filter((p) => p.prediction === val);
-  const activeVoters = activePick ? votersFor(activePick) : [];
-  const activeLabel = picks.find((p) => p.val === activePick)?.label ?? '';
+  const scorerVoters = predictions.filter((p) => (p.score_points ?? 0) > 0);
+  const activeVoters = activePick === 'score' ? scorerVoters : activePick ? votersFor(activePick) : [];
+  const activeLabel = activePick === 'score' ? 'the exact score' : picks.find((p) => p.val === activePick)?.label ?? '';
 
   return (
     <div className="border-t border-slate-700/50">
       {/* Vote breakdown — tap a side to see who picked it */}
       <div className="px-5 pt-3 pb-1">
-        <div className={`grid gap-2 ${match.is_knockout ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        <div className={`grid gap-2 ${match.is_knockout && isCompleted ? 'grid-cols-3' : match.is_knockout ? 'grid-cols-2' : 'grid-cols-3'}`}>
           {picks.map(({ val, label }) => {
             const count = votersFor(val).length;
             const active = activePick === val;
@@ -356,6 +357,24 @@ function PredictionsList({
               </button>
             );
           })}
+          {/* Exact scoreline filter — knockout completed only */}
+          {match.is_knockout && isCompleted && (
+            <button
+              onClick={() => setActivePick((p) => (p === 'score' ? null : 'score'))}
+              className={`flex flex-col items-center gap-0.5 py-2 px-2 rounded-xl border text-xs font-semibold transition-colors ${
+                activePick === 'score'
+                  ? 'bg-green-600/20 border-green-500/50 text-white'
+                  : 'bg-teal-500/10 border-teal-500/30 text-teal-200 hover:border-teal-400/50'
+              }`}
+            >
+              <span className="leading-tight font-black tabular-nums">
+                {match.final_home_goals}–{match.final_away_goals}
+              </span>
+              <span className={`text-base font-black leading-none ${activePick === 'score' ? 'text-green-300' : 'text-teal-300'}`}>
+                {scorerVoters.length}
+              </span>
+            </button>
+          )}
         </div>
 
         {activePick && (
