@@ -74,7 +74,17 @@ async function fetchFromApiFootball(match) {
     return { notFinished: true, status };
   }
 
-  return { homeGoals, awayGoals, source: 'api-football' };
+  // For PEN matches, determine who won the shootout
+  let penaltyWinner = null;
+  if (status === 'PEN' && homeGoals === awayGoals) {
+    const penHome = fixture.score?.penalty?.home;
+    const penAway = fixture.score?.penalty?.away;
+    if (penHome != null && penAway != null) {
+      penaltyWinner = penHome > penAway ? 'home' : 'away';
+    }
+  }
+
+  return { homeGoals, awayGoals, penaltyWinner, source: 'api-football' };
 }
 
 // ── football-data.org fallback ────────────────────────────────────────────────
@@ -96,7 +106,17 @@ async function fetchFromFootballData(match) {
     return { notFinished: true, status };
   }
 
-  return { homeGoals, awayGoals, source: 'football-data' };
+  // For penalty-decided matches, determine who won the shootout
+  let penaltyWinner = null;
+  if (homeGoals === awayGoals) {
+    const penHome = matchData.score?.penalties?.home;
+    const penAway = matchData.score?.penalties?.away;
+    if (penHome != null && penAway != null) {
+      penaltyWinner = penHome > penAway ? 'home' : 'away';
+    }
+  }
+
+  return { homeGoals, awayGoals, penaltyWinner, source: 'football-data' };
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -176,6 +196,7 @@ export const handler = async (event) => {
     let result;
     if (homeGoals > awayGoals) result = 'home';
     else if (awayGoals > homeGoals) result = 'away';
+    else if (match.is_knockout && scoreData.penaltyWinner) result = scoreData.penaltyWinner;
     else result = 'draw';
 
     await sql`

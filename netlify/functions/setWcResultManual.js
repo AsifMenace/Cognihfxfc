@@ -23,7 +23,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { match_id, home_goals, away_goals, override } = JSON.parse(event.body);
+    const { match_id, home_goals, away_goals, penalty_winner, override } = JSON.parse(event.body);
 
     if (!match_id || home_goals === undefined || away_goals === undefined) {
       return {
@@ -68,7 +68,18 @@ export const handler = async (event) => {
     let result;
     if (hg > ag) result = 'home';
     else if (ag > hg) result = 'away';
-    else result = 'draw';
+    else if (match.is_knockout) {
+      if (penalty_winner !== 'home' && penalty_winner !== 'away') {
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Knockout match with equal score requires penalty_winner (home|away)' }),
+        };
+      }
+      result = penalty_winner;
+    } else {
+      result = 'draw';
+    }
 
     await sql`
       UPDATE wc_matches
