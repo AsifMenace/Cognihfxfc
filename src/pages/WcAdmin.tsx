@@ -30,6 +30,7 @@ interface ActiveMatch {
   final_home_goals: number | null;
   final_away_goals: number | null;
   is_banker_match: boolean;
+  is_knockout: boolean;
   trivia_question: string | null;
   trivia_options: string | null; // JSON array string
   trivia_answer: number | null; // null = unset, -1 = none, >=0 = correct index
@@ -163,6 +164,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [activateModal, setActivateModal] = useState<{
     fixture: Fixture;
     banker: boolean;
+    isKnockout: boolean;
     triviaQuestion: string;
     triviaOptions: string[];
   } | null>(null);
@@ -242,6 +244,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const activateMatch = async (
     fixture: Fixture,
     isBankerMatch: boolean,
+    isKnockout: boolean,
     triviaQuestion: string,
     triviaOptions: string[]
   ) => {
@@ -265,6 +268,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           away_flag: fixture.away_flag,
           kickoff_time: fixture.kickoff_time,
           is_banker_match: isBankerMatch,
+          is_knockout: isKnockout,
           trivia_question: sendTrivia ? q : null,
           trivia_options: sendTrivia ? opts : null,
         }),
@@ -577,6 +581,37 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                 </>
               )}
 
+              {/* Knockout toggle — pre-checked for Round of 32 onwards */}
+              <button
+                type="button"
+                onClick={() => setActivateModal((s) => (s ? { ...s, isKnockout: !s.isKnockout } : s))}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
+                  activateModal.isKnockout
+                    ? 'bg-green-500/15 border-green-500/50'
+                    : 'bg-slate-700/40 border-slate-600/50 hover:border-slate-500'
+                }`}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className={`block text-sm font-bold ${activateModal.isKnockout ? 'text-green-200' : 'text-slate-200'}`}>
+                    Knockout match
+                  </span>
+                  <span className="block text-xs text-slate-400 mt-0.5">
+                    Scoreline prediction · +5 exact score · +1 winner
+                  </span>
+                </span>
+                <span
+                  className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+                    activateModal.isKnockout ? 'bg-green-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                      activateModal.isKnockout ? 'left-[1.125rem]' : 'left-0.5'
+                    }`}
+                  />
+                </span>
+              </button>
+
               {/* Optional bonus trivia (multiple choice) — set at activation only */}
               <div className="rounded-xl bg-sky-500/10 border border-sky-500/30 px-4 py-3 space-y-2">
                 <div className="flex items-center gap-1.5">
@@ -663,6 +698,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                   activateMatch(
                     activateModal.fixture,
                     activateModal.banker,
+                    activateModal.isKnockout,
                     activateModal.triviaQuestion,
                     activateModal.triviaOptions
                   )
@@ -1178,6 +1214,7 @@ const WcAdmin: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                           setActivateModal({
                             fixture: fix,
                             banker: false,
+                            isKnockout: true,
                             triviaQuestion: '',
                             triviaOptions: ['', ''],
                           })
