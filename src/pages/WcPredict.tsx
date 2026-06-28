@@ -640,8 +640,8 @@ function ActiveMatchCard({
   useEffect(() => {
     if (!selectedPlayer) {
       setSelectedPrediction(null);
-      setPredictedHomeGoals(null);
-      setPredictedAwayGoals(null);
+      setPredictedHomeGoals(0);
+      setPredictedAwayGoals(0);
       setPredictedWinner(null);
       setSubmitted(false);
       setBanker(false);
@@ -651,8 +651,8 @@ function ActiveMatchCard({
     const existing = match.predictions.find((p) => p.player_id === selectedPlayer);
     if (existing) {
       if (match.is_knockout) {
-        setPredictedHomeGoals(existing.predicted_home_goals ?? null);
-        setPredictedAwayGoals(existing.predicted_away_goals ?? null);
+        setPredictedHomeGoals(existing.predicted_home_goals ?? 0);
+        setPredictedAwayGoals(existing.predicted_away_goals ?? 0);
         setPredictedWinner((existing.predicted_winner ?? null) as 'home' | 'away' | null);
       } else {
         setSelectedPrediction(existing.prediction);
@@ -662,8 +662,8 @@ function ActiveMatchCard({
       setSubmitted(true);
     } else {
       setSelectedPrediction(null);
-      setPredictedHomeGoals(null);
-      setPredictedAwayGoals(null);
+      setPredictedHomeGoals(0);
+      setPredictedAwayGoals(0);
       setPredictedWinner(null);
       setSubmitted(false);
       setBanker(false);
