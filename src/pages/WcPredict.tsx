@@ -992,8 +992,11 @@ function ActiveMatchCard({
                     Use my Banker
                   </span>
                   <span className="block text-xs text-slate-400 mt-0.5">
-                    2× points if right · {match.is_knockout ? '−2' : '−1'} if wrong · one per game day
+                    2× if correct winner · {match.is_knockout ? '−2' : '−1'} if wrong winner · one per game day
                   </span>
+                  {match.is_knockout && (
+                    <span className="block text-xs text-slate-500 mt-0.5">⚽ Exact score bonus (+5) is separate — no risk</span>
+                  )}
                 </span>
                 <span
                   className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
