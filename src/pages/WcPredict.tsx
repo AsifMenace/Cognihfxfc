@@ -954,11 +954,16 @@ function ActiveMatchCard({
           )}
 
           {bankerMode === 'admin' && match.is_banker_match ? (
-            <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-2.5">
-              <Star size={14} className="flex-shrink-0 text-amber-400 fill-amber-400" />
-              <span className="text-amber-300 text-xs font-semibold">
-                Banker is ON for everyone on this match · {match.is_knockout ? '−2' : '−1'} if wrong
-              </span>
+            <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-2.5">
+              <Star size={14} className="flex-shrink-0 text-amber-400 fill-amber-400 mt-0.5" />
+              <div className="flex flex-col gap-0.5">
+                <span className="text-amber-300 text-xs font-semibold">
+                  Banker ON for everyone · 2× if correct winner · {match.is_knockout ? '−2' : '−1'} if wrong
+                </span>
+                {match.is_knockout && (
+                  <span className="text-amber-400/70 text-xs">⚽ Exact score bonus (+5) is separate — no risk</span>
+                )}
+              </div>
             </div>
           ) : bankerMode === 'user' ? (
             bankerUsedToday ? (
