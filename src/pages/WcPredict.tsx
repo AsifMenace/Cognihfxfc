@@ -606,6 +606,7 @@ function ActiveMatchCard({
   onPredicted,
   bankerMode,
   bankerUsedToday,
+  bankerSwappable,
   isLastUnpredictedToday,
 }: {
   match: Match;
@@ -615,6 +616,8 @@ function ActiveMatchCard({
   bankerMode: 'admin' | 'user';
   // User mode only: the player already bankered another game this game day.
   bankerUsedToday: boolean;
+  // User mode only: true when the existing banker is on an active match (still editable — atomic swap allowed).
+  bankerSwappable: boolean;
   // User mode only: all other matches today are already predicted — banker is now mandatory.
   isLastUnpredictedToday: boolean;
 }) {
@@ -966,7 +969,13 @@ function ActiveMatchCard({
               </div>
             </div>
           ) : bankerMode === 'user' ? (
-            <button
+            {bankerUsedToday && !bankerSwappable ? (
+              <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
+                <Star size={14} className="flex-shrink-0 text-slate-500" />
+                Banker locked in on today's earlier match — one per game day.
+              </div>
+            ) : (
+              <button
                 type="button"
                 onClick={() => setBanker((b) => !b)}
                 className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
@@ -983,10 +992,10 @@ function ActiveMatchCard({
                   <span
                     className={`block text-sm font-bold ${banker ? 'text-amber-200' : 'text-slate-200'}`}
                   >
-                    {bankerUsedToday && !banker ? 'Move Banker here' : 'Use my Banker'}
+                    {bankerSwappable && !banker ? 'Move Banker here' : 'Use my Banker'}
                   </span>
                   <span className="block text-xs text-slate-400 mt-0.5">
-                    {bankerUsedToday && !banker
+                    {bankerSwappable && !banker
                       ? 'Removes it from today\'s other match · 2× if correct winner'
                       : `2× if correct winner · ${match.is_knockout ? '−2' : '−1'} if wrong winner · one per game day`}
                   </span>
@@ -1006,6 +1015,7 @@ function ActiveMatchCard({
                   />
                 </span>
               </button>
+            )}
           ) : null}
 
           {/* Bonus trivia — optional multiple-choice question for this match */}
@@ -2207,6 +2217,12 @@ const WcPredict: React.FC = () => {
                 bankerMatchByDay.has(gameDay(match.kickoff_time)) &&
                 bankerMatchByDay.get(gameDay(match.kickoff_time)) !== match.id
               }
+              bankerSwappable={(() => {
+                const bankerMatchId = bankerMatchByDay.get(gameDay(match.kickoff_time));
+                if (!bankerMatchId || bankerMatchId === match.id) return false;
+                const bankerMatch = matches.find((m) => m.id === bankerMatchId);
+                return bankerMatch?.status === 'active';
+              })()}
               isLastUnpredictedToday={isLastUnpredictedToday(match)}
             />
           ))
