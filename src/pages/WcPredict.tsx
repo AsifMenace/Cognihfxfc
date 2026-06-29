@@ -1520,8 +1520,8 @@ function StandingsTracker({
         ? selectedPlayer
         : leaderId;
   const hSeries = series.find((s) => s.id === highlight)!;
-  const hFirst = hSeries.points[0];
   const hLast = hSeries.points[hSeries.points.length - 1];
+  const hPrev = hSeries.points.length >= 2 ? hSeries.points[hSeries.points.length - 2] : hLast;
 
   // Geometry
   const VBW = 680;
@@ -1629,15 +1629,23 @@ function StandingsTracker({
           <p className="text-xs text-slate-400">
             <span className="text-sky-300 font-semibold">{hSeries.name}</span>{' '}
             {view === 'rank' ? (
-              <>
-                moved from <span className="text-white font-bold">#{hFirst.rank}</span> to{' '}
-                <span className="text-white font-bold">#{hLast.rank}</span>
-              </>
+              hPrev.rank !== hLast.rank ? (
+                <>
+                  moved from <span className="text-white font-bold">#{hPrev.rank}</span> to{' '}
+                  <span className="text-white font-bold">#{hLast.rank}</span>
+                </>
+              ) : (
+                <>is at <span className="text-white font-bold">#{hLast.rank}</span></>
+              )
             ) : (
-              <>
-                from <span className="text-white font-bold">{hFirst.total}</span> to{' '}
-                <span className="text-white font-bold">{hLast.total}</span> pts
-              </>
+              hPrev.total !== hLast.total ? (
+                <>
+                  from <span className="text-white font-bold">{hPrev.total}</span> to{' '}
+                  <span className="text-white font-bold">{hLast.total}</span> pts
+                </>
+              ) : (
+                <>is at <span className="text-white font-bold">{hLast.total}</span> pts</>
+              )
             )}
           </p>
 
