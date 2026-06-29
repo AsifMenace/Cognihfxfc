@@ -966,13 +966,7 @@ function ActiveMatchCard({
               </div>
             </div>
           ) : bankerMode === 'user' ? (
-            bankerUsedToday ? (
-              <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
-                <Star size={14} className="flex-shrink-0 text-slate-500" />
-                Banker already used for another game this game day — one per game day.
-              </div>
-            ) : (
-              <button
+            <button
                 type="button"
                 onClick={() => setBanker((b) => !b)}
                 className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-colors ${
@@ -989,10 +983,12 @@ function ActiveMatchCard({
                   <span
                     className={`block text-sm font-bold ${banker ? 'text-amber-200' : 'text-slate-200'}`}
                   >
-                    Use my Banker
+                    {bankerUsedToday && !banker ? 'Move Banker here' : 'Use my Banker'}
                   </span>
                   <span className="block text-xs text-slate-400 mt-0.5">
-                    2× if correct winner · {match.is_knockout ? '−2' : '−1'} if wrong winner · one per game day
+                    {bankerUsedToday && !banker
+                      ? 'Removes it from today\'s other match · 2× if correct winner'
+                      : `2× if correct winner · ${match.is_knockout ? '−2' : '−1'} if wrong winner · one per game day`}
                   </span>
                   {match.is_knockout && (
                     <span className="block text-xs text-slate-500 mt-0.5">⚽ Exact score bonus (+5) is separate — no risk</span>
@@ -1010,7 +1006,6 @@ function ActiveMatchCard({
                   />
                 </span>
               </button>
-            )
           ) : null}
 
           {/* Bonus trivia — optional multiple-choice question for this match */}
