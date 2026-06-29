@@ -111,29 +111,21 @@ export const handler = async (event) => {
           };
         }
       } else {
-        // User mode: banker any match, but at most one per game day.
-        // Exclude this match so re-submitting/editing the same pick doesn't clash
-        // with its own existing banker row.
+        // User mode: one banker per game day — atomic swap if player already
+        // has a banker on another match today (moves it here instead of rejecting).
         const matchDay = gameDay(match.kickoff_time);
         const existingBankers = await sql`
-          SELECT m.kickoff_time
+          SELECT wp.match_id, m.kickoff_time
           FROM wc_predictions wp
           JOIN wc_matches m ON m.id = wp.match_id
           WHERE wp.player_id = ${player_id}
             AND wp.is_banker = TRUE
             AND wp.match_id <> ${match_id}
         `;
-        const clash = existingBankers.some(
-          (b) => gameDay(b.kickoff_time) === matchDay
-        );
-        if (clash) {
-          return {
-            statusCode: 409,
-            headers: corsHeaders,
-            body: JSON.stringify({
-              error: "You've already used your Banker for this day",
-            }),
-          };
+        for (const b of existingBankers) {
+          if (gameDay(b.kickoff_time) === matchDay) {
+            await sql`UPDATE wc_predictions SET is_banker = FALSE WHERE player_id = ${player_id} AND match_id = ${b.match_id}`;
+          }
         }
       }
     }
