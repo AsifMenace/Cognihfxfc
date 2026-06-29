@@ -707,14 +707,14 @@ function ActiveMatchCard({
             predicted_home_goals: predictedHomeGoals,
             predicted_away_goals: predictedAwayGoals,
             predicted_winner: predictedWinner,
-            is_banker: banker,
+            is_banker: bankerMode === 'admin' && match.is_banker_match ? true : banker,
             trivia_guess: hasTrivia ? triviaGuess : null,
           }
         : {
             match_id: match.id,
             player_id: selectedPlayer,
             prediction: selectedPrediction,
-            is_banker: banker,
+            is_banker: bankerMode === 'admin' && match.is_banker_match ? true : banker,
             trivia_guess: hasTrivia ? triviaGuess : null,
           };
       const res = await fetch('/.netlify/functions/submitPrediction', {
@@ -938,8 +938,15 @@ function ActiveMatchCard({
              match, but locked out if the player already bankered another game
              on the same game day (one per game day). Shown as soon as the form is
              open so the choice is always visible; default is off. */}
-          {(bankerMode === 'user' || match.is_banker_match) &&
-            (bankerUsedToday ? (
+          {bankerMode === 'admin' && match.is_banker_match ? (
+            <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-2.5">
+              <Star size={14} className="flex-shrink-0 text-amber-400 fill-amber-400" />
+              <span className="text-amber-300 text-xs font-semibold">
+                Banker is ON for everyone on this match · {match.is_knockout ? '−2' : '−1'} if wrong
+              </span>
+            </div>
+          ) : bankerMode === 'user' ? (
+            bankerUsedToday ? (
               <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
                 <Star size={14} className="flex-shrink-0 text-slate-500" />
                 Banker already used for another game this game day — one per game day.
@@ -965,7 +972,7 @@ function ActiveMatchCard({
                     Use my Banker
                   </span>
                   <span className="block text-xs text-slate-400 mt-0.5">
-                    2× points if right · {match.is_knockout ? '−2' : '−1'} if wrong{bankerMode === 'user' ? ' · one per game day' : ''}
+                    2× points if right · {match.is_knockout ? '−2' : '−1'} if wrong · one per game day
                   </span>
                 </span>
                 <span
@@ -980,7 +987,8 @@ function ActiveMatchCard({
                   />
                 </span>
               </button>
-            ))}
+            )
+          ) : null}
 
           {/* Bonus trivia — optional multiple-choice question for this match */}
           {hasTrivia && (
