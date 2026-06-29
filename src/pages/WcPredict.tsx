@@ -606,6 +606,7 @@ function ActiveMatchCard({
   onPredicted,
   bankerMode,
   bankerUsedToday,
+  isLastUnpredictedToday,
 }: {
   match: Match;
   selectedPlayer: number | null;
@@ -614,6 +615,8 @@ function ActiveMatchCard({
   bankerMode: 'admin' | 'user';
   // User mode only: the player already bankered another game this game day.
   bankerUsedToday: boolean;
+  // User mode only: all other matches today are already predicted — banker is now mandatory.
+  isLastUnpredictedToday: boolean;
 }) {
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
   // Knockout-specific prediction state
@@ -707,14 +710,14 @@ function ActiveMatchCard({
             predicted_home_goals: predictedHomeGoals,
             predicted_away_goals: predictedAwayGoals,
             predicted_winner: predictedWinner,
-            is_banker: banker,
+            is_banker: bankerMode === 'admin' && match.is_banker_match ? true : banker,
             trivia_guess: hasTrivia ? triviaGuess : null,
           }
         : {
             match_id: match.id,
             player_id: selectedPlayer,
             prediction: selectedPrediction,
-            is_banker: banker,
+            is_banker: bankerMode === 'admin' && match.is_banker_match ? true : banker,
             trivia_guess: hasTrivia ? triviaGuess : null,
           };
       const res = await fetch('/.netlify/functions/submitPrediction', {
@@ -938,8 +941,32 @@ function ActiveMatchCard({
              match, but locked out if the player already bankered another game
              on the same game day (one per game day). Shown as soon as the form is
              open so the choice is always visible; default is off. */}
-          {(bankerMode === 'user' || match.is_banker_match) &&
-            (bankerUsedToday ? (
+          {/* User mode banker reminder — shown on every match until banker is used */}
+          {bankerMode === 'user' && !bankerUsedToday && (
+            <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+              <Star size={13} className="flex-shrink-0 text-amber-400 fill-amber-400" />
+              <span className="text-amber-300 text-xs">
+                {isLastUnpredictedToday
+                  ? 'This is your last match today — banker is required before you can submit.'
+                  : 'You must use your banker on at least one match today.'}
+              </span>
+            </div>
+          )}
+
+          {bankerMode === 'admin' && match.is_banker_match ? (
+            <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-2.5">
+              <Star size={14} className="flex-shrink-0 text-amber-400 fill-amber-400 mt-0.5" />
+              <div className="flex flex-col gap-0.5">
+                <span className="text-amber-300 text-xs font-semibold">
+                  Banker ON for everyone · 2× if correct winner · {match.is_knockout ? '−2' : '−1'} if wrong
+                </span>
+                {match.is_knockout && (
+                  <span className="text-amber-400/70 text-xs">⚽ Exact score bonus (+5) is separate — no risk</span>
+                )}
+              </div>
+            </div>
+          ) : bankerMode === 'user' ? (
+            bankerUsedToday ? (
               <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
                 <Star size={14} className="flex-shrink-0 text-slate-500" />
                 Banker already used for another game this game day — one per game day.
@@ -965,8 +992,11 @@ function ActiveMatchCard({
                     Use my Banker
                   </span>
                   <span className="block text-xs text-slate-400 mt-0.5">
-                    2× points if right · {match.is_knockout ? '−2' : '−1'} if wrong{bankerMode === 'user' ? ' · one per game day' : ''}
+                    2× if correct winner · {match.is_knockout ? '−2' : '−1'} if wrong winner · one per game day
                   </span>
+                  {match.is_knockout && (
+                    <span className="block text-xs text-slate-500 mt-0.5">⚽ Exact score bonus (+5) is separate — no risk</span>
+                  )}
                 </span>
                 <span
                   className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${
@@ -980,7 +1010,8 @@ function ActiveMatchCard({
                   />
                 </span>
               </button>
-            ))}
+            )
+          ) : null}
 
           {/* Bonus trivia — optional multiple-choice question for this match */}
           {hasTrivia && (
@@ -1023,7 +1054,7 @@ function ActiveMatchCard({
             : !!selectedPrediction) && (
             <button
               onClick={handleSubmit}
-              disabled={submitting}
+              disabled={submitting || (isLastUnpredictedToday && !bankerUsedToday && !banker)}
               className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 text-sm"
             >
               {submitting ? 'Saving...' : myPrediction ? 'Save changes' : 'Submit Prediction'}
@@ -2084,6 +2115,16 @@ const WcPredict: React.FC = () => {
     }
   }
 
+  // User mode only: is this the last match of the day the player hasn't predicted yet?
+  // If so, banker becomes mandatory before they can submit.
+  const isLastUnpredictedToday = (match: Match): boolean => {
+    if (!selectedPlayer || bankerMode !== 'user') return false;
+    const day = gameDay(match.kickoff_time);
+    return activeMatches
+      .filter((m) => m.id !== match.id && gameDay(m.kickoff_time) === day)
+      .every((m) => m.predictions.some((p) => p.player_id === selectedPlayer));
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 pb-16">
       {/* Header */}
@@ -2171,6 +2212,7 @@ const WcPredict: React.FC = () => {
                 bankerMatchByDay.has(gameDay(match.kickoff_time)) &&
                 bankerMatchByDay.get(gameDay(match.kickoff_time)) !== match.id
               }
+              isLastUnpredictedToday={isLastUnpredictedToday(match)}
             />
           ))
         )}

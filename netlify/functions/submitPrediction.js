@@ -65,6 +65,9 @@ export const handler = async (event) => {
 
     const match = matches[0];
 
+    // Admin-designated banker matches are always banked — ignore whatever the client sent.
+    const effectiveIsBanker = match.is_banker_match ? true : is_banker;
+
     // Check kickoff time server-side (don't trust client)
     if (new Date(match.kickoff_time) <= new Date()) {
       // Lock the match while we're here
@@ -86,7 +89,7 @@ export const handler = async (event) => {
 
     // Banker validation depends on the global mode (defaults to 'admin' if the
     // settings row/table is absent, preserving current behaviour).
-    if (is_banker) {
+    if (effectiveIsBanker) {
       let bankerMode = "admin";
       try {
         const settings = await sql`SELECT banker_mode FROM wc_settings WHERE id = 1`;
@@ -181,13 +184,13 @@ export const handler = async (event) => {
 
       await sql`
         INSERT INTO wc_predictions (match_id, player_id, prediction, predicted_home_goals, predicted_away_goals, predicted_winner, is_banker, trivia_guess)
-        VALUES (${match_id}, ${player_id}, ${predictedWinner}, ${predictedHomeGoals}, ${predictedAwayGoals}, ${predictedWinner}, ${is_banker}, ${validTriviaGuess})
+        VALUES (${match_id}, ${player_id}, ${predictedWinner}, ${predictedHomeGoals}, ${predictedAwayGoals}, ${predictedWinner}, ${effectiveIsBanker}, ${validTriviaGuess})
         ON CONFLICT (match_id, player_id) DO UPDATE SET
           prediction = ${predictedWinner},
           predicted_home_goals = ${predictedHomeGoals},
           predicted_away_goals = ${predictedAwayGoals},
           predicted_winner = ${predictedWinner},
-          is_banker = ${is_banker},
+          is_banker = ${effectiveIsBanker},
           trivia_guess = ${validTriviaGuess}
       `;
     } else {
@@ -212,9 +215,9 @@ export const handler = async (event) => {
       // trivia_points is left untouched (awarded later by setWcTriviaResult).
       await sql`
         INSERT INTO wc_predictions (match_id, player_id, prediction, is_banker, trivia_guess)
-        VALUES (${match_id}, ${player_id}, ${prediction}, ${is_banker}, ${validTriviaGuess})
+        VALUES (${match_id}, ${player_id}, ${prediction}, ${effectiveIsBanker}, ${validTriviaGuess})
         ON CONFLICT (match_id, player_id)
-        DO UPDATE SET prediction = ${prediction}, is_banker = ${is_banker}, trivia_guess = ${validTriviaGuess}
+        DO UPDATE SET prediction = ${prediction}, is_banker = ${effectiveIsBanker}, trivia_guess = ${validTriviaGuess}
       `;
     }
 
