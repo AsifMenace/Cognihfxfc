@@ -969,7 +969,7 @@ function ActiveMatchCard({
               </div>
             </div>
           ) : bankerMode === 'user' ? (
-            {bankerUsedToday && !bankerSwappable ? (
+            bankerUsedToday && !bankerSwappable ? (
               <div className="flex items-center gap-2 rounded-xl bg-slate-700/30 border border-slate-600/40 px-4 py-2.5 text-slate-400 text-xs">
                 <Star size={14} className="flex-shrink-0 text-slate-500" />
                 Banker locked in on today's earlier match — one per game day.
@@ -1015,7 +1015,7 @@ function ActiveMatchCard({
                   />
                 </span>
               </button>
-            )}
+            )
           ) : null}
 
           {/* Bonus trivia — optional multiple-choice question for this match */}
