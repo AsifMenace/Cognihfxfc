@@ -162,12 +162,12 @@ export async function cancelJob(jobId) {
   }).catch(() => {});
 }
 
-// Start polling 155 min after kickoff — covers 90 min + ET (30 min) + penalties + API delay.
-// Retry every 10 min, give up after 240 min (covers worst-case ET + shootout + slow APIs).
+// Start polling 126 min after kickoff — catches regulation results on first fire.
+// Retry every 15 min; give up after 240 min (covers worst-case ET + shootout + slow APIs).
 // Exported so activateWcMatch / scheduleWcCron schedule the first poll at the
 // same offset instead of hardcoding their own.
-export const INITIAL_OFFSET_MINUTES = 155;
-const RETRY_INTERVAL_MINUTES = 10;
+export const INITIAL_OFFSET_MINUTES = 126;
+const RETRY_INTERVAL_MINUTES = 15;
 const MAX_WINDOW_MINUTES = 240;
 
 export const handler = async (event) => {
