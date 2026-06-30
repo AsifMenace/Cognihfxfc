@@ -100,20 +100,24 @@ async function fetchFromFootballData(match) {
 
   if (!FD_FINISHED.has(status)) return { notFinished: true, status };
 
-  const homeGoals = matchData.score?.fullTime?.home;
-  const awayGoals = matchData.score?.fullTime?.away;
+  // football-data.org v4 puts the penalty aggregate into score.fullTime for
+  // penalty matches (e.g. 5–4 instead of 1–1). Use score.extraTime for the
+  // actual goals at end of 120 min; fall back to fullTime for non-PK matches.
+  const isPenaltyShootout = matchData.score?.duration === 'PENALTY_SHOOTOUT';
+  const scoreSource = isPenaltyShootout ? matchData.score?.extraTime : matchData.score?.fullTime;
+  const homeGoals = scoreSource?.home ?? matchData.score?.fullTime?.home;
+  const awayGoals = scoreSource?.away ?? matchData.score?.fullTime?.away;
+
   if (homeGoals === null || homeGoals === undefined || awayGoals === null || awayGoals === undefined) {
     return { notFinished: true, status };
   }
 
-  // For penalty-decided matches, determine who won the shootout
+  // For penalty-decided matches derive the winner from score.winner — more
+  // reliable than comparing penalty goal counts.
   let penaltyWinner = null;
-  if (homeGoals === awayGoals) {
-    const penHome = matchData.score?.penalties?.home;
-    const penAway = matchData.score?.penalties?.away;
-    if (penHome != null && penAway != null) {
-      penaltyWinner = penHome > penAway ? 'home' : 'away';
-    }
+  if (isPenaltyShootout) {
+    const w = matchData.score?.winner;
+    penaltyWinner = w === 'HOME_TEAM' ? 'home' : w === 'AWAY_TEAM' ? 'away' : null;
   }
 
   return { homeGoals, awayGoals, penaltyWinner, source: 'football-data' };
