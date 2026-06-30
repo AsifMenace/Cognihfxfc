@@ -101,12 +101,23 @@ async function fetchFromFootballData(match) {
   if (!FD_FINISHED.has(status)) return { notFinished: true, status };
 
   // football-data.org v4 puts the penalty aggregate into score.fullTime for
-  // penalty matches (e.g. 5–4 instead of 1–1). Use score.extraTime for the
-  // actual goals at end of 120 min; fall back to fullTime for non-PK matches.
+  // penalty matches (e.g. 5–4 instead of 1–1), and score.extraTime holds only
+  // the goals scored during the ET period (not cumulative).
+  // Goals at end of 120 min = regularTime + extraTime.
+  // For non-penalty matches, fullTime is the correct end-of-match score.
   const isPenaltyShootout = matchData.score?.duration === 'PENALTY_SHOOTOUT';
-  const scoreSource = isPenaltyShootout ? matchData.score?.extraTime : matchData.score?.fullTime;
-  const homeGoals = scoreSource?.home ?? matchData.score?.fullTime?.home;
-  const awayGoals = scoreSource?.away ?? matchData.score?.fullTime?.away;
+
+  let homeGoals, awayGoals;
+  if (isPenaltyShootout) {
+    const regHome = matchData.score?.regularTime?.home;
+    const regAway = matchData.score?.regularTime?.away;
+    if (regHome == null || regAway == null) return { notFinished: true, status };
+    homeGoals = regHome + (matchData.score?.extraTime?.home ?? 0);
+    awayGoals = regAway + (matchData.score?.extraTime?.away ?? 0);
+  } else {
+    homeGoals = matchData.score?.fullTime?.home;
+    awayGoals = matchData.score?.fullTime?.away;
+  }
 
   if (homeGoals === null || homeGoals === undefined || awayGoals === null || awayGoals === undefined) {
     return { notFinished: true, status };
