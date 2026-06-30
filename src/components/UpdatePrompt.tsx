@@ -19,7 +19,7 @@ export const UpdatePrompt: React.FC<UpdatePromptProps> = ({ show, onRefresh }) =
         onClick={onRefresh}
         className="flex-shrink-0 rounded-lg bg-white px-4 py-1.5 text-sm font-black text-amber-600 shadow-md animate-pulse"
       >
-        Reload
+        Update
       </button>
     </div>
   );
