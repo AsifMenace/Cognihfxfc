@@ -66,7 +66,17 @@ async function fetchFromApiFootball(match) {
   const homeGoals = fixture.goals.home;
   const awayGoals = fixture.goals.away;
   if (homeGoals == null || awayGoals == null) return { notFinished: true, status };
-  return { homeGoals, awayGoals };
+
+  let penaltyWinner = null;
+  if (status === 'PEN' && homeGoals === awayGoals) {
+    const penHome = fixture.score?.penalty?.home;
+    const penAway = fixture.score?.penalty?.away;
+    if (penHome != null && penAway != null) {
+      penaltyWinner = penHome > penAway ? 'home' : 'away';
+    }
+  }
+
+  return { homeGoals, awayGoals, penaltyWinner };
 }
 
 async function fetchFromFootballData(match) {
@@ -78,10 +88,29 @@ async function fetchFromFootballData(match) {
   const status = matchData.status;
   if (!FD_FINISHED.has(status)) return { notFinished: true, status };
 
-  const homeGoals = matchData.score?.fullTime?.home;
-  const awayGoals = matchData.score?.fullTime?.away;
+  const isPenaltyShootout = matchData.score?.duration === 'PENALTY_SHOOTOUT';
+
+  let homeGoals, awayGoals;
+  if (isPenaltyShootout) {
+    const regHome = matchData.score?.regularTime?.home;
+    const regAway = matchData.score?.regularTime?.away;
+    if (regHome == null || regAway == null) return { notFinished: true, status };
+    homeGoals = regHome + (matchData.score?.extraTime?.home ?? 0);
+    awayGoals = regAway + (matchData.score?.extraTime?.away ?? 0);
+  } else {
+    homeGoals = matchData.score?.fullTime?.home;
+    awayGoals = matchData.score?.fullTime?.away;
+  }
+
   if (homeGoals == null || awayGoals == null) return { notFinished: true, status };
-  return { homeGoals, awayGoals };
+
+  let penaltyWinner = null;
+  if (isPenaltyShootout) {
+    const w = matchData.score?.winner;
+    penaltyWinner = w === 'HOME_TEAM' ? 'home' : w === 'AWAY_TEAM' ? 'away' : null;
+  }
+
+  return { homeGoals, awayGoals, penaltyWinner };
 }
 
 export async function scheduleJob(matchId, atTime) {
@@ -133,13 +162,13 @@ export async function cancelJob(jobId) {
   }).catch(() => {});
 }
 
-// Start polling 126 min after kickoff (empirically when finals are published),
-// retry every 10 min, give up after 3.5 hours (covers extra time + penalties).
+// Start polling 126 min after kickoff — catches regulation results on first fire.
+// Retry every 15 min; give up after 240 min (covers worst-case ET + shootout + slow APIs).
 // Exported so activateWcMatch / scheduleWcCron schedule the first poll at the
 // same offset instead of hardcoding their own.
 export const INITIAL_OFFSET_MINUTES = 126;
-const RETRY_INTERVAL_MINUTES = 10;
-const MAX_WINDOW_MINUTES = 210;
+const RETRY_INTERVAL_MINUTES = 15;
+const MAX_WINDOW_MINUTES = 240;
 
 export const handler = async (event) => {
   const { secret, match_id } = event.queryStringParameters || {};
@@ -203,7 +232,11 @@ export const handler = async (event) => {
 
   if (scoreData) {
     const { homeGoals, awayGoals } = scoreData;
-    const result = homeGoals > awayGoals ? 'home' : awayGoals > homeGoals ? 'away' : 'draw';
+    let result;
+    if (homeGoals > awayGoals) result = 'home';
+    else if (awayGoals > homeGoals) result = 'away';
+    else if (match.is_knockout && scoreData.penaltyWinner) result = scoreData.penaltyWinner;
+    else result = 'draw';
 
     await sql`
       UPDATE wc_matches
@@ -212,14 +245,35 @@ export const handler = async (event) => {
           cronjob_id = NULL
       WHERE id = ${match_id}
     `;
-    await sql`
-      UPDATE wc_predictions
-      SET points = CASE
-        WHEN prediction = ${result} THEN (CASE WHEN is_banker THEN 2 ELSE 1 END)
-        ELSE (CASE WHEN is_banker THEN -1 ELSE 0 END)
-      END
-      WHERE match_id = ${match_id}
-    `;
+
+    if (match.is_knockout) {
+      await sql`
+        UPDATE wc_predictions
+        SET points = CASE
+          WHEN predicted_winner = ${result} THEN (CASE WHEN is_banker THEN 2 ELSE 1 END)
+          ELSE (CASE WHEN is_banker THEN -2 ELSE 0 END)
+        END
+        WHERE match_id = ${match_id}
+      `;
+      await sql`
+        UPDATE wc_predictions
+        SET score_points = CASE
+          WHEN predicted_home_goals = ${homeGoals} AND predicted_away_goals = ${awayGoals} THEN 5
+          ELSE 0
+        END
+        WHERE match_id = ${match_id}
+      `;
+    } else {
+      await sql`
+        UPDATE wc_predictions
+        SET points = CASE
+          WHEN prediction = ${result} THEN (CASE WHEN is_banker THEN 2 ELSE 1 END)
+          ELSE (CASE WHEN is_banker THEN -1 ELSE 0 END)
+        END
+        WHERE match_id = ${match_id}
+      `;
+    }
+
     await cancelJob(match.cronjob_id);
     return {
       statusCode: 200,
