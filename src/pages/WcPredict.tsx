@@ -78,6 +78,14 @@ interface PerfectDay {
   perfect_players: { player_id: number; player_name: string; player_photo: string }[];
 }
 
+interface ScorelineEntry {
+  player_id: number;
+  player_name: string;
+  player_photo: string;
+  exact_score_count: number;
+  exact_matches: { winner_flag: string; winner_name: string }[];
+}
+
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
 // Official game day (US Eastern) calendar date (YYYY-MM-DD) — defines "a day" for the user-mode
@@ -1349,6 +1357,38 @@ function PerfectDaysCard({ days }: { days: PerfectDay[] }) {
   );
 }
 
+function ScorelineLeaderboard({ entries }: { entries: ScorelineEntry[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <div className="bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
+      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-700/40 bg-gradient-to-r from-slate-800 to-teal-950/30">
+        <span className="text-base leading-none">⚽</span>
+        <h3 className="text-white font-bold tracking-wide text-sm">Exact Scoreline Predictors</h3>
+      </div>
+      <div className="divide-y divide-slate-700/30">
+        {entries.map((entry, idx) => (
+          <div key={entry.player_id} className="flex items-center gap-3 px-4 py-2.5">
+            <span className="w-5 text-center text-xs font-bold text-slate-500 flex-shrink-0 tabular-nums">{idx + 1}</span>
+            <PlayerAvatar photo={entry.player_photo} name={entry.player_name} size={8} />
+            <div className="flex-1 min-w-0 flex flex-col gap-1">
+              <span className="text-white text-sm font-semibold leading-none truncate">{entry.player_name}</span>
+              <div className="flex flex-wrap gap-1">
+                {entry.exact_matches.map((m, i) => (
+                  <img key={i} src={m.winner_flag} alt={m.winner_name} title={m.winner_name} className="h-3.5 w-auto rounded-sm" />
+                ))}
+              </div>
+            </div>
+            <div className="flex-shrink-0 flex flex-col items-center leading-none">
+              <span className="text-teal-400 font-black text-lg tabular-nums leading-none">{entry.exact_score_count}</span>
+              <span className="text-teal-700 text-[9px] font-semibold uppercase tracking-wide">exact</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Banker mode banner ───────────────────────────────────────────────────────
 
 // Big, eye-catching banner telling players how the Banker works today.
@@ -1759,6 +1799,7 @@ const WcPredict: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [perfectDays, setPerfectDays] = useState<PerfectDay[]>([]);
+  const [scorelineLeaderboard, setScorelineLeaderboard] = useState<ScorelineEntry[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -2049,21 +2090,24 @@ const WcPredict: React.FC = () => {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [matchRes, playersRes, lbRes, perfectRes] = await Promise.all([
+      const [matchRes, playersRes, lbRes, perfectRes, slbRes] = await Promise.all([
         fetch('/.netlify/functions/getActiveWcMatch'),
         fetch('/.netlify/functions/getPlayers'),
         fetch('/.netlify/functions/getWcLeaderboard'),
         fetch('/.netlify/functions/getWcPerfectDays'),
+        fetch('/.netlify/functions/getScorelineLeaderboard'),
       ]);
       const matchData = await matchRes.json();
       const playersData = await playersRes.json();
       const lbData = await lbRes.json();
       const perfectData = await perfectRes.json();
+      const slbData = await slbRes.json();
       setMatches(matchData.matches ?? []);
       setBankerMode(matchData.banker_mode === 'user' ? 'user' : 'admin');
       setPlayers(playersData);
       setLeaderboard(lbData);
       setPerfectDays(perfectData.days ?? []);
+      setScorelineLeaderboard(Array.isArray(slbData) ? slbData : []);
     } catch {
       setError('Failed to load data. Please refresh.');
     } finally {
@@ -2396,6 +2440,9 @@ const WcPredict: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* Exact Scoreline Predictors */}
+        <ScorelineLeaderboard entries={scorelineLeaderboard} />
 
         {/* Perfect Predictors — trivia of the day */}
         <PerfectDaysCard days={perfectDays} />
