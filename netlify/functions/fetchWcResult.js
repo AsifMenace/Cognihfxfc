@@ -123,12 +123,19 @@ async function fetchFromFootballData(match) {
     return { notFinished: true, status };
   }
 
-  // For penalty-decided matches derive the winner from score.winner — more
-  // reliable than comparing penalty goal counts.
   let penaltyWinner = null;
   if (isPenaltyShootout) {
     const w = matchData.score?.winner;
-    penaltyWinner = w === 'HOME_TEAM' ? 'home' : w === 'AWAY_TEAM' ? 'away' : null;
+    if (w === 'HOME_TEAM') penaltyWinner = 'home';
+    else if (w === 'AWAY_TEAM') penaltyWinner = 'away';
+    else {
+      // winner field null — fall back to fullTime which contains penalty aggregate
+      const ftHome = matchData.score?.fullTime?.home;
+      const ftAway = matchData.score?.fullTime?.away;
+      if (ftHome != null && ftAway != null && ftHome !== ftAway) {
+        penaltyWinner = ftHome > ftAway ? 'home' : 'away';
+      }
+    }
   }
 
   return { homeGoals, awayGoals, penaltyWinner, source: 'football-data' };
