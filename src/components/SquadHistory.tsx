@@ -9,6 +9,7 @@ interface Player {
   name: string;
   position: string;
   skill?: number;
+  runner?: boolean;
 }
 
 interface Squad {
@@ -370,10 +371,8 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
                                     <div className="flex items-center gap-1 min-w-0">
                                       <span>{getPositionEmoji(player.position)}</span>
                                       <span className="text-gray-300 truncate">{player.name}</span>
+                                      {player.runner && <span className="text-sm flex-shrink-0">🏃</span>}
                                     </div>
-                                    {isAdmin && player.skill && (
-                                      <span className="text-yellow-400 font-bold flex-shrink-0 ml-1">{player.skill}</span>
-                                    )}
                                   </div>
                                 ))}
                               </div>
@@ -398,10 +397,8 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
                                     <div className="flex items-center gap-1 min-w-0">
                                       <span>{getPositionEmoji(player.position)}</span>
                                       <span className="text-gray-300 truncate">{player.name}</span>
+                                      {player.runner && <span className="text-sm flex-shrink-0">🏃</span>}
                                     </div>
-                                    {isAdmin && player.skill && (
-                                      <span className="text-yellow-400 font-bold flex-shrink-0 ml-1">{player.skill}</span>
-                                    )}
                                   </div>
                                 ))}
                               </div>
