@@ -23,7 +23,8 @@ export function AdminLogin({ setIsAdmin }: AdminLoginProps) {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
-        localStorage.setItem("adminToken", password);
+        const { token } = await res.json();
+        localStorage.setItem("adminToken", token);
         setIsAdmin(true);
         const intendedPath = location.state?.intended || "/";
         navigate(intendedPath, { replace: true });
