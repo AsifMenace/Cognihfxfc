@@ -42,16 +42,32 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Only handle same-origin GET requests. Everything else — POSTs, and
+  // cross-origin resources like flag CDN images (which come back "opaque" and
+  // can't be inspected for success) — passes straight to the network and is
+  // never cached, so a failed one can't get stuck in the cache.
+  if (
+    event.request.method !== "GET" ||
+    requestURL.origin !== self.location.origin
+  ) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
       return fetch(event.request)
-        .then((networkResponse) =>
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
-          })
-        )
+        .then((networkResponse) => {
+          // Only cache successful responses. A 4xx/5xx during a blip must not be
+          // saved — cache-first would then serve that error until the next deploy.
+          if (networkResponse.ok) {
+            const responseToCache = networkResponse.clone();
+            caches
+              .open(CACHE_NAME)
+              .then((cache) => cache.put(event.request, responseToCache));
+          }
+          return networkResponse;
+        })
         .catch(() => {
           if (event.request.mode === "navigate") {
             return caches.match("/index.html");
