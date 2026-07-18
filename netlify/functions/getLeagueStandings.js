@@ -32,6 +32,7 @@ export const handler = async (event) => {
         WHERE home_team_id IS NOT NULL
           AND away_team_id IS NOT NULL
           AND result IS NOT NULL
+          AND result ~ '^[0-9]+-[0-9]+$'
           AND TO_CHAR(date::date, 'YYYY-MM') = ${month}
         UNION ALL
         SELECT away_team_id AS team_id,
@@ -41,6 +42,7 @@ export const handler = async (event) => {
         WHERE home_team_id IS NOT NULL
           AND away_team_id IS NOT NULL
           AND result IS NOT NULL
+          AND result ~ '^[0-9]+-[0-9]+$'
           AND TO_CHAR(date::date, 'YYYY-MM') = ${month}
       ),
       team_results AS (

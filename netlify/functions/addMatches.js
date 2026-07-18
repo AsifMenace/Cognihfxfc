@@ -66,6 +66,20 @@ export const handler = async (event) => {
       };
     }
 
+    // Result is optional (unplayed match), but when present it must be goals-goals
+    // (e.g. "2-1"). The league standings / head-to-head queries cast these to
+    // integers, so anything else would corrupt or break those pages.
+    const trimmedResult =
+      result && result.trim() !== "" ? result.trim() : null;
+    if (trimmedResult && !/^\d+-\d+$/.test(trimmedResult)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: "Result must be in the format goals-goals, e.g. 2-1",
+        }),
+      };
+    }
+
     if (id) {
       // Update existing match
       await sql`
@@ -75,7 +89,7 @@ export const handler = async (event) => {
           time = ${time},
           opponent = ${opponent || null},
           venue = ${venue},
-          result = ${result && result.trim() !== "" ? result : null},
+          result = ${trimmedResult},
           competition = ${
             competition && competition.trim() !== "" ? competition : null
           },
@@ -94,7 +108,7 @@ export const handler = async (event) => {
           ${time},
           ${opponent || null},
           ${venue},
-          ${result && result.trim() !== "" ? result : null},
+          ${trimmedResult},
           ${competition && competition.trim() !== "" ? competition : null},
           ${home_team_id || null},
           ${away_team_id || null},

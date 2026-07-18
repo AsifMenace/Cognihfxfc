@@ -19,8 +19,17 @@ export const handler = async (event) => {
       return { statusCode: 400, body: "Missing id or result" };
     }
 
+    const trimmedResult = String(result).trim();
+    if (!/^\d+-\d+$/.test(trimmedResult)) {
+      return {
+        statusCode: 400,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "Result must be in the format goals-goals, e.g. 2-1" }),
+      };
+    }
+
     await sql`
-      UPDATE matches SET result=${result} WHERE id=${id};
+      UPDATE matches SET result=${trimmedResult} WHERE id=${id};
     `;
 
     return {
