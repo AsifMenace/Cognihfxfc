@@ -1,4 +1,5 @@
 import { neon } from "@netlify/neon";
+import { verifyToken } from "./sessionToken.js";
 
 const sql = neon(process.env.DATABASE_URL);
 
@@ -19,6 +20,16 @@ export default async (req, context) => {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
       headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Admin-only: linking a squad rewrites a match's lineup. The Match Linking
+  // modal already sends the admin token via getAdminHeaders().
+  const token = req.headers.get("x-admin-token") || "";
+  if (!verifyToken(token)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
   }
 

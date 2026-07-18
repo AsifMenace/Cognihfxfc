@@ -1,4 +1,5 @@
 import { neon } from '@netlify/neon';
+import { verifyToken } from './sessionToken.js';
 
 const sql = neon(process.env.DATABASE_URL);
 
@@ -65,7 +66,7 @@ export default async (req) => {
 
   // Admin auth
   const token = req.headers.get('x-admin-token') || '';
-  if (!token || token !== process.env.ADMIN_PASSWORD) {
+  if (!verifyToken(token)) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
