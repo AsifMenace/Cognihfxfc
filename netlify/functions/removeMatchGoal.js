@@ -1,5 +1,6 @@
 import { neon } from "@netlify/neon";
 import { validateAdmin } from "./validateAdmin.js";
+import { recomputeMatchResult } from "./recomputeMatchResult.js";
 const sql = neon();
 
 export const handler = async (event) => {
@@ -18,7 +19,9 @@ export const handler = async (event) => {
     }
 
     // Delete the goal entry
-    await sql`DELETE FROM match_goals WHERE id = ${goal_id};`;
+    const deleted = await sql`
+      DELETE FROM match_goals WHERE id = ${goal_id} RETURNING match_id;
+    `;
 
     // Decrement player's goals count safely
     await sql`
@@ -27,9 +30,13 @@ export const handler = async (event) => {
       WHERE id = ${player_id};
     `;
 
+    const result = deleted.length
+      ? await recomputeMatchResult(sql, deleted[0].match_id)
+      : null;
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true }),
+      body: JSON.stringify({ success: true, result }),
       headers: { "Access-Control-Allow-Origin": "*" },
     };
   } catch (error) {

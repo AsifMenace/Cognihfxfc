@@ -1,5 +1,6 @@
 import { neon } from "@netlify/neon";
 import { validateAdmin } from "./validateAdmin.js";
+import { recomputeMatchResult } from "./recomputeMatchResult.js";
 
 const sql = neon();
 
@@ -29,10 +30,13 @@ export const handler = async (event) => {
       WHERE id = ${player_id};
     `;
 
+    const result = await recomputeMatchResult(sql, match_id);
+
     return {
       statusCode: 200,
       body: JSON.stringify({
         message: "Goal added and player goals updated successfully",
+        result,
       }),
       headers: { "Access-Control-Allow-Origin": "*" },
     };

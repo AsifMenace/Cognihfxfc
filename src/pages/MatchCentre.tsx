@@ -422,6 +422,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         const errData = await res.json();
         throw new Error(errData.error || 'Failed to add goal scorer');
       }
+      const data = await res.json();
+      if (data.result) {
+        setMatch((m) => (m ? { ...m, result: data.result } : m));
+      }
       setSuccess('Goal scorer added successfully!');
       await fetchScorers();
       setSelectedPlayerId('');
@@ -444,6 +448,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || 'Failed to remove goal');
+      }
+      const data = await res.json();
+      if (data.result) {
+        setMatch((m) => (m ? { ...m, result: data.result } : m));
       }
       await fetchScorers();
     } catch (error) {
@@ -1125,6 +1133,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             >
               <input
                 name="result"
+                key={match.result || ''}
                 defaultValue={match.result || ''}
                 placeholder="e.g. 2-1"
                 className="w-full max-w-xs px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 text-center text-xl font-bold focus:border-green-500 focus:outline-none"
