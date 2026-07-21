@@ -74,20 +74,7 @@ function App() {
             {/* Admin login route */}
             <Route path="/admin-login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
 
-            <Route
-              path="/balances"
-              element={
-                isAdmin ? (
-                  <Balances />
-                ) : (
-                  <Navigate
-                    to="/admin-login"
-                    replace
-                    state={{ intended: '/balances' }} // 👈 ADD THIS LINE
-                  />
-                )
-              }
-            />
+            <Route path="/balances" element={<Balances />} />
 
             <Route
               path="/player-map"
