@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 interface TeamBadgeProps {
   color?: string | null;
@@ -6,18 +6,79 @@ interface TeamBadgeProps {
   size?: number;
 }
 
-function getAbbr(name: string): string {
-  const words = name.trim().split(/\s+/);
-  if (words.length >= 2) {
-    // Multi-word: first letter of first two words + first letter of third if exists
-    return words
-      .slice(0, 3)
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase();
+type PatternFn = (primary: string, secondary: string) => React.ReactNode;
+
+// Bold, flag-style geometric patterns (stripes, cross, chevron, etc.) instead
+// of a mascot/icon. Picked deterministically per team so a team's badge
+// stays stable across renders/pages instead of changing at random.
+const PATTERNS: PatternFn[] = [
+  // horizontal stripes
+  (p, s) => (
+    <>
+      <rect width="80" height="80" fill={p} />
+      <rect y="26.6" width="80" height="26.6" fill={s} />
+    </>
+  ),
+  // vertical stripes
+  (p, s) => (
+    <>
+      <rect width="80" height="80" fill={p} />
+      <rect x="26.6" width="26.6" height="80" fill={s} />
+    </>
+  ),
+  // diagonal split
+  (p, s) => (
+    <>
+      <rect width="80" height="80" fill={p} />
+      <polygon points="0,0 80,0 0,80" fill={s} />
+    </>
+  ),
+  // chevron
+  (p, s) => (
+    <>
+      <rect width="80" height="80" fill={p} />
+      <polygon points="0,0 40,40 0,80" fill={s} />
+    </>
+  ),
+  // nordic-style cross
+  (p, s) => (
+    <>
+      <rect width="80" height="80" fill={p} />
+      <rect x="28" width="14" height="80" fill={s} />
+      <rect y="33" width="80" height="14" fill={s} />
+    </>
+  ),
+  // circle
+  (p, s) => (
+    <>
+      <rect width="80" height="80" fill={p} />
+      <circle cx="40" cy="40" r="20" fill={s} />
+    </>
+  ),
+  // quartered
+  (p, s) => (
+    <>
+      <rect width="40" height="40" fill={p} />
+      <rect x="40" width="40" height="40" fill={s} />
+      <rect y="40" width="40" height="40" fill={s} />
+      <rect x="40" y="40" width="40" height="40" fill={p} />
+    </>
+  ),
+  // triangle from left edge
+  (p, s) => (
+    <>
+      <rect width="80" height="80" fill={p} />
+      <polygon points="0,80 0,0 46,40" fill={s} />
+    </>
+  ),
+];
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) | 0;
   }
-  // Single word: first 3 chars
-  return name.slice(0, 3).toUpperCase();
+  return Math.abs(hash);
 }
 
 export const TeamBadge: React.FC<TeamBadgeProps> = ({
@@ -25,50 +86,27 @@ export const TeamBadge: React.FC<TeamBadgeProps> = ({
   name,
   size = 36,
 }) => {
-  const fill = color || "#374151";
-  const abbr = getAbbr(name);
-  const w = size;
-  const h = Math.round(size * 1.15);
-  const fontSize = Math.round(size * 0.28);
+  const primary = color || "#374151";
+  const pattern = useMemo(() => {
+    const key = name.trim().toLowerCase();
+    return PATTERNS[hashString(key) % PATTERNS.length];
+  }, [name]);
 
   return (
     <svg
-      width={w}
-      height={h}
-      viewBox="0 0 40 46"
-      fill="none"
+      width={size}
+      height={size}
+      viewBox="0 0 80 80"
       xmlns="http://www.w3.org/2000/svg"
       aria-label={name}
+      style={{
+        borderRadius: Math.round(size * 0.22),
+        border: "1px solid rgba(0,0,0,0.15)",
+        display: "inline-block",
+        flexShrink: 0,
+      }}
     >
-      {/* Shield shape */}
-      <path
-        d="M20 1 L39 7 L39 27 Q39 38 20 45 Q1 38 1 27 L1 7 Z"
-        fill={fill}
-        stroke="rgba(255,255,255,0.25)"
-        strokeWidth="1.5"
-      />
-      {/* Inner highlight line */}
-      <path
-        d="M20 5 L35 10 L35 27 Q35 36 20 42"
-        stroke="rgba(255,255,255,0.12)"
-        strokeWidth="1"
-        fill="none"
-        strokeLinecap="round"
-      />
-      {/* Abbreviation */}
-      <text
-        x="20"
-        y="25"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill="white"
-        fontWeight="800"
-        fontSize={fontSize}
-        fontFamily="system-ui, sans-serif"
-        letterSpacing="0.5"
-      >
-        {abbr}
-      </text>
+      {pattern(primary, "#ffffff")}
     </svg>
   );
 };
