@@ -34,6 +34,25 @@ interface Summary {
   coreFundsToExhaust?: number;
 }
 
+const MOOD_MAP: Record<'owed' | 'low' | 'almost-finished' | 'deposited', { label: string; className: string }> = {
+  deposited: {
+    label: 'Loaded 💰',
+    className: 'bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-white shadow-emerald-500/50',
+  },
+  low: {
+    label: 'Getting Thin 💸',
+    className: 'bg-gradient-to-r from-yellow-500/90 to-amber-500/90 text-white shadow-yellow-500/50',
+  },
+  'almost-finished': {
+    label: 'Scraping By 😅',
+    className: 'bg-gradient-to-r from-orange-500/90 to-orange-600/90 text-white shadow-orange-500/50',
+  },
+  owed: {
+    label: 'Pay Up! 🚨',
+    className: 'bg-gradient-to-r from-red-500/90 to-rose-500/90 text-white shadow-red-500/50',
+  },
+};
+
 export default function Balances() {
   const [data, setData] = useState<BalancesData>({
     players: [],
@@ -164,76 +183,64 @@ export default function Balances() {
         </div>
 
         <div className="overflow-x-auto pb-4 -mx-1 sm:-mx-2">
-          <table className="w-full min-w-[650px] table-auto">
+          <table className="w-full min-w-[535px] sm:min-w-[650px] table-auto">
             <thead className="bg-gradient-to-r from-gray-700/50 to-gray-800/70 sticky top-0 backdrop-blur-md border-b border-gray-600">
               <tr>
-                <th className="sticky left-0 z-10 px-6 py-4 text-left text-xs font-black text-gray-200 uppercase tracking-wider min-w-[120px] bg-gradient-to-r from-gray-700/50 to-gray-800/70">
+                <th className="sticky left-0 z-10 px-3 sm:px-6 py-4 text-left text-xs font-black text-gray-200 uppercase tracking-wider min-w-[85px] sm:min-w-[120px] bg-gradient-to-r from-gray-700/50 to-gray-800/70">
                   Player
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-black text-gray-200 uppercase tracking-wider min-w-[90px]">
+                <th className="sticky left-[85px] sm:left-[120px] z-10 px-3 sm:px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[80px] sm:min-w-[100px] bg-gradient-to-r from-gray-700/50 to-gray-800/70 shadow-[4px_0_6px_-2px_rgba(0,0,0,0.4)]">
+                  Balance
+                </th>
+                <th className="px-3 sm:px-6 py-4 text-left text-xs font-black text-gray-200 uppercase tracking-wider min-w-[125px] sm:min-w-[140px]">
                   Status
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[100px]">
-                  Cash Deposited
-                </th>
-
-                <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[80px]">
+                <th className="px-3 sm:px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[70px] sm:min-w-[80px]">
                   Games Played
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[100px]">
+                <th className="px-3 sm:px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[85px] sm:min-w-[100px]">
                   Total Deposit
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[110px]">
+                <th className="px-3 sm:px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[90px] sm:min-w-[110px]">
                   Amount Consumed
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-black text-gray-200 uppercase tracking-wider min-w-[100px]">
-                  Balance
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
               {displayPlayers.map((player, i) => (
                 <tr key={i} className="hover:bg-gray-700/50 transition-all duration-200">
-                  <td className="sticky left-0 z-10 px-6 py-5 font-black text-lg text-white min-w-[120px] bg-gray-800/90">
+                  <td className="sticky left-0 z-10 px-3 sm:px-6 py-5 font-black text-sm sm:text-lg text-white min-w-[85px] sm:min-w-[120px] bg-gray-800/90 truncate">
                     {player.player}
                   </td>
-                  <td className="px-6 py-5 min-w-[90px]">
-                    <span
-                      className={`inline-flex px-3 py-1.5 rounded-full text-sm font-bold shadow-lg ${
-                        player.coreStatus.includes('Core')
-                          ? 'bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-white shadow-emerald-500/50'
-                          : 'bg-gradient-to-r from-gray-600/90 to-gray-700/90 text-gray-200 shadow-gray-500/50'
-                      }`}
-                    >
-                      {player.coreStatus}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 text-right text-lg font-bold text-gray-300 min-w-[100px]">
-                    ${player.startingBalance.toFixed(2)}
-                  </td>
-
-                  <td className="px-6 py-5 text-right text-xl font-black text-yellow-400 min-w-[80px]">
-                    {player.gamesAttended}
-                  </td>
-                  <td className="px-6 py-5 text-right text-lg font-bold text-green-300 min-w-[100px]">
-                    ${(player.startingBalance + player.deposit2).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-5 text-right text-lg font-bold text-red-300 min-w-[110px]">
-                    ${player.totalAmountConsumed.toFixed(2)}
-                  </td>
                   <td
-                    className={`px-6 py-5 text-right text-xl font-black min-w-[100px] shadow-lg px-4 py-2 rounded-xl mx-2 inline-block ${
+                    className={`sticky left-[85px] sm:left-[120px] z-10 px-3 sm:px-6 py-5 text-right text-base sm:text-xl font-black min-w-[80px] sm:min-w-[100px] shadow-[4px_0_6px_-2px_rgba(0,0,0,0.4)] bg-gray-800/90 ${
                       player.balanceStatus === 'owed'
-                        ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-red-500/50'
+                        ? 'text-red-400'
                         : player.balanceStatus === 'low'
-                          ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-yellow-500/50'
+                          ? 'text-yellow-400'
                           : player.balanceStatus === 'almost-finished'
-                            ? 'bg-gradient-to-r from-orange-600 to-yellow-600 text-white shadow-orange-500/50'
-                            : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/50'
+                            ? 'text-orange-400'
+                            : 'text-emerald-400'
                     }`}
                   >
                     {player.balanceStatus === 'owed' ? '-' : ''}$
                     {Math.abs(player.runningBalance).toFixed(2)}
+                  </td>
+                  <td className="px-3 sm:px-6 py-5 min-w-[125px] sm:min-w-[140px]">
+                    <span
+                      className={`inline-flex whitespace-nowrap px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold shadow-lg ${MOOD_MAP[player.balanceStatus].className}`}
+                    >
+                      {MOOD_MAP[player.balanceStatus].label}
+                    </span>
+                  </td>
+                  <td className="px-3 sm:px-6 py-5 text-right text-base sm:text-xl font-black text-yellow-400 min-w-[70px] sm:min-w-[80px]">
+                    {player.gamesAttended}
+                  </td>
+                  <td className="px-3 sm:px-6 py-5 text-right text-sm sm:text-lg font-bold text-green-300 min-w-[85px] sm:min-w-[100px]">
+                    ${(player.startingBalance + player.deposit2).toFixed(2)}
+                  </td>
+                  <td className="px-3 sm:px-6 py-5 text-right text-sm sm:text-lg font-bold text-red-300 min-w-[90px] sm:min-w-[110px]">
+                    ${player.totalAmountConsumed.toFixed(2)}
                   </td>
                 </tr>
               ))}
