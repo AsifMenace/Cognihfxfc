@@ -28,6 +28,7 @@ interface Match {
   home_team_color: string | null;
   away_team_name: string | null;
   away_team_color: string | null;
+  video_url: string | null;
 }
 
 const CANVAS_W = 1280;
@@ -368,6 +369,17 @@ export default function ThumbnailGenerator() {
   const pushThumbnail = (videoId: string) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const selectedMatch =
+      selectedMatchId === '' ? null : matches.find((m) => m.id === selectedMatchId) || null;
+
+    if (selectedMatch?.video_url) {
+      const proceed = window.confirm(
+        'This match already has a video linked. Replace it with this one?'
+      );
+      if (!proceed) return;
+    }
+
     setPushingVideoId(videoId);
     setPushMessage(null);
     canvas.toBlob(
@@ -390,12 +402,39 @@ export default function ThumbnailGenerator() {
             body: JSON.stringify({ videoId, imageBase64 }),
           });
           const data = await res.json();
-          if (res.ok) {
-            setPushMessage({ text: 'Thumbnail updated on YouTube!', ok: true });
-            setShowPicker(false);
-          } else {
+          if (!res.ok) {
             setPushMessage({ text: data.error || 'Failed to push thumbnail', ok: false });
+            return;
           }
+
+          if (!selectedMatch) {
+            setPushMessage({
+              text: 'Thumbnail updated! Pick a match above to also save the video link.',
+              ok: true,
+            });
+            setShowPicker(false);
+            return;
+          }
+
+          const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+          const linkRes = await fetch('/.netlify/functions/setMatchVideoUrl', {
+            method: 'POST',
+            headers: getAdminHeaders(),
+            body: JSON.stringify({ id: selectedMatch.id, video_url: videoUrl }),
+          });
+
+          if (linkRes.ok) {
+            setMatches((prev) =>
+              prev.map((m) => (m.id === selectedMatch.id ? { ...m, video_url: videoUrl } : m))
+            );
+            setPushMessage({ text: 'Thumbnail set and video linked to the match!', ok: true });
+          } else {
+            setPushMessage({
+              text: 'Thumbnail updated, but saving the video link to the match failed.',
+              ok: false,
+            });
+          }
+          setShowPicker(false);
         } catch {
           setPushMessage({ text: 'Network error pushing thumbnail', ok: false });
         } finally {
@@ -443,6 +482,10 @@ export default function ThumbnailGenerator() {
                   </option>
                 ))}
               </select>
+              {selectedMatchId !== '' &&
+                matches.find((m) => m.id === selectedMatchId)?.video_url && (
+                  <p className="text-xs text-green-400 mt-1">✓ This match already has a video linked</p>
+                )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -563,7 +606,9 @@ export default function ThumbnailGenerator() {
                 ) : (
                   <>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      Pick the video to set this thumbnail on
+                      {selectedMatchId !== ''
+                        ? 'Pick the video — sets the thumbnail and links it to the match'
+                        : 'Pick the video to set this thumbnail on'}
                     </p>
                     {youtubeVideos.map((v) => (
                       <div
