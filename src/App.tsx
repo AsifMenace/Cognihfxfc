@@ -26,6 +26,7 @@ import BookingsPage from './pages/BookingsPage';
 import PlayerMap from './pages/PlayerMap';
 import WcPredict from './pages/WcPredict';
 import WcAdmin from './pages/WcAdmin';
+import ThumbnailGenerator from './pages/ThumbnailGenerator';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('adminToken') !== null);
@@ -129,6 +130,10 @@ function App() {
               element={
                 isAdmin ? <WcAdmin isAdmin={isAdmin} /> : <Navigate to="/admin-login" replace />
               }
+            />
+            <Route
+              path="/thumbnail-generator"
+              element={isAdmin ? <ThumbnailGenerator /> : <Navigate to="/admin-login" replace />}
             />
           </Routes>
         </div>
