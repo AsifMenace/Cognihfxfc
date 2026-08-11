@@ -21,6 +21,7 @@ import {
   CalendarCheck,
   LogOut,
   LogIn,
+  Image,
 } from 'lucide-react';
 
 interface Player {
@@ -57,6 +58,7 @@ const adminLinks = [
   { to: '/add-team', label: 'Add Team', icon: ShieldPlus },
   { to: '/add-booking', label: 'Add Booking', icon: Clock },
   { to: '/wc-admin', label: 'WC Admin', icon: Trophy },
+  { to: '/thumbnail-generator', label: 'Thumbnail Generator', icon: Image },
   { to: '/add-notification', label: 'Add Notification', icon: BellIcon },
   { to: '/add-news', label: 'Add News', icon: Newspaper },
 ];
