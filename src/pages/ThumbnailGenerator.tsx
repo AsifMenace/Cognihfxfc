@@ -94,6 +94,7 @@ export default function ThumbnailGenerator() {
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
 
   const [showPicker, setShowPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'thumbnail' | 'link'>('thumbnail');
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [needsConnect, setNeedsConnect] = useState(false);
   const [youtubeVideos, setYoutubeVideos] = useState<YoutubeVideo[]>([]);
@@ -326,7 +327,8 @@ export default function ThumbnailGenerator() {
     }, 'image/png');
   };
 
-  const openPicker = async () => {
+  const openPicker = async (mode: 'thumbnail' | 'link') => {
+    setPickerMode(mode);
     setShowPicker(true);
     setLoadingVideos(true);
     setPushMessage(null);
@@ -446,6 +448,43 @@ export default function ThumbnailGenerator() {
     );
   };
 
+  const linkVideoOnly = async (videoId: string) => {
+    const selectedMatch =
+      selectedMatchId === '' ? null : matches.find((m) => m.id === selectedMatchId) || null;
+    if (!selectedMatch) return;
+
+    if (selectedMatch.video_url) {
+      const proceed = window.confirm(
+        'This match already has a video linked. Replace it with this one?'
+      );
+      if (!proceed) return;
+    }
+
+    setPushingVideoId(videoId);
+    setPushMessage(null);
+    try {
+      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      const res = await fetch('/.netlify/functions/setMatchVideoUrl', {
+        method: 'POST',
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ id: selectedMatch.id, video_url: videoUrl }),
+      });
+      if (res.ok) {
+        setMatches((prev) =>
+          prev.map((m) => (m.id === selectedMatch.id ? { ...m, video_url: videoUrl } : m))
+        );
+        setPushMessage({ text: 'Video linked to the match!', ok: true });
+        setShowPicker(false);
+      } else {
+        setPushMessage({ text: 'Failed to link video to the match', ok: false });
+      }
+    } catch {
+      setPushMessage({ text: 'Network error linking video', ok: false });
+    } finally {
+      setPushingVideoId(null);
+    }
+  };
+
   const inputCls =
     'w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none';
   const labelCls = 'block mb-1 text-sm font-bold text-gray-300';
@@ -464,7 +503,7 @@ export default function ThumbnailGenerator() {
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Form */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 p-6 md:p-8 space-y-4 shadow-2xl">
+          <div className="min-w-0 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 p-6 md:p-8 space-y-4 shadow-2xl">
             <div>
               <label className={labelCls}>Pick a match (most recent first)</label>
               <select
@@ -571,11 +610,25 @@ export default function ThumbnailGenerator() {
               </button>
               <button
                 type="button"
-                onClick={openPicker}
+                onClick={() => openPicker('thumbnail')}
                 className="flex items-center justify-center gap-2 py-3 bg-red-600 text-white font-black rounded-lg hover:scale-105 transition-all"
               >
                 <Youtube className="w-5 h-5" /> PUSH TO YOUTUBE
               </button>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => selectedMatchId !== '' && openPicker('link')}
+                disabled={selectedMatchId === ''}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-700 text-white font-bold rounded-lg border border-red-600/50 hover:bg-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Link2 className="w-4 h-4" /> LINK A VIDEO TO THIS MATCH (no thumbnail)
+              </button>
+              {selectedMatchId === '' && (
+                <p className="text-xs text-gray-500 text-center mt-1">Pick a match above first</p>
+              )}
             </div>
 
             {pushMessage && (
@@ -606,9 +659,11 @@ export default function ThumbnailGenerator() {
                 ) : (
                   <>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      {selectedMatchId !== ''
-                        ? 'Pick the video — sets the thumbnail and links it to the match'
-                        : 'Pick the video to set this thumbnail on'}
+                      {pickerMode === 'link'
+                        ? 'Pick the video to link to this match'
+                        : selectedMatchId !== ''
+                          ? 'Pick the video — sets the thumbnail and links it to the match'
+                          : 'Pick the video to set this thumbnail on'}
                     </p>
                     {youtubeVideos.map((v) => (
                       <div
@@ -626,11 +681,13 @@ export default function ThumbnailGenerator() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => pushThumbnail(v.videoId)}
+                          onClick={() =>
+                            pickerMode === 'link' ? linkVideoOnly(v.videoId) : pushThumbnail(v.videoId)
+                          }
                           disabled={pushingVideoId !== null}
                           className="shrink-0 px-3 py-1.5 bg-yellow-500 text-black text-xs font-bold rounded-lg hover:scale-105 transition-all disabled:opacity-50"
                         >
-                          {pushingVideoId === v.videoId ? 'Pushing…' : 'Use this'}
+                          {pushingVideoId === v.videoId ? 'Working…' : 'Use this'}
                         </button>
                       </div>
                     ))}
@@ -648,7 +705,7 @@ export default function ThumbnailGenerator() {
           </div>
 
           {/* Live preview */}
-          <div className="flex flex-col items-center justify-start">
+          <div className="min-w-0 flex flex-col items-center justify-start">
             <div className="w-full aspect-video rounded-2xl overflow-hidden border border-slate-700 shadow-2xl bg-black">
               <canvas ref={canvasRef} className="w-full h-full" />
             </div>
