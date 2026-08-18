@@ -44,6 +44,13 @@ const formatDateLong = (dateStr: string) => {
   return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
+const formatDateForTitle = (dateStr: string) => {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, (m || 1) - 1, d || 1);
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 const formatTime12h = (timeStr: string) => {
   if (!timeStr) return '';
   const [hStr, mStr] = timeStr.split(':');
@@ -85,6 +92,7 @@ export default function ThumbnailGenerator() {
   const [teamAColor, setTeamAColor] = useState(GOLD);
   const [teamBName, setTeamBName] = useState('');
   const [teamBColor, setTeamBColor] = useState('#64748b');
+  const [videoTitle, setVideoTitle] = useState('');
 
   const [photoUrl, setPhotoUrl] = useState('');
   const [photographer, setPhotographer] = useState('');
@@ -155,17 +163,22 @@ export default function ThumbnailGenerator() {
     setDate(match.date || '');
     setTime(match.time || '');
 
+    let a = 'Cogni HFX FC';
+    let b = match.opponent || '';
     if (match.home_team_name && match.away_team_name) {
-      setTeamAName(match.home_team_name);
+      a = match.home_team_name;
+      b = match.away_team_name;
       setTeamAColor(match.home_team_color || GOLD);
-      setTeamBName(match.away_team_name);
       setTeamBColor(match.away_team_color || '#64748b');
     } else {
-      setTeamAName('Cogni HFX FC');
       setTeamAColor(GOLD);
-      setTeamBName(match.opponent || '');
       setTeamBColor('#64748b');
     }
+    setTeamAName(a);
+    setTeamBName(b);
+
+    const dateForTitle = formatDateForTitle(match.date || '');
+    setVideoTitle(b ? `${a} vs ${b} - ${dateForTitle}` : `${a} - ${dateForTitle}`);
   };
 
   const applyQuickPick = (side: 'A' | 'B', teamId: string) => {
@@ -368,6 +381,19 @@ export default function ThumbnailGenerator() {
     }
   };
 
+  const applyVideoTitle = async (videoId: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/.netlify/functions/setYoutubeVideoTitle', {
+        method: 'POST',
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ videoId, title: videoTitle.trim() }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
   const pushThumbnail = (videoId: string) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -409,33 +435,36 @@ export default function ThumbnailGenerator() {
             return;
           }
 
-          if (!selectedMatch) {
-            setPushMessage({
-              text: 'Thumbnail updated! Pick a match above to also save the video link.',
-              ok: true,
-            });
-            setShowPicker(false);
-            return;
+          const results = ['Thumbnail set'];
+          let allOk = true;
+
+          if (videoTitle.trim()) {
+            const titleOk = await applyVideoTitle(videoId);
+            results.push(titleOk ? 'title updated' : 'title update failed');
+            allOk = allOk && titleOk;
           }
 
-          const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-          const linkRes = await fetch('/.netlify/functions/setMatchVideoUrl', {
-            method: 'POST',
-            headers: getAdminHeaders(),
-            body: JSON.stringify({ id: selectedMatch.id, video_url: videoUrl }),
-          });
-
-          if (linkRes.ok) {
-            setMatches((prev) =>
-              prev.map((m) => (m.id === selectedMatch.id ? { ...m, video_url: videoUrl } : m))
-            );
-            setPushMessage({ text: 'Thumbnail set and video linked to the match!', ok: true });
+          if (selectedMatch) {
+            const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            const linkRes = await fetch('/.netlify/functions/setMatchVideoUrl', {
+              method: 'POST',
+              headers: getAdminHeaders(),
+              body: JSON.stringify({ id: selectedMatch.id, video_url: videoUrl }),
+            });
+            if (linkRes.ok) {
+              setMatches((prev) =>
+                prev.map((m) => (m.id === selectedMatch.id ? { ...m, video_url: videoUrl } : m))
+              );
+              results.push('linked to match');
+            } else {
+              results.push('linking to match failed');
+              allOk = false;
+            }
           } else {
-            setPushMessage({
-              text: 'Thumbnail updated, but saving the video link to the match failed.',
-              ok: false,
-            });
+            results.push('pick a match above to also save the video link');
           }
+
+          setPushMessage({ text: `${results.join(', ')}.`, ok: allOk });
           setShowPicker(false);
         } catch {
           setPushMessage({ text: 'Network error pushing thumbnail', ok: false });
@@ -469,15 +498,26 @@ export default function ThumbnailGenerator() {
         headers: getAdminHeaders(),
         body: JSON.stringify({ id: selectedMatch.id, video_url: videoUrl }),
       });
+
+      const results = [];
+      let allOk = res.ok;
       if (res.ok) {
         setMatches((prev) =>
           prev.map((m) => (m.id === selectedMatch.id ? { ...m, video_url: videoUrl } : m))
         );
-        setPushMessage({ text: 'Video linked to the match!', ok: true });
-        setShowPicker(false);
+        results.push('Video linked to the match');
       } else {
-        setPushMessage({ text: 'Failed to link video to the match', ok: false });
+        results.push('Failed to link video to the match');
       }
+
+      if (videoTitle.trim()) {
+        const titleOk = await applyVideoTitle(videoId);
+        results.push(titleOk ? 'title updated' : 'title update failed');
+        allOk = allOk && titleOk;
+      }
+
+      setPushMessage({ text: `${results.join(', ')}!`, ok: allOk });
+      setShowPicker(false);
     } catch {
       setPushMessage({ text: 'Network error linking video', ok: false });
     } finally {
@@ -545,6 +585,22 @@ export default function ThumbnailGenerator() {
                 placeholder="e.g. 3"
                 value={fieldNumber}
                 onChange={(e) => setFieldNumber(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+
+            <div>
+              <label className={labelCls}>
+                YouTube video title{' '}
+                <span className="text-gray-500 font-normal text-xs">
+                  (optional — renames whichever video you push/link below)
+                </span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Cogni HFX FC vs Bayern Munich - Jul 20, 2026"
+                value={videoTitle}
+                onChange={(e) => setVideoTitle(e.target.value)}
                 className={inputCls}
               />
             </div>
