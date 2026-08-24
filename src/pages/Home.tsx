@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, Trophy, Target, ChevronRight } from 'lucide-react';
+import { Calendar, Users, Trophy, Target, ChevronRight, Send, Shield } from 'lucide-react';
 import { parseMatchDateTime } from '../components/dateUtils';
 import CountdownTimer from '../components/CountdownTimer';
 import { TeamBadge } from '../components/TeamBadge';
@@ -23,6 +23,15 @@ interface TopScorer {
   goals: number;
   appearances: number;
   photo: string;
+}
+
+interface HallOfFameEntry {
+  id: number;
+  name: string;
+  position: string;
+  appearances: number;
+  photo: string;
+  value: number;
 }
 
 interface Player {
@@ -72,6 +81,8 @@ type HomeProps = {
 const Home: React.FC<HomeProps> = ({ isAdmin }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [topScorers, setTopScorers] = useState<TopScorer[]>([]);
+  const [topAssists, setTopAssists] = useState<HallOfFameEntry[]>([]);
+  const [topSaves, setTopSaves] = useState<HallOfFameEntry[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [nextGame, setNextGame] = useState<Match | null>(null);
   const [lineups, setLineups] = useState<Player[]>([]);
@@ -84,10 +95,12 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [playersRes, scorersRes, matchesRes] = await Promise.all([
+        const [playersRes, scorersRes, matchesRes, assistsRes, savesRes] = await Promise.all([
           fetch(`${BASE_URL}/getPlayers`),
           fetch(`${BASE_URL}/getTopScorers`),
           fetch(`${BASE_URL}/getMatches`),
+          fetch(`${BASE_URL}/getHallOfFame?category=assists&limit=5`),
+          fetch(`${BASE_URL}/getHallOfFame?category=saves&limit=5`),
         ]);
 
         if (!playersRes.ok) throw new Error('Failed to fetch players');
@@ -97,6 +110,9 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
         const playersData: Player[] = await playersRes.json();
         const scorersData: TopScorer[] = await scorersRes.json();
         const matchesData: Match[] = await matchesRes.json();
+
+        if (assistsRes.ok) setTopAssists(await assistsRes.json());
+        if (savesRes.ok) setTopSaves(await savesRes.json());
 
         setPlayers(playersData);
         setTopScorers(scorersData);
@@ -677,6 +693,133 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
               </div>
             </div>
           </section>
+        )}
+
+        {/* Top Assists */}
+        {!loading && !error && topAssists.length > 0 && (
+          <section className="py-8 md:py-16 bg-gradient-to-b from-slate-900 to-black">
+            <div className="container mx-auto px-4">
+              <h2 className="text-6xl md:text-8xl font-black text-center mb-8 tracking-tighter">
+                <span className="text-yellow-400 drop-shadow-lg">TOP</span>
+                <span className="text-white"> ASSISTS</span>
+              </h2>
+              <div className="max-w-4xl mx-auto overflow-x-auto py-2">
+                <div className="flex space-x-4 px-4">
+                  {topAssists.map((player, i) => (
+                    <motion.div
+                      key={player.id}
+                      className="flex-shrink-0 w-44 sm:w-56 md:w-64 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 text-center hover:shadow-xl hover:-translate-y-1 transition border border-slate-700"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + i * 0.1, duration: 0.8 }}
+                    >
+                      <Link to={`/player/${player.id}`} className="group block">
+                        <div className="mb-3">
+                          <div
+                            className="relative mx-auto rounded-lg overflow-hidden bg-slate-700"
+                            style={{ width: '100px', aspectRatio: '3/4' }}
+                          >
+                            <img
+                              src={player.photo}
+                              alt={player.name}
+                              className="w-full h-full object-cover object-center"
+                            />
+                            {i === 0 && (
+                              <div className="absolute -top-2 -right-2 bg-gradient-to-br from-yellow-400 to-amber-500 text-black w-7 h-7 rounded-full flex items-center justify-center text-xs font-black">
+                                👑
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <h3 className="font-black text-sm md:text-base truncate text-white">
+                          {player.name}
+                        </h3>
+                        <p className="text-gray-400 text-xs mb-2 truncate">{player.position}</p>
+                        <div className="flex items-center justify-center space-x-3 text-sm">
+                          <div className="flex items-center space-x-1">
+                            <Send className="text-blue-400" size={16} />
+                            <span className="font-bold text-white">{player.value}</span>
+                          </div>
+                          <div className="text-gray-500">|</div>
+                          <div className="text-gray-400 text-xs">{player.appearances} apps</div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Top Saves */}
+        {!loading && !error && topSaves.length > 0 && (
+          <section className="py-8 md:py-16 bg-gradient-to-b from-slate-900 to-black">
+            <div className="container mx-auto px-4">
+              <h2 className="text-6xl md:text-8xl font-black text-center mb-8 tracking-tighter">
+                <span className="text-yellow-400 drop-shadow-lg">TOP</span>
+                <span className="text-white"> SAVES</span>
+              </h2>
+              <div className="max-w-4xl mx-auto overflow-x-auto py-2">
+                <div className="flex space-x-4 px-4">
+                  {topSaves.map((player, i) => (
+                    <motion.div
+                      key={player.id}
+                      className="flex-shrink-0 w-44 sm:w-56 md:w-64 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 text-center hover:shadow-xl hover:-translate-y-1 transition border border-slate-700"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + i * 0.1, duration: 0.8 }}
+                    >
+                      <Link to={`/player/${player.id}`} className="group block">
+                        <div className="mb-3">
+                          <div
+                            className="relative mx-auto rounded-lg overflow-hidden bg-slate-700"
+                            style={{ width: '100px', aspectRatio: '3/4' }}
+                          >
+                            <img
+                              src={player.photo}
+                              alt={player.name}
+                              className="w-full h-full object-cover object-center"
+                            />
+                            {i === 0 && (
+                              <div className="absolute -top-2 -right-2 bg-gradient-to-br from-yellow-400 to-amber-500 text-black w-7 h-7 rounded-full flex items-center justify-center text-xs font-black">
+                                👑
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <h3 className="font-black text-sm md:text-base truncate text-white">
+                          {player.name}
+                        </h3>
+                        <p className="text-gray-400 text-xs mb-2 truncate">{player.position}</p>
+                        <div className="flex items-center justify-center space-x-3 text-sm">
+                          <div className="flex items-center space-x-1">
+                            <Shield className="text-blue-400" size={16} />
+                            <span className="font-bold text-white">{player.value}</span>
+                          </div>
+                          <div className="text-gray-500">|</div>
+                          <div className="text-gray-400 text-xs">{player.appearances} apps</div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Hall of Fame link */}
+        {!loading && !error && (
+          <div className="text-center pb-8 md:pb-16 bg-black">
+            <Link
+              to="/hall-of-fame"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 text-slate-900 font-bold rounded-full hover:bg-yellow-400 hover:scale-105 transition-all shadow-lg"
+            >
+              VIEW HALL OF FAME
+              <ChevronRight size={18} />
+            </Link>
+          </div>
         )}
 
         {/* Quick Stats */}

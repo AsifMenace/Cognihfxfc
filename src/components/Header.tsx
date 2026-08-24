@@ -22,6 +22,7 @@ import {
   LogOut,
   LogIn,
   Image,
+  Award,
 } from 'lucide-react';
 
 interface Player {
@@ -45,6 +46,7 @@ const mainNavLinks = [
   { to: '/squad', label: 'Squad', icon: Users },
   { to: '/squad-creator', label: 'Squad Creator', icon: Zap },
   { to: '/standings', label: 'Standings', icon: Trophy },
+  { to: '/hall-of-fame', label: 'Hall of Fame', icon: Award },
   { to: '/gallery', label: 'Gallery', icon: Camera },
   { to: '/balances', label: 'Balances', icon: DollarSign },
   { to: '/predict', label: 'Predictor', icon: Globe },

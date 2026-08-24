@@ -13,6 +13,7 @@ import { AdminLogin } from './components/AdminLogin';
 import { AddMatch } from './pages/AddMatch'; // create this page/component
 import MatchCentre from './pages/MatchCentre';
 import { LeagueStandings } from './pages/LeagueStandings';
+import HallOfFame from './pages/HallOfFame';
 import { AddTeam } from './pages/AddTeam';
 import AddBooking from './pages/AddBooking';
 import AdminNotification from './pages/AdminNotificationPage';
@@ -63,6 +64,7 @@ function App() {
             <Route path="/" element={<Home isAdmin={isAdmin} />} />
             <Route path="/games" element={<Games />} />
             <Route path="/standings" element={<LeagueStandings />} />
+            <Route path="/hall-of-fame" element={<HallOfFame />} />
             <Route path="/predict" element={<WcPredict />} />
 
             <Route path="/squad" element={<Squad isAdmin={isAdmin} />} />
