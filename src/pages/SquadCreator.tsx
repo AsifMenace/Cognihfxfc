@@ -54,6 +54,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
   const [savedSquadId, setSavedSquadId] = useState<number | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
+  const [linkingPair, setLinkingPair] = useState<{ teamA: Player[]; teamB: Player[] } | null>(null);
   const [editingTeamIndex, setEditingTeamIndex] = useState(0);
   const [showSquadHistory, setShowSquadHistory] = useState(false);
 
@@ -692,6 +693,38 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
                       '⚡ Save & Create Matches'
                     )}
                   </motion.button>
+
+                  <div className="border-t border-slate-700/50 pt-4 space-y-2">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                      🔗 Or Link to Existing Matches
+                    </h4>
+                    <div className="space-y-2">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setLinkingPair({ teamA, teamB })}
+                        className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-gray-200 font-semibold rounded-lg text-sm transition-colors"
+                      >
+                        🔗 Link Squad A vs Squad B
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setLinkingPair({ teamA: teamB, teamB: teamC })}
+                        className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-gray-200 font-semibold rounded-lg text-sm transition-colors"
+                      >
+                        🔗 Link Squad B vs Squad C
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setLinkingPair({ teamA: teamC, teamB: teamA })}
+                        className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-gray-200 font-semibold rounded-lg text-sm transition-colors"
+                      >
+                        🔗 Link Squad C vs Squad A
+                      </motion.button>
+                    </div>
+                  </div>
                 </motion.div>
               </>
             )}
@@ -730,7 +763,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
         )}
       </AnimatePresence>
 
-      {/* Link to match modal (2-squad only) */}
+      {/* Link to match modal */}
       <AnimatePresence>
         {showMatchModal && (
           <MatchLinkingModal
@@ -739,6 +772,15 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
             teamB={teamB}
             onClose={() => setShowMatchModal(false)}
             onSuccess={() => setShowMatchModal(false)}
+          />
+        )}
+        {linkingPair && (
+          <MatchLinkingModal
+            squadId={savedSquadId || 0}
+            teamA={linkingPair.teamA}
+            teamB={linkingPair.teamB}
+            onClose={() => setLinkingPair(null)}
+            onSuccess={() => setLinkingPair(null)}
           />
         )}
       </AnimatePresence>
