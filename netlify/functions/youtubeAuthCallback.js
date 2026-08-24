@@ -1,4 +1,4 @@
-import { redirectUri } from './youtubeClient.js';
+import { redirectUri, saveRefreshToken } from './youtubeClient.js';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
@@ -60,12 +60,13 @@ export const handler = async (event) => {
       );
     }
 
+    await saveRefreshToken(data.refresh_token);
+
     return page(
       'YouTube connected',
       `<h1>YouTube connected</h1>
-       <p>Copy this value and save it as the environment variable <code>YOUTUBE_REFRESH_TOKEN</code>:</p>
-       <code>${data.refresh_token}</code>
-       <p style="margin-top:24px">Add it in Netlify, redeploy, then close this tab. Treat this value like a password.</p>`
+       <p>You're all set — the app can now manage thumbnails, links, and titles on your channel. No env vars or redeploy needed.</p>
+       <p style="margin-top:24px">You can close this tab.</p>`
     );
   } catch (err) {
     return page('YouTube connection failed', `<h1>Unexpected error</h1><p>${err.message}</p>`);
