@@ -181,8 +181,8 @@ export default async (req) => {
       // 3-squad: pairs are A vs B, B vs C, C vs A
       const pairs = [
         { home: teamAId, away: teamBId, homePlayers: teamAPlayers, awayPlayers: teamBPlayers, time: matchTime },
-        { home: teamBId, away: teamCId, homePlayers: teamBPlayers, awayPlayers: teamCPlayers, time: addMinutes(matchTime, 15) },
-        { home: teamCId, away: teamAId, homePlayers: teamCPlayers, awayPlayers: teamAPlayers, time: addMinutes(matchTime, 30) },
+        { home: teamBId, away: teamCId, homePlayers: teamBPlayers, awayPlayers: teamCPlayers, time: addMinutes(matchTime, 1) },
+        { home: teamCId, away: teamAId, homePlayers: teamCPlayers, awayPlayers: teamAPlayers, time: addMinutes(matchTime, 2) },
       ];
 
       matchIds = [];
@@ -246,8 +246,8 @@ export default async (req) => {
       squadCount === 3
         ? [
             `${teamNameMap[teamAId]} vs ${teamNameMap[teamBId]} · ${matchTime}`,
-            `${teamNameMap[teamBId]} vs ${teamNameMap[teamCId]} · ${addMinutes(matchTime, 15)}`,
-            `${teamNameMap[teamCId]} vs ${teamNameMap[teamAId]} · ${addMinutes(matchTime, 30)}`,
+            `${teamNameMap[teamBId]} vs ${teamNameMap[teamCId]} · ${addMinutes(matchTime, 1)}`,
+            `${teamNameMap[teamCId]} vs ${teamNameMap[teamAId]} · ${addMinutes(matchTime, 2)}`,
           ]
         : [`${teamNameMap[teamAId]} vs ${teamNameMap[teamBId]}`];
 
