@@ -244,7 +244,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white">
+      <div className="min-h-screen overflow-x-hidden bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white">
         {/* Hero Section */}
         <motion.section
           className="relative overflow-hidden -mt-[30px]"

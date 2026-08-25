@@ -58,6 +58,16 @@ export const handler = async (event) => {
       };
     }
 
+    // Look up what was previously recorded for this match so we can apply
+    // just the difference to the player's total, instead of overwriting it
+    // with a recomputed sum (which would wipe out any manually-adjusted total).
+    const existing = await sql`
+      SELECT saves, assists FROM player_match_stats
+      WHERE player_id = ${playerId} AND match_id = ${matchId}
+    `;
+    const savesDelta = saves - (existing[0]?.saves ?? 0);
+    const assistsDelta = assists - (existing[0]?.assists ?? 0);
+
     // Upsert both stats
     await sql`
       INSERT INTO player_match_stats (player_id, match_id, saves, assists)
@@ -73,8 +83,8 @@ export const handler = async (event) => {
     await sql`
       UPDATE players
       SET
-        saves = (SELECT COALESCE(SUM(saves), 0) FROM player_match_stats WHERE player_id = ${playerId}),
-        assists = (SELECT COALESCE(SUM(assists), 0) FROM player_match_stats WHERE player_id = ${playerId})
+        saves = saves + ${savesDelta},
+        assists = assists + ${assistsDelta}
       WHERE id = ${playerId}
     `;
 
