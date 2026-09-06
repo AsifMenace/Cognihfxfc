@@ -101,7 +101,7 @@ export const TeamBadge: React.FC<TeamBadgeProps> = ({
       aria-label={name}
       style={{
         borderRadius: Math.round(size * 0.22),
-        border: "1px solid rgba(0,0,0,0.15)",
+        border: "1px solid rgba(255,255,255,0.25)",
         display: "inline-block",
         flexShrink: 0,
       }}

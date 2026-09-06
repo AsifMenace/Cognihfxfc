@@ -12,6 +12,11 @@ import { SetPlayerOfTheMatch } from '../components/SetPlayerOfTheMatch';
 import { PlayerOfTheMatch } from './PlayerOfTheMatch';
 import ThemeProvider from '../components/ThemeProvider';
 import { TeamBadge } from '../components/TeamBadge';
+import { JerseyIcon } from '../components/JerseyIcon';
+import { KIT_PALETTE } from '../constants/kitPalette';
+
+const kitColorName = (hex?: string | null): string | undefined =>
+  KIT_PALETTE.find((k) => k.hex.toLowerCase() === hex?.toLowerCase())?.name;
 import Card from '../components/Card';
 import Title from '../components/Title';
 import { MatchStats } from '../components/MatchStats';
@@ -49,6 +54,10 @@ interface Match {
   home_team_color?: string | null;
   away_team_name?: string | null;
   away_team_color?: string | null;
+  home_kit_color?: string | null;
+  away_kit_color?: string | null;
+  home_display_color?: string | null;
+  away_display_color?: string | null;
   opponent_id?: number | null;
   opponent_name?: string | null;
   opponent_color?: string | null;
@@ -376,10 +385,10 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     let teamColor = '';
     if (teamId === match?.home_team_id) {
       teamName = match.home_team_name || '';
-      teamColor = match.home_team_color || '';
+      teamColor = match.home_display_color || match.home_team_color || '';
     } else if (teamId === match?.away_team_id) {
       teamName = match.away_team_name || '';
-      teamColor = match.away_team_color || '';
+      teamColor = match.away_display_color || match.away_team_color || '';
     }
     teamMap[teamId] = {
       name: teamName,
@@ -478,17 +487,33 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   }
 
+  const waitForImages = (container: HTMLElement) => {
+    const imgs = Array.from(container.querySelectorAll('img'));
+    return Promise.all(
+      imgs.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          img.addEventListener('load', () => resolve(), { once: true });
+          img.addEventListener('error', () => resolve(), { once: true });
+        });
+      })
+    );
+  };
+
   const handleShareLineup = async () => {
     const el = lineupShareRef.current;
     if (!el) return;
     setSharingLineup(true);
     try {
+      await waitForImages(el);
       const dataUrl = await toPng(el, {
         backgroundColor: '#0f172a',
         pixelRatio: 2,
+        cacheBust: true,
+        imagePlaceholder:
+          'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMzc0MTUxIi8+PC9zdmc+',
         filter: (node) => {
           const n = node as HTMLElement;
-          if (n.tagName === 'IMG') return false;
           if (n.dataset?.noCapture === 'true') return false;
           return true;
         },
@@ -518,13 +543,40 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     teamId: number,
     teamName: string,
     colorClass: string,
-    teamPlayers: Player[]
+    teamPlayers: Player[],
+    isKitTeam: boolean = false
   ) => (
-    <div key={teamId}>
-      <h3 className="flex items-center gap-2 text-xs sm:text-sm md:text-lg font-black mb-2 px-2 text-white">
+    <div
+      key={teamId}
+      style={
+        isKitTeam
+          ? {
+              backgroundColor: `${colorClass}22`,
+              border: `2px solid ${colorClass}`,
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15), 0 0 0 1px rgba(255,255,255,0.08)',
+              borderRadius: '0.75rem',
+              padding: '0.5rem',
+            }
+          : undefined
+      }
+    >
+      <h3 className="flex items-center gap-2 text-xs sm:text-sm md:text-lg font-black mb-1 px-2 text-white">
         <TeamBadge color={colorClass} name={teamName} size={24} />
+        {isKitTeam && <JerseyIcon color={colorClass} size={20} />}
         {teamName.toUpperCase()}
       </h3>
+
+      {isKitTeam && kitColorName(colorClass) && (
+        <div className="flex items-center gap-1.5 px-2 mb-2">
+          <span
+            className="w-3 h-3 rounded-full inline-block flex-shrink-0"
+            style={{ backgroundColor: colorClass, border: '1px solid rgba(255,255,255,0.5)' }}
+          />
+          <span className="text-[10px] sm:text-xs font-bold text-gray-200 uppercase tracking-wide">
+            Wear {kitColorName(colorClass)}
+          </span>
+        </div>
+      )}
 
       {teamPlayers.length === 0 ? (
         <p className="text-gray-500 text-center text-xs sm:text-sm">No players assigned.</p>
@@ -543,6 +595,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               <img
                 src={player.photo}
                 alt={player.name}
+                crossOrigin="anonymous"
                 className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full object-cover object-top flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
@@ -1216,7 +1269,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 {playingTeamIds.map((teamId) => {
                   const { name: teamName, colorClass } = teamMap[teamId];
                   const teamPlayers = sortPlayersByPosition(groupedLineups[teamName] || []);
-                  return renderTeamLineup(teamId, teamName, colorClass, teamPlayers);
+                  return renderTeamLineup(teamId, teamName, colorClass, teamPlayers, true);
                 })}
               </div>
             )}

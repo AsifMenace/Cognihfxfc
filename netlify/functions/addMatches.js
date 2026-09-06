@@ -28,6 +28,8 @@ export const handler = async (event) => {
       away_team_id,
       isHome,
       video_url,
+      home_kit_color,
+      away_kit_color,
     } = JSON.parse(event.body);
 
     console.log("Parsed match data:", {
@@ -96,13 +98,15 @@ export const handler = async (event) => {
           home_team_id = ${home_team_id || null},
           away_team_id = ${away_team_id || null},
           isHome = ${typeof isHome === "boolean" ? isHome : true},
-           video_url = ${video_url || null}
+           video_url = ${video_url || null},
+          home_kit_color = ${home_kit_color || null},
+          away_kit_color = ${away_kit_color || null}
         WHERE id = ${id}
       `;
     } else {
       // Insert new match
       await sql`
-        INSERT INTO matches (date, time, opponent, venue, result, competition, home_team_id, away_team_id, isHome, video_url)
+        INSERT INTO matches (date, time, opponent, venue, result, competition, home_team_id, away_team_id, isHome, video_url, home_kit_color, away_kit_color)
         VALUES (
           ${date},
           ${time},
@@ -113,7 +117,9 @@ export const handler = async (event) => {
           ${home_team_id || null},
           ${away_team_id || null},
           ${typeof isHome === "boolean" ? isHome : true},
-          ${video_url || null}
+          ${video_url || null},
+          ${home_kit_color || null},
+          ${away_kit_color || null}
         )
       `;
 

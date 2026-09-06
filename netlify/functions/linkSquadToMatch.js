@@ -35,8 +35,16 @@ export default async (req, context) => {
 
   try {
     const body = await req.json();
-    const { squadId, matchId, teamAAssignedTo, teamBAssignedTo, teamA, teamB } =
-      body;
+    const {
+      squadId,
+      matchId,
+      teamAAssignedTo,
+      teamBAssignedTo,
+      teamA,
+      teamB,
+      teamAKitColor = null,
+      teamBKitColor = null,
+    } = body;
 
     // Validate input
     if (
@@ -135,6 +143,27 @@ export default async (req, context) => {
           },
         );
       }
+    }
+
+    // Apply kit color picks (optional) — oriented to whichever side each squad
+    // is actually assigned to. Leave existing colors untouched if not picked.
+    if (teamAKitColor || teamBKitColor) {
+      let homeKit = null;
+      let awayKit = null;
+      if (teamAId === matchData.home_team_id) {
+        homeKit = teamAKitColor;
+        awayKit = teamBKitColor;
+      } else if (teamAId === matchData.away_team_id) {
+        homeKit = teamBKitColor;
+        awayKit = teamAKitColor;
+      }
+      await sql`
+        UPDATE matches
+        SET
+          home_kit_color = COALESCE(${homeKit}, home_kit_color),
+          away_kit_color = COALESCE(${awayKit}, away_kit_color)
+        WHERE id = ${matchId}
+      `;
     }
 
     // ============================================================================

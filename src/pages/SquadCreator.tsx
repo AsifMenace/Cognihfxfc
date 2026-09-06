@@ -7,6 +7,7 @@ import { EditTeamsModal } from '../components/EditTeamsModal';
 import { MatchLinkingModal } from '../components/MatchLinkingModal';
 import { SquadHistory } from '../components/SquadHistory';
 import { getAdminHeaders } from '../utils/auth';
+import { KIT_PALETTE } from '../constants/kitPalette';
 import { FaStar, FaFire, FaCheck, FaUsers } from 'react-icons/fa';
 
 interface SquadCreatorProps {
@@ -63,6 +64,9 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
   const [assignedTeamA, setAssignedTeamA] = useState<number | null>(null);
   const [assignedTeamB, setAssignedTeamB] = useState<number | null>(null);
   const [assignedTeamC, setAssignedTeamC] = useState<number | null>(null);
+  const [kitColorA, setKitColorA] = useState('');
+  const [kitColorB, setKitColorB] = useState('');
+  const [kitColorC, setKitColorC] = useState('');
   const [nextBooking, setNextBooking] = useState<Booking | null>(null);
   const [creatingMatch, setCreatingMatch] = useState(false);
   const [matchCreated, setMatchCreated] = useState<{
@@ -114,6 +118,9 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
     setAssignedTeamA(null);
     setAssignedTeamB(null);
     setAssignedTeamC(null);
+    setKitColorA('');
+    setKitColorB('');
+    setKitColorC('');
     setMatchCreated(null);
     setError(null);
   };
@@ -260,6 +267,9 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
           teamAPlayers: teamA,
           teamBPlayers: teamB,
           teamCPlayers: squadMode === '3squad' ? teamC : undefined,
+          teamAKitColor: kitColorA || null,
+          teamBKitColor: kitColorB || null,
+          teamCKitColor: squadMode === '3squad' ? (kitColorC || null) : undefined,
         }),
       });
 
@@ -536,6 +546,52 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Squad A Kit Color (optional)</label>
+                      <div className="flex gap-2">
+                        {KIT_PALETTE.map(({ name, hex }) => (
+                          <button
+                            key={hex}
+                            type="button"
+                            title={name}
+                            onClick={() => setKitColorA((c) => (c === hex ? '' : hex))}
+                            className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
+                            style={{ backgroundColor: hex, borderColor: kitColorA === hex ? '#facc15' : '#e5e7eb' }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Squad B Kit Color (optional)</label>
+                      <div className="flex gap-2">
+                        {KIT_PALETTE.map(({ name, hex }) => (
+                          <button
+                            key={hex}
+                            type="button"
+                            title={name}
+                            onClick={() => setKitColorB((c) => (c === hex ? '' : hex))}
+                            className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
+                            style={{ backgroundColor: hex, borderColor: kitColorB === hex ? '#facc15' : '#e5e7eb' }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {(() => {
+                    const effectiveA = kitColorA || registeredTeams.find((t) => t.id === assignedTeamA)?.color;
+                    const effectiveB = kitColorB || registeredTeams.find((t) => t.id === assignedTeamB)?.color;
+                    return (
+                      effectiveA &&
+                      effectiveB &&
+                      effectiveA === effectiveB && (
+                        <p className="text-amber-400 text-sm">
+                          ⚠ Both squads are wearing the same color — consider picking a different kit color.
+                        </p>
+                      )
+                    );
+                  })()}
+
                   <motion.button
                     whileHover={{ scale: nextBooking && assignedTeamA && assignedTeamB ? 1.02 : 1 }}
                     whileTap={{ scale: nextBooking && assignedTeamA && assignedTeamB ? 0.98 : 1 }}
@@ -651,27 +707,56 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
 
                   <div className="space-y-3">
                     {[
-                      { label: 'Squad A 🔵', value: assignedTeamA, setter: setAssignedTeamA, others: [assignedTeamB, assignedTeamC] },
-                      { label: 'Squad B 🔴', value: assignedTeamB, setter: setAssignedTeamB, others: [assignedTeamA, assignedTeamC] },
-                      { label: 'Squad C 🟢', value: assignedTeamC, setter: setAssignedTeamC, others: [assignedTeamA, assignedTeamB] },
-                    ].map(({ label, value, setter, others }) => (
-                      <div key={label} className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-white w-24 flex-shrink-0">{label}</span>
-                        <select
-                          value={value ?? ''}
-                          onChange={(e) => setter(Number(e.target.value) || null)}
-                          className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
-                        >
-                          <option value="">— pick team —</option>
-                          {registeredTeams
-                            .filter((t) => !others.includes(t.id))
-                            .map((t) => (
-                              <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
+                      { label: 'Squad A 🔵', value: assignedTeamA, setter: setAssignedTeamA, others: [assignedTeamB, assignedTeamC], kitColor: kitColorA, kitSetter: setKitColorA },
+                      { label: 'Squad B 🔴', value: assignedTeamB, setter: setAssignedTeamB, others: [assignedTeamA, assignedTeamC], kitColor: kitColorB, kitSetter: setKitColorB },
+                      { label: 'Squad C 🟢', value: assignedTeamC, setter: setAssignedTeamC, others: [assignedTeamA, assignedTeamB], kitColor: kitColorC, kitSetter: setKitColorC },
+                    ].map(({ label, value, setter, others, kitColor, kitSetter }) => (
+                      <div key={label} className="space-y-1.5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold text-white w-24 flex-shrink-0">{label}</span>
+                          <select
+                            value={value ?? ''}
+                            onChange={(e) => setter(Number(e.target.value) || null)}
+                            className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
+                          >
+                            <option value="">— pick team —</option>
+                            {registeredTeams
+                              .filter((t) => !others.includes(t.id))
+                              .map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2 pl-[6.5rem]">
+                          {KIT_PALETTE.map(({ name, hex }) => (
+                            <button
+                              key={hex}
+                              type="button"
+                              title={name}
+                              onClick={() => kitSetter((c: string) => (c === hex ? '' : hex))}
+                              className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
+                              style={{ backgroundColor: hex, borderColor: kitColor === hex ? '#facc15' : '#e5e7eb' }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
+                  {(() => {
+                    const effective = (id: number | null, kit: string) =>
+                      kit || registeredTeams.find((t) => t.id === id)?.color;
+                    const eA = effective(assignedTeamA, kitColorA);
+                    const eB = effective(assignedTeamB, kitColorB);
+                    const eC = effective(assignedTeamC, kitColorC);
+                    const clash = (eA && eB && eA === eB) || (eB && eC && eB === eC) || (eA && eC && eA === eC);
+                    return (
+                      clash && (
+                        <p className="text-amber-400 text-sm">
+                          ⚠ Two or more squads are wearing the same color — consider picking different kit colors.
+                        </p>
+                      )
+                    );
+                  })()}
 
                   <motion.button
                     whileHover={{ scale: nextBooking && assignedTeamA && assignedTeamB && assignedTeamC ? 1.02 : 1 }}
