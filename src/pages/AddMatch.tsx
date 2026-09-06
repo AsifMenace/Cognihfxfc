@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getAdminHeaders } from "../utils/auth";
+import { KIT_PALETTE } from "../constants/kitPalette";
 interface Team {
   id: number;
   name: string;
+  color?: string;
 }
 
 interface AddMatchProps {
@@ -24,6 +26,8 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
     home_team_id: "" as number | "",
     away_team_id: "" as number | "",
     video_url: "",
+    home_kit_color: "",
+    away_kit_color: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -61,6 +65,8 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
               home_team_id: data.match.home_team_id ?? "",
               away_team_id: data.match.away_team_id ?? "",
               video_url: data.match.video_url ?? "", // <-- add this
+              home_kit_color: data.match.home_kit_color ?? "",
+              away_kit_color: data.match.away_kit_color ?? "",
             });
           }
         })
@@ -179,6 +185,8 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
             home_team_id: "",
             away_team_id: "",
             video_url: "",
+            home_kit_color: "",
+            away_kit_color: "",
           });
         }
         if (onMatchAdded) onMatchAdded();
@@ -261,6 +269,77 @@ export function AddMatch({ onMatchAdded }: AddMatchProps) {
               </option>
             ))}
           </select>
+
+          {(form.home_team_id || form.away_team_id) && (
+            <div className="grid grid-cols-2 gap-4 mb-2">
+              <div>
+                <label className={labelCls}>Home Kit Color (optional)</label>
+                <div className="flex gap-2">
+                  {KIT_PALETTE.map(({ name, hex }) => (
+                    <button
+                      key={hex}
+                      type="button"
+                      title={name}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          home_kit_color: f.home_kit_color === hex ? "" : hex,
+                        }))
+                      }
+                      className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
+                      style={{
+                        backgroundColor: hex,
+                        borderColor:
+                          form.home_kit_color === hex ? "#facc15" : "#e5e7eb",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Away Kit Color (optional)</label>
+                <div className="flex gap-2">
+                  {KIT_PALETTE.map(({ name, hex }) => (
+                    <button
+                      key={hex}
+                      type="button"
+                      title={name}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          away_kit_color: f.away_kit_color === hex ? "" : hex,
+                        }))
+                      }
+                      className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
+                      style={{
+                        backgroundColor: hex,
+                        borderColor:
+                          form.away_kit_color === hex ? "#facc15" : "#e5e7eb",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              {(() => {
+                const effectiveHome =
+                  form.home_kit_color ||
+                  teams.find((t) => t.id === form.home_team_id)?.color;
+                const effectiveAway =
+                  form.away_kit_color ||
+                  teams.find((t) => t.id === form.away_team_id)?.color;
+                return (
+                  effectiveHome &&
+                  effectiveAway &&
+                  effectiveHome === effectiveAway && (
+                    <p className="text-amber-400 text-sm col-span-2">
+                      ⚠ Both teams are wearing the same color — consider
+                      picking a different kit color.
+                    </p>
+                  )
+                );
+              })()}
+            </div>
+          )}
 
           <div className="flex items-center gap-3 py-1">
             <div className="flex-1 border-t border-slate-600" />

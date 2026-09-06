@@ -25,6 +25,8 @@ export const handler = async (event) => {
       SELECT m.*,
        t1.name AS home_team_name, t1.color AS home_team_color,
        t2.name AS away_team_name, t2.color AS away_team_color,
+       COALESCE(m.home_kit_color, t1.color) AS home_display_color,
+       COALESCE(m.away_kit_color, t2.color) AS away_display_color,
        t3.id AS opponent_id,
        t3.name AS opponent_name, t3.color AS opponent_color,
         t4.id AS cogni_id, t4.name AS cogni_name, t4.color AS cogni_color

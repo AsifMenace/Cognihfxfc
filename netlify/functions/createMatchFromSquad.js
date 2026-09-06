@@ -83,6 +83,10 @@ export default async (req) => {
       teamAPlayers,
       teamBPlayers,
       teamCPlayers = null,
+      // kit color overrides (hex or null = use team's registered color)
+      teamAKitColor = null,
+      teamBKitColor = null,
+      teamCKitColor = null,
     } = body;
 
     if (!squadId || !teamAId || !teamBId || !teamAPlayers || !teamBPlayers) {
@@ -163,11 +167,22 @@ export default async (req) => {
           SET match_id = NULL, status = 'created', linked_at = NULL
           WHERE match_id = ${existing.id} AND id != ${squadId}
         `;
+
+        // Apply kit color picks, oriented to whichever side is actually home/away
+        const homeKit = existing.home_team_id === teamAId ? teamAKitColor : teamBKitColor;
+        const awayKit = existing.away_team_id === teamBId ? teamBKitColor : teamAKitColor;
+        await sql`
+          UPDATE matches
+          SET
+            home_kit_color = COALESCE(${homeKit}, home_kit_color),
+            away_kit_color = COALESCE(${awayKit}, away_kit_color)
+          WHERE id = ${existing.id}
+        `;
       } else {
         // Create 1 new match
         const [newMatch] = await sql`
-          INSERT INTO matches (date, time, venue, competition, home_team_id, away_team_id, isHome)
-          VALUES (${matchDate}, ${matchTime}, ${matchVenue}, ${competition}, ${teamAId}, ${teamBId}, true)
+          INSERT INTO matches (date, time, venue, competition, home_team_id, away_team_id, isHome, home_kit_color, away_kit_color)
+          VALUES (${matchDate}, ${matchTime}, ${matchVenue}, ${competition}, ${teamAId}, ${teamBId}, true, ${teamAKitColor}, ${teamBKitColor})
           RETURNING id
         `;
         matchIds = [newMatch.id];
@@ -180,9 +195,9 @@ export default async (req) => {
     } else {
       // 3-squad: pairs are A vs B, B vs C, C vs A
       const pairs = [
-        { home: teamAId, away: teamBId, homePlayers: teamAPlayers, awayPlayers: teamBPlayers, time: matchTime },
-        { home: teamBId, away: teamCId, homePlayers: teamBPlayers, awayPlayers: teamCPlayers, time: addMinutes(matchTime, 1) },
-        { home: teamCId, away: teamAId, homePlayers: teamCPlayers, awayPlayers: teamAPlayers, time: addMinutes(matchTime, 2) },
+        { home: teamAId, away: teamBId, homePlayers: teamAPlayers, awayPlayers: teamBPlayers, time: matchTime, homeKit: teamAKitColor, awayKit: teamBKitColor },
+        { home: teamBId, away: teamCId, homePlayers: teamBPlayers, awayPlayers: teamCPlayers, time: addMinutes(matchTime, 1), homeKit: teamBKitColor, awayKit: teamCKitColor },
+        { home: teamCId, away: teamAId, homePlayers: teamCPlayers, awayPlayers: teamAPlayers, time: addMinutes(matchTime, 2), homeKit: teamCKitColor, awayKit: teamAKitColor },
       ];
 
       matchIds = [];
@@ -210,10 +225,20 @@ export default async (req) => {
             SET match_id = NULL, status = 'created', linked_at = NULL
             WHERE match_id = ${matchId} AND id != ${squadId}
           `;
+
+          const homeKit = existingPair.home_team_id === pair.home ? pair.homeKit : pair.awayKit;
+          const awayKit = existingPair.away_team_id === pair.away ? pair.awayKit : pair.homeKit;
+          await sql`
+            UPDATE matches
+            SET
+              home_kit_color = COALESCE(${homeKit}, home_kit_color),
+              away_kit_color = COALESCE(${awayKit}, away_kit_color)
+            WHERE id = ${matchId}
+          `;
         } else {
           const [newMatch] = await sql`
-            INSERT INTO matches (date, time, venue, competition, home_team_id, away_team_id, isHome)
-            VALUES (${matchDate}, ${pair.time}, ${matchVenue}, ${competition}, ${pair.home}, ${pair.away}, true)
+            INSERT INTO matches (date, time, venue, competition, home_team_id, away_team_id, isHome, home_kit_color, away_kit_color)
+            VALUES (${matchDate}, ${pair.time}, ${matchVenue}, ${competition}, ${pair.home}, ${pair.away}, true, ${pair.homeKit}, ${pair.awayKit})
             RETURNING id
           `;
           matchId = newMatch.id;

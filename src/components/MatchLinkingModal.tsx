@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAdminHeaders } from '../utils/auth';
+import { KIT_PALETTE } from '../constants/kitPalette';
 import { FaTimes, FaArrowRight, FaCheck } from 'react-icons/fa';
 
 interface Player {
@@ -49,6 +50,8 @@ export function MatchLinkingModal({
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [teamAAssignment, setTeamAAssignment] = useState<string | null>(null);
   const [teamBAssignment, setTeamBAssignment] = useState<string | null>(null);
+  const [kitColorA, setKitColorA] = useState('');
+  const [kitColorB, setKitColorB] = useState('');
   const [loading, setLoading] = useState(true);
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,6 +124,8 @@ export function MatchLinkingModal({
           teamBAssignedTo: teamBAssignment,
           teamA,
           teamB,
+          teamAKitColor: kitColorA || null,
+          teamBKitColor: kitColorB || null,
         }),
       });
 
@@ -358,6 +363,61 @@ export function MatchLinkingModal({
                       </motion.button>
                     </div>
                   </div>
+
+                  {/* Kit color pickers */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Squad Team A Kit Color (optional)</label>
+                      <div className="flex gap-2">
+                        {KIT_PALETTE.map(({ name, hex }) => (
+                          <button
+                            key={hex}
+                            type="button"
+                            title={name}
+                            onClick={() => setKitColorA((c) => (c === hex ? '' : hex))}
+                            className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
+                            style={{ backgroundColor: hex, borderColor: kitColorA === hex ? '#facc15' : '#e5e7eb' }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Squad Team B Kit Color (optional)</label>
+                      <div className="flex gap-2">
+                        {KIT_PALETTE.map(({ name, hex }) => (
+                          <button
+                            key={hex}
+                            type="button"
+                            title={name}
+                            onClick={() => setKitColorB((c) => (c === hex ? '' : hex))}
+                            className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
+                            style={{ backgroundColor: hex, borderColor: kitColorB === hex ? '#facc15' : '#e5e7eb' }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {(() => {
+                    const effectiveA =
+                      kitColorA ||
+                      (teamAAssignment === selectedMatch.homeTeam.name
+                        ? selectedMatch.homeTeam.color
+                        : selectedMatch.awayTeam.color);
+                    const effectiveB =
+                      kitColorB ||
+                      (teamBAssignment === selectedMatch.homeTeam.name
+                        ? selectedMatch.homeTeam.color
+                        : selectedMatch.awayTeam.color);
+                    return (
+                      effectiveA &&
+                      effectiveB &&
+                      effectiveA === effectiveB && (
+                        <p className="text-amber-400 text-sm">
+                          ⚠ Both squads are wearing the same color — consider picking a different kit color.
+                        </p>
+                      )
+                    );
+                  })()}
 
                   {/* Summary */}
                   {teamAAssignment && teamBAssignment && (
