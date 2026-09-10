@@ -16,7 +16,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { name, color, description } = JSON.parse(event.body);
+    const { name, color, description, logo_url } = JSON.parse(event.body);
 
     if (!name || typeof name !== "string") {
       return {
@@ -39,9 +39,9 @@ export const handler = async (event) => {
     }
 
     const result = await sql`
-      INSERT INTO teams (name, color, description)
-      VALUES (${name}, ${teamColor}, ${description || ""})
-      RETURNING id, name, color, description
+      INSERT INTO teams (name, color, description, logo_url)
+      VALUES (${name}, ${teamColor}, ${description || ""}, ${logo_url || null})
+      RETURNING id, name, color, description, logo_url
     `;
 
     return {

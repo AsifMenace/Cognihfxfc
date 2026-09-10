@@ -20,16 +20,20 @@ type Match = {
   isHome?: boolean;
   home_team_name?: string | null;
   home_team_color?: string | null;
+  home_team_logo?: string | null;
   away_team_name?: string | null;
   away_team_color?: string | null;
+  away_team_logo?: string | null;
   home_team_id?: number | null;
   away_team_id?: number | null;
   opponent_id?: number | null;
   opponent_name?: string | null;
   opponent_color?: string | null;
+  opponent_logo?: string | null;
   cogni_id?: number | null;
   cogni_name?: string | null;
   cogni_color?: string | null;
+  cogni_logo?: string | null;
   video_url?: string | null;
 };
 
@@ -308,12 +312,12 @@ export default function Games() {
                               {isInternal ? (
                                 <div className="flex justify-center items-end gap-3">
                                   <div className="flex flex-col items-center gap-1 flex-1">
-                                    <TeamBadge color={game.home_team_color} name={game.home_team_name || ""} size={32} />
+                                    <TeamBadge color={game.home_team_color} name={game.home_team_name || ""} size={32} logoUrl={game.home_team_logo} />
                                     <span className="text-white text-sm font-bold truncate max-w-full">{game.home_team_name}</span>
                                   </div>
                                   <span className="text-gray-400 text-base mb-1 flex-shrink-0">vs</span>
                                   <div className="flex flex-col items-center gap-1 flex-1">
-                                    <TeamBadge color={game.away_team_color} name={game.away_team_name || ""} size={32} />
+                                    <TeamBadge color={game.away_team_color} name={game.away_team_name || ""} size={32} logoUrl={game.away_team_logo} />
                                     <span className="text-white text-sm font-bold truncate max-w-full">{game.away_team_name}</span>
                                   </div>
                                 </div>

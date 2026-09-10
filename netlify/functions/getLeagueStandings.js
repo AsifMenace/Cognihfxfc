@@ -61,6 +61,7 @@ export const handler = async (event) => {
         t.id AS team_id,
         t.name AS team_name,
         t.color AS team_color,
+        t.logo_url AS team_logo,
         COALESCE(r.played, 0) AS played,
         COALESCE(r.wins, 0) AS wins,
         COALESCE(r.draws, 0) AS draws,

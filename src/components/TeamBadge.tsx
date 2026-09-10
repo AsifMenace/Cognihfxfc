@@ -1,9 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 interface TeamBadgeProps {
   color?: string | null;
   name: string;
   size?: number;
+  logoUrl?: string | null;
 }
 
 type PatternFn = (primary: string, secondary: string) => React.ReactNode;
@@ -85,12 +86,35 @@ export const TeamBadge: React.FC<TeamBadgeProps> = ({
   color,
   name,
   size = 36,
+  logoUrl,
 }) => {
+  const [logoFailed, setLogoFailed] = useState(false);
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [logoUrl]);
   const primary = color || "#374151";
   const pattern = useMemo(() => {
     const key = name.trim().toLowerCase();
     return PATTERNS[hashString(key) % PATTERNS.length];
   }, [name]);
+
+  if (logoUrl && !logoFailed) {
+    return (
+      <img
+        src={logoUrl}
+        alt={name}
+        data-team-logo="true"
+        onError={() => setLogoFailed(true)}
+        style={{
+          width: size,
+          height: size,
+          objectFit: "contain",
+          display: "inline-block",
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
 
   return (
     <svg

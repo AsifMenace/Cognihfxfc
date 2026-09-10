@@ -37,6 +37,7 @@ interface Player {
   photo?: string;
   bio?: string;
   team_id?: number | null;
+  runner?: boolean;
 }
 
 interface Match {
@@ -52,8 +53,10 @@ interface Match {
   away_team_id?: number | null;
   home_team_name?: string | null;
   home_team_color?: string | null;
+  home_team_logo?: string | null;
   away_team_name?: string | null;
   away_team_color?: string | null;
+  away_team_logo?: string | null;
   home_kit_color?: string | null;
   away_kit_color?: string | null;
   home_display_color?: string | null;
@@ -61,9 +64,11 @@ interface Match {
   opponent_id?: number | null;
   opponent_name?: string | null;
   opponent_color?: string | null;
+  opponent_logo?: string | null;
   cogni_id?: number | null;
   cogni_name?: string | null;
   cogni_color?: string | null;
+  cogni_logo?: string | null;
   video_url?: string | null;
 }
 
@@ -118,6 +123,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [success, setSuccess] = useState<string | null>(null);
   const [matchStats, setMatchStats] = useState<MatchStat[]>([]);
   const [sharingLineup, setSharingLineup] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
   const lineupShareRef = useRef<HTMLDivElement>(null);
 
   type PlayerOption = {
@@ -379,20 +385,24 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     (id): id is number => typeof id === 'number'
   );
 
-  const teamMap: { [id: number]: { name: string; colorClass: string } } = {};
+  const teamMap: { [id: number]: { name: string; colorClass: string; logo?: string | null } } = {};
   playingTeamIds.forEach((teamId: number) => {
     let teamName = '';
     let teamColor = '';
+    let teamLogo: string | null | undefined = null;
     if (teamId === match?.home_team_id) {
       teamName = match.home_team_name || '';
       teamColor = match.home_display_color || match.home_team_color || '';
+      teamLogo = match.home_team_logo;
     } else if (teamId === match?.away_team_id) {
       teamName = match.away_team_name || '';
       teamColor = match.away_display_color || match.away_team_color || '';
+      teamLogo = match.away_team_logo;
     }
     teamMap[teamId] = {
       name: teamName,
       colorClass: teamColor || 'white',
+      logo: teamLogo,
     };
   });
 
@@ -487,37 +497,156 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   }
 
-  const waitForImages = (container: HTMLElement) => {
-    const imgs = Array.from(container.querySelectorAll('img'));
-    return Promise.all(
-      imgs.map((img) => {
-        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-        return new Promise<void>((resolve) => {
-          img.addEventListener('load', () => resolve(), { once: true });
-          img.addEventListener('error', () => resolve(), { once: true });
+  // Re-encode an already-fetched image blob into a small, clean JPEG data
+  // URL via canvas. html-to-image composes the whole capture into one SVG
+  // and rasterizes that as a single image — large, CMYK-encoded, or oddly
+  // oriented source photos (very common for phone-camera uploads) can fail
+  // to decode inside that pipeline with no catchable error, leaving a
+  // player's photo silently blank. Downscaling and re-compressing through a
+  // canvas here strips all of that and guarantees a small, standard-sRGB
+  // image that's safe to embed, since these are only ever displayed at
+  // ~40px.
+  const recompressImage = async (blob: Blob): Promise<string> => {
+    const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+    try {
+      const maxDim = 200;
+      const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas 2D context unavailable');
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      return canvas.toDataURL('image/jpeg', 0.85);
+    } finally {
+      bitmap.close();
+    }
+  };
+
+  // Fetch a single image URL ourselves and convert it to a small, clean
+  // data: URL. Doing this explicitly (rather than letting html-to-image
+  // fetch it internally) means we know exactly which photos succeeded/failed
+  // instead of guessing why the export silently came out incomplete.
+  const fetchAsDataUrl = async (url: string): Promise<string | null> => {
+    try {
+      const res = await fetch(url, { mode: 'cors', cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      try {
+        return await recompressImage(blob);
+      } catch (recompressErr) {
+        console.warn('Recompression failed, using original image data:', url, recompressErr);
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(reader.error);
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
         });
+      }
+    } catch (err) {
+      console.error('Failed to inline photo for share:', url, err);
+      return null;
+    }
+  };
+
+  // Swap every <img> in the capture area to a locally-fetched data: URL
+  // before handing the DOM to html-to-image, so the library never has to do
+  // its own network fetch at capture time. Returns a restore function and a
+  // count of photos that failed to inline.
+  const inlinePhotosForCapture = async (container: HTMLElement) => {
+    const imgs = Array.from(container.querySelectorAll('img'));
+    const originalSrcs = imgs.map((img) => img.getAttribute('src') || '');
+    let failedCount = 0;
+    let playerPhotoTotal = 0;
+
+    await Promise.all(
+      imgs.map(async (img, i) => {
+        const src = originalSrcs[i];
+        // Team logos come from football-data.org's crest CDN, which sends no
+        // CORS headers at all — inlining will always fail for these (unlike
+        // Cloudinary-hosted player photos), so they're excluded from the
+        // "couldn't be loaded" count shown to the user: that failure is
+        // expected here, not a flaky-network problem worth surfacing.
+        const isTeamLogo = img.dataset.teamLogo === 'true';
+        if (!isTeamLogo) playerPhotoTotal++;
+        if (!src || src.startsWith('data:')) return;
+        const dataUrl = await fetchAsDataUrl(src);
+        if (dataUrl) {
+          img.src = dataUrl;
+        } else if (!isTeamLogo) {
+          failedCount++;
+        }
       })
     );
+
+    const restore = () => {
+      imgs.forEach((img, i) => {
+        img.setAttribute('src', originalSrcs[i]);
+      });
+    };
+
+    return { restore, failedCount, total: playerPhotoTotal };
+  };
+
+  const downloadLineupImage = (dataUrl: string) => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `lineup-${match?.id}.png`;
+    a.click();
   };
 
   const handleShareLineup = async () => {
     const el = lineupShareRef.current;
     if (!el) return;
     setSharingLineup(true);
+    setShareError(null);
+    let dataUrl: string;
     try {
-      await waitForImages(el);
-      const dataUrl = await toPng(el, {
-        backgroundColor: '#0f172a',
-        pixelRatio: 2,
-        cacheBust: true,
-        imagePlaceholder:
-          'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMzc0MTUxIi8+PC9zdmc+',
-        filter: (node) => {
-          const n = node as HTMLElement;
-          if (n.dataset?.noCapture === 'true') return false;
-          return true;
-        },
-      });
+      const { restore, failedCount, total } = await inlinePhotosForCapture(el);
+      try {
+        dataUrl = await toPng(el, {
+          backgroundColor: '#0f172a',
+          pixelRatio: 2,
+          cacheBust: true,
+          // Defensive fallback: if a photo failed our own inlining above
+          // (still a live cross-origin URL at this point), html-to-image
+          // will try to embed it itself. Without a placeholder, that retry
+          // failing throws and aborts the *entire* export — not just that
+          // one photo — so this must stay set even though most photos never
+          // reach this path.
+          imagePlaceholder:
+            'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMzc0MTUxIi8+PC9zdmc+',
+          filter: (node) => {
+            const n = node as HTMLElement;
+            if (n.dataset?.noCapture === 'true') return false;
+            return true;
+          },
+        });
+      } finally {
+        restore();
+      }
+      if (failedCount > 0) {
+        console.warn(`${failedCount}/${total} player photo(s) failed to load for the shared image`);
+        setShareError(
+          `Heads up: ${failedCount} of ${total} player photo${total === 1 ? '' : 's'} couldn't be loaded and may be missing from the image.`
+        );
+      }
+    } catch (err) {
+      console.error('Failed to generate lineup image', err);
+      setShareError('Could not generate the lineup image. Please try again.');
+      setSharingLineup(false);
+      return;
+    }
+
+    // The image itself is fully generated at this point — clear the
+    // "Preparing..." state now rather than leaving it stuck for the whole
+    // native share-sheet interaction, which can stay open for a while and
+    // has nothing left to do with our own loading state.
+    setSharingLineup(false);
+
+    try {
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const file = new File([blob], `lineup-${match?.id}.png`, { type: 'image/png' });
@@ -527,15 +656,25 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
           text: match ? shareLineupText(match) : undefined,
         });
       } else {
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `lineup-${match?.id}.png`;
-        a.click();
+        downloadLineupImage(dataUrl);
       }
     } catch (err) {
-      console.error('Share failed', err);
-    } finally {
-      setSharingLineup(false);
+      // The Web Share API can reject if the user's "activation" from the tap
+      // expired while the image was being generated (common on mobile
+      // browsers for slower networks) — fall back to a direct download
+      // instead of leaving the user with nothing. A user-cancelled share
+      // sheet (AbortError) is not a failure and needs no fallback.
+      if (err instanceof Error && err.name === 'AbortError') {
+        // user cancelled the native share sheet — do nothing
+      } else {
+        console.error('Share failed, falling back to download', err);
+        try {
+          downloadLineupImage(dataUrl);
+        } catch (downloadErr) {
+          console.error('Fallback download also failed', downloadErr);
+          setShareError('Could not share or download the image. Please try again.');
+        }
+      }
     }
   };
 
@@ -544,7 +683,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     teamName: string,
     colorClass: string,
     teamPlayers: Player[],
-    isKitTeam: boolean = false
+    isKitTeam: boolean = false,
+    logoUrl?: string | null
   ) => (
     <div
       key={teamId}
@@ -561,7 +701,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       }
     >
       <h3 className="flex items-center gap-2 text-xs sm:text-sm md:text-lg font-black mb-1 px-2 text-white">
-        <TeamBadge color={colorClass} name={teamName} size={24} />
+        <TeamBadge color={colorClass} name={teamName} size={24} logoUrl={logoUrl} />
         {isKitTeam && <JerseyIcon color={colorClass} size={20} />}
         {teamName.toUpperCase()}
       </h3>
@@ -586,10 +726,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
             <Link
               key={player.id}
               to={`/player/${player.id}`}
-              className="flex items-center gap-2 sm:gap-2 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 text-left border-l-4 transition-all group relative"
+              className="flex items-center gap-2 sm:gap-2 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 text-left border-l-4 transition-all group relative hover:brightness-110"
               style={{
-                backgroundColor: `${colorClass}18`,
+                backgroundColor: `${colorClass}33`,
                 borderLeftColor: colorClass,
+                boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.08), 0 0 0 1px ${colorClass}55`,
               }}
             >
               <img
@@ -599,8 +740,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full object-cover object-top flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-white text-xs sm:text-xs md:text-sm truncate">
-                  {player.name}
+                <div className="font-bold text-white text-xs sm:text-xs md:text-sm flex items-center gap-1 min-w-0">
+                  <span className="truncate">{player.name}</span>
+                  {player.runner && <span className="text-xs flex-shrink-0">🏃</span>}
                 </div>
                 <div className="text-xs text-gray-400 flex items-center gap-0.5">
                   <span>
@@ -706,6 +848,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               const awayTeamName = match.away_team_name || match.opponent_name || '';
               const homeColor = match.home_team_color || match.cogni_color || '#e5e7eb';
               const awayColor = match.away_team_color || match.opponent_color || '#e5e7eb';
+              const homeLogo = match.home_team_logo || match.cogni_logo;
+              const awayLogo = match.away_team_logo || match.opponent_logo;
 
               const homeScoreColor = isDraw
                 ? 'text-yellow-400'
@@ -723,7 +867,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <div className="flex items-center justify-between gap-1 sm:gap-4 md:gap-6">
                     {/* Home team */}
                     <div className="flex-1 flex flex-col items-center gap-1 text-center min-w-0">
-                      <TeamBadge color={homeColor} name={homeTeamName} size={40} />
+                      <TeamBadge color={homeColor} name={homeTeamName} size={40} logoUrl={homeLogo} />
                       <span className="font-black text-xs sm:text-sm md:text-lg text-white leading-tight truncate w-full px-1">
                         {homeTeamName.toUpperCase()}
                       </span>
@@ -756,7 +900,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
                     {/* Away team */}
                     <div className="flex-1 flex flex-col items-center gap-1 text-center min-w-0">
-                      <TeamBadge color={awayColor} name={awayTeamName} size={40} />
+                      <TeamBadge color={awayColor} name={awayTeamName} size={40} logoUrl={awayLogo} />
                       <span className="font-black text-xs sm:text-sm md:text-lg text-white leading-tight truncate w-full px-1">
                         {awayTeamName.toUpperCase()}
                       </span>
@@ -838,6 +982,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   color={match?.home_team_color || match?.cogni_color}
                   name={match?.home_team_name || match?.cogni_name || ''}
                   size={36}
+                  logoUrl={match?.home_team_logo || match?.cogni_logo}
                 />
                 <div className="min-w-0 flex-1">
                   <h4 className="text-sm sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight truncate">
@@ -902,6 +1047,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   color={match?.away_team_color || match?.opponent_color}
                   name={match?.away_team_name || match?.opponent_name || ''}
                   size={36}
+                  logoUrl={match?.away_team_logo || match?.opponent_logo}
                 />
               </div>
 
@@ -1234,6 +1380,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
               </button>
             )}
           </div>
+          {shareError && (
+            <p className="text-red-400 text-xs text-center -mt-4 mb-4">{shareError}</p>
+          )}
 
           {/* Capture wrapper — ref lives here, Share button is outside */}
           <div ref={lineupShareRef} className="bg-slate-900 rounded-xl p-3">
@@ -1265,11 +1414,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
 
             {/* INTERNAL TEAMS: home & away - side by side */}
             {playingTeamIds.length > 0 && (
-              <div className="grid grid-cols-2 gap-2 md:gap-8 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2 md:gap-8 mb-8">
                 {playingTeamIds.map((teamId) => {
-                  const { name: teamName, colorClass } = teamMap[teamId];
+                  const { name: teamName, colorClass, logo } = teamMap[teamId];
                   const teamPlayers = sortPlayersByPosition(groupedLineups[teamName] || []);
-                  return renderTeamLineup(teamId, teamName, colorClass, teamPlayers, true);
+                  return renderTeamLineup(teamId, teamName, colorClass, teamPlayers, true, logo);
                 })}
               </div>
             )}
@@ -1290,7 +1439,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                           match.cogni_id!,
                           match.cogni_name!,
                           match.cogni_color || '#e5e7eb',
-                          cogniPlayers
+                          cogniPlayers,
+                          false,
+                          match.cogni_logo
                         );
                       })()}
                     </>
@@ -1308,7 +1459,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                           match.opponent_id!,
                           match.opponent_name!,
                           match.opponent_color || '#e5e7eb',
-                          opponentPlayers
+                          opponentPlayers,
+                          false,
+                          match.opponent_logo
                         );
                       })()}
                     </>

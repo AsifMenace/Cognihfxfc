@@ -57,14 +57,18 @@ interface Match {
   away_team_id?: number | null;
   home_team_name?: string | null;
   home_team_color?: string | null;
+  home_team_logo?: string | null;
   away_team_name?: string | null;
   away_team_color?: string | null;
+  away_team_logo?: string | null;
   cogni_id?: number | null;
   cogni_name?: string | null;
   cogni_color?: string | null;
+  cogni_logo?: string | null;
   opponent_id?: number | null;
   opponent_name?: string | null;
   opponent_color?: string | null;
+  opponent_logo?: string | null;
 }
 
 type HomeProps = {
@@ -185,11 +189,12 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
     teamId: number,
     teamName: string,
     colorClass: string,
-    teamPlayers: Player[]
+    teamPlayers: Player[],
+    logoUrl?: string | null
   ) => (
     <div key={teamId}>
       <h3 className="flex items-center gap-2 text-xs sm:text-sm md:text-lg font-black mb-2 px-2 text-white">
-        <TeamBadge color={colorClass} name={teamName} size={24} />
+        <TeamBadge color={colorClass} name={teamName} size={24} logoUrl={logoUrl} />
         {teamName.toUpperCase()}
       </h3>
 
@@ -427,6 +432,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                               color={nextGame.home_team_color}
                               name={nextGame.home_team_name || ''}
                               size={32}
+                              logoUrl={nextGame.home_team_logo}
                             />
                             <span className="text-white text-sm font-bold truncate max-w-full">
                               {nextGame.home_team_name}
@@ -438,6 +444,7 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                               color={nextGame.away_team_color}
                               name={nextGame.away_team_name || ''}
                               size={32}
+                              logoUrl={nextGame.away_team_logo}
                             />
                             <span className="text-white text-sm font-bold truncate max-w-full">
                               {nextGame.away_team_name}
@@ -569,7 +576,8 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                           nextGame.home_team_id!,
                           nextGame.home_team_name || 'Home Team',
                           nextGame.home_team_color || '#3b82f6',
-                          homeTeamPlayers
+                          homeTeamPlayers,
+                          nextGame.home_team_logo
                         );
                       })()}
                     </div>
@@ -584,7 +592,8 @@ const Home: React.FC<HomeProps> = ({ isAdmin }) => {
                           nextGame.away_team_id!,
                           nextGame.away_team_name || 'Away Team',
                           nextGame.away_team_color || '#8b5cf6',
-                          awayTeamPlayers
+                          awayTeamPlayers,
+                          nextGame.away_team_logo
                         );
                       })()}
                     </div>
