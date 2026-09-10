@@ -30,6 +30,7 @@ interface Standing {
   team_id: number;
   team_name: string;
   team_color: string | null;
+  team_logo?: string | null;
   played: number;
   wins: number;
   draws: number;
@@ -216,7 +217,7 @@ export const LeagueStandings: React.FC = () => {
                         {index + 1}
                       </td>
                       <td className="py-3 px-6 flex items-center gap-3">
-                        <TeamBadge color={team.team_color} name={team.team_name} size={28} />
+                        <TeamBadge color={team.team_color} name={team.team_name} size={28} logoUrl={team.team_logo} />
                         <span className="font-semibold text-sm truncate">
                           {team.team_name.toUpperCase()}
                         </span>

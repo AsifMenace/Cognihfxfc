@@ -5,8 +5,10 @@ type Match = {
   id: number;
   home_team_name: string;
   home_team_color: string;
+  home_team_logo?: string | null;
   away_team_name: string;
   away_team_color: string;
+  away_team_logo?: string | null;
   result: string;
   date: string;
   competition?: string;
@@ -116,7 +118,7 @@ export const GetRecentMatch: React.FC = () => {
       <div className="flex items-center justify-between mb-8 px-2">
         {/* Home Team */}
         <div className="flex flex-col items-center gap-1 flex-1">
-          <TeamBadge color={match.home_team_color} name={match.home_team_name} size={36} />
+          <TeamBadge color={match.home_team_color} name={match.home_team_name} size={36} logoUrl={match.home_team_logo} />
           <p className="text-xs font-bold text-white text-center truncate w-full">
             {match.home_team_name}
           </p>
@@ -135,7 +137,7 @@ export const GetRecentMatch: React.FC = () => {
 
         {/* Away Team */}
         <div className="flex flex-col items-center gap-1 flex-1">
-          <TeamBadge color={match.away_team_color} name={match.away_team_name} size={36} />
+          <TeamBadge color={match.away_team_color} name={match.away_team_name} size={36} logoUrl={match.away_team_logo} />
           <p className="text-xs font-bold text-white text-center truncate w-full">
             {match.away_team_name}
           </p>

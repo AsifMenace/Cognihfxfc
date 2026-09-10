@@ -5,7 +5,7 @@ const sql = neon();
 export const handler = async () => {
   try {
     const teams = await sql`
-      SELECT id, name, color
+      SELECT id, name, color, logo_url
       FROM teams
       ORDER BY name ASC
     `;

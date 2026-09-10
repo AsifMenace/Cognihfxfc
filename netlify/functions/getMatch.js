@@ -23,13 +23,13 @@ export const handler = async (event) => {
   try {
     const matches = await sql`
       SELECT m.*,
-       t1.name AS home_team_name, t1.color AS home_team_color,
-       t2.name AS away_team_name, t2.color AS away_team_color,
+       t1.name AS home_team_name, t1.color AS home_team_color, t1.logo_url AS home_team_logo,
+       t2.name AS away_team_name, t2.color AS away_team_color, t2.logo_url AS away_team_logo,
        COALESCE(m.home_kit_color, t1.color) AS home_display_color,
        COALESCE(m.away_kit_color, t2.color) AS away_display_color,
        t3.id AS opponent_id,
-       t3.name AS opponent_name, t3.color AS opponent_color,
-        t4.id AS cogni_id, t4.name AS cogni_name, t4.color AS cogni_color
+       t3.name AS opponent_name, t3.color AS opponent_color, t3.logo_url AS opponent_logo,
+        t4.id AS cogni_id, t4.name AS cogni_name, t4.color AS cogni_color, t4.logo_url AS cogni_logo
 FROM matches m
 LEFT JOIN teams t1 ON m.home_team_id = t1.id
 LEFT JOIN teams t2 ON m.away_team_id = t2.id
