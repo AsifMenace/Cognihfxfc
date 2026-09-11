@@ -418,8 +418,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   });
 
   const homeScorers = scorers.filter((s) => s.team_name === match?.home_team_name);
-  const awayScorers = scorers.filter((s) => s.team_name === match?.away_team_name);
-  const opponentScorers = scorers.filter((s) => s.team_name === match?.opponent_name);
+  // Single pass so away/opponent goals stay in the order they were added,
+  // matching the Games page.
+  const awayScorers = scorers.filter(
+    (s) =>
+      s.team_name === match?.away_team_name ||
+      s.team_name === match?.opponent_name
+  );
 
   async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -967,8 +972,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 {homeScorers.length} Goal{homeScorers.length !== 1 ? 's' : ''}
               </div>
               <div className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 font-bold text-sm sm:text-base">
-                {awayScorers.length + opponentScorers.length} Goal
-                {awayScorers.length + opponentScorers.length !== 1 ? 's' : ''}
+                {awayScorers.length} Goal
+                {awayScorers.length !== 1 ? 's' : ''}
               </div>
             </div>
           </div>
@@ -1039,8 +1044,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     {match?.away_team_name || match?.opponent_name}
                   </h4>
                   <p className="text-purple-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
-                    {awayScorers.length + opponentScorers.length} Goal
-                    {awayScorers.length + opponentScorers.length !== 1 ? 's' : ''}
+                    {awayScorers.length} Goal
+                    {awayScorers.length !== 1 ? 's' : ''}
                   </p>
                 </div>
                 <TeamBadge
@@ -1051,9 +1056,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 />
               </div>
 
-              {awayScorers.length + opponentScorers.length > 0 ? (
+              {awayScorers.length > 0 ? (
                 <div className="space-y-2 sm:space-y-3 pl-2">
-                  {[...awayScorers, ...opponentScorers].map((s) => (
+                  {awayScorers.map((s) => (
                     <div
                       key={s.id}
                       className="group/scorer flex items-center gap-3 p-3 sm:p-4 bg-gray-800/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-purple-600/10 rounded-xl border border-gray-700/50 hover:border-purple-400/50 transition-all duration-300 hover:translate-x-1 justify-end"

@@ -18,7 +18,8 @@ export const handler = async (event) => {
       FROM match_goals mg
       JOIN players p ON mg.player_id = p.id
       JOIN teams t ON mg.team_id = t.id
-      WHERE mg.match_id = ${matchId};
+      WHERE mg.match_id = ${matchId}
+      ORDER BY mg.id;
     `;
 
     return {
