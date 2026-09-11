@@ -118,6 +118,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<number | ''>('');
+  // Separate from selectedTeamId: the Add Goal form prefills this from the
+  // chosen player, and must not disturb the add-players-to-lineup form.
+  const [selectedGoalTeamId, setSelectedGoalTeamId] = useState<number | ''>('');
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -417,9 +420,69 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   });
 
+  // Admin player pickers: list whoever actually played this match (the
+  // match_players lineup, which carries a per-match team_id) grouped under
+  // their team, then everyone else under "Other Players".
+  const matchTeams = [
+    { id: match?.home_team_id, name: match?.home_team_name },
+    { id: match?.away_team_id, name: match?.away_team_name },
+    { id: match?.cogni_id, name: match?.cogni_name },
+    { id: match?.opponent_id, name: match?.opponent_name },
+  ].filter(
+    (t, i, arr): t is { id: number; name: string } =>
+      typeof t.id === 'number' &&
+      !!t.name &&
+      arr.findIndex((o) => o.id === t.id) === i
+  );
+
+  const lineupGroups = matchTeams
+    .map((team) => ({
+      team,
+      players: lineups.filter((p) => p.team_id === team.id),
+    }))
+    .filter((g) => g.players.length > 0);
+
+  const playerTeamIds = new Map<number, number>();
+  lineupGroups.forEach(({ team, players }) => {
+    players.forEach((p) => playerTeamIds.set(p.id, team.id));
+  });
+
+  const groupedPlayerIds = new Set(
+    lineupGroups.flatMap((g) => g.players.map((p) => p.id))
+  );
+  const otherPlayers = allPlayers.filter((p) => !groupedPlayerIds.has(p.id));
+
+  const renderPlayerOption = (p: Player) => (
+    <option key={p.id} value={p.id.toString()}>
+      {p.name} ({p.position})
+    </option>
+  );
+
+  // No lineup recorded yet -> nothing to prioritise, so keep a flat list.
+  const renderPlayerOptions = () =>
+    lineupGroups.length === 0 ? (
+      allPlayers.map(renderPlayerOption)
+    ) : (
+      <>
+        {lineupGroups.map(({ team, players }) => (
+          <optgroup key={team.id} label={team.name}>
+            {players.map(renderPlayerOption)}
+          </optgroup>
+        ))}
+        {otherPlayers.length > 0 && (
+          <optgroup label="Other Players">{otherPlayers.map(renderPlayerOption)}</optgroup>
+        )}
+      </>
+    );
+
   const homeScorers = scorers.filter((s) => s.team_name === match?.home_team_name);
-  const awayScorers = scorers.filter((s) => s.team_name === match?.away_team_name);
-  const opponentScorers = scorers.filter((s) => s.team_name === match?.opponent_name);
+  // Single pass so away/opponent goals stay in the order they were added,
+  // matching the Games page.
+  const awayScorers = scorers.filter(
+    (s) =>
+      s.team_name === match?.away_team_name ||
+      s.team_name === match?.opponent_name
+  );
 
   async function handleAddGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -434,7 +497,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         body: JSON.stringify({
           match_id: match.id,
           player_id: Number(selectedPlayerId),
-          team_id: Number(selectedTeamId),
+          team_id: Number(selectedGoalTeamId),
         }),
       });
       if (!res.ok) {
@@ -448,7 +511,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       setSuccess('Goal scorer added successfully!');
       await fetchScorers();
       setSelectedPlayerId('');
-      setSelectedTeamId('');
+      setSelectedGoalTeamId('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -967,8 +1030,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 {homeScorers.length} Goal{homeScorers.length !== 1 ? 's' : ''}
               </div>
               <div className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 font-bold text-sm sm:text-base">
-                {awayScorers.length + opponentScorers.length} Goal
-                {awayScorers.length + opponentScorers.length !== 1 ? 's' : ''}
+                {awayScorers.length} Goal
+                {awayScorers.length !== 1 ? 's' : ''}
               </div>
             </div>
           </div>
@@ -1039,8 +1102,8 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     {match?.away_team_name || match?.opponent_name}
                   </h4>
                   <p className="text-purple-400 font-bold text-xs sm:text-base lg:text-lg mt-1">
-                    {awayScorers.length + opponentScorers.length} Goal
-                    {awayScorers.length + opponentScorers.length !== 1 ? 's' : ''}
+                    {awayScorers.length} Goal
+                    {awayScorers.length !== 1 ? 's' : ''}
                   </p>
                 </div>
                 <TeamBadge
@@ -1051,9 +1114,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                 />
               </div>
 
-              {awayScorers.length + opponentScorers.length > 0 ? (
+              {awayScorers.length > 0 ? (
                 <div className="space-y-2 sm:space-y-3 pl-2">
-                  {[...awayScorers, ...opponentScorers].map((s) => (
+                  {awayScorers.map((s) => (
                     <div
                       key={s.id}
                       className="group/scorer flex items-center gap-3 p-3 sm:p-4 bg-gray-800/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-purple-600/10 rounded-xl border border-gray-700/50 hover:border-purple-400/50 transition-all duration-300 hover:translate-x-1 justify-end"
@@ -1115,27 +1178,30 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <label className="block text-sm font-bold text-gray-300 mb-1">PLAYER</label>
                   <select
                     value={selectedPlayerId}
-                    onChange={(e) => setSelectedPlayerId(e.target.value)}
+                    onChange={(e) => {
+                      const playerId = e.target.value;
+                      setSelectedPlayerId(playerId);
+                      // Prefill the team from the lineup, still editable below.
+                      // Unknown player (not in the lineup) clears it rather than
+                      // leaving a previous pick that would credit the wrong team.
+                      setSelectedGoalTeamId(playerTeamIds.get(Number(playerId)) ?? '');
+                    }}
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
                     required
                   >
                     <option value="" disabled>
                       Select player
                     </option>
-                    {allPlayers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.position})
-                      </option>
-                    ))}
+                    {renderPlayerOptions()}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-300 mb-1">TEAM</label>
                   {/* In Add Goal form */}
                   <select
-                    value={selectedTeamId}
+                    value={selectedGoalTeamId}
                     onChange={(e) =>
-                      setSelectedTeamId(e.target.value === '' ? '' : Number(e.target.value))
+                      setSelectedGoalTeamId(e.target.value === '' ? '' : Number(e.target.value))
                     }
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
                     required
@@ -1206,11 +1272,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     <option value="" disabled>
                       Select player
                     </option>
-                    {allPlayers.map((p: Player) => (
-                      <option key={p.id} value={p.id.toString()}>
-                        {p.name} ({p.position})
-                      </option>
-                    ))}
+                    {renderPlayerOptions()}
                   </select>
                 </div>
 
