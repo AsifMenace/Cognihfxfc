@@ -73,3 +73,23 @@ export async function buildCrestMap(
 
   return crestMap;
 }
+
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/mycloudasif/image/upload";
+const UPLOAD_PRESET = "unsigned_preset";
+
+// football-data.org's crest CDN sends no CORS headers at all, so a crest
+// saved as-is displays fine as a plain <img> (no CORS needed for that) but
+// can never be read back into a canvas — which is exactly what the shared
+// lineup image export needs to do. Cloudinary's unsigned upload API accepts
+// a remote URL and fetches it server-side (no browser CORS involved), so
+// re-hosting the crest there — the same CORS-friendly host already used for
+// player photos — makes it work everywhere with no other code changes.
+export async function rehostCrestOnCloudinary(remoteUrl: string): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", remoteUrl);
+  formData.append("upload_preset", UPLOAD_PRESET);
+  const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
+  if (!res.ok) throw new Error("Cloudinary upload failed");
+  const data = await res.json();
+  return data.secure_url as string;
+}

@@ -1,7 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { getAdminHeaders } from "../utils/auth";
 import { TeamBadge } from "../components/TeamBadge";
-import { buildCrestMap, normalizeTeamName, QUICK_COMPETITIONS, ALL_COMPETITIONS } from "../utils/teamCrestMatch";
+import {
+  buildCrestMap,
+  normalizeTeamName,
+  rehostCrestOnCloudinary,
+  QUICK_COMPETITIONS,
+  ALL_COMPETITIONS,
+} from "../utils/teamCrestMatch";
+
+// Re-host any non-Cloudinary logo URL (auto-fetched crest or a manually
+// pasted link) so it works in the shared lineup image export, which needs
+// to read the image back via canvas — something football-data.org's crest
+// CDN (and most arbitrary URLs) don't support due to missing CORS headers.
+// Falls back to the original URL if the re-host attempt fails, so saving
+// still succeeds (just without export support for that logo).
+async function ensureCloudinaryHosted(url: string): Promise<string> {
+  if (url.includes("cloudinary.com")) return url;
+  try {
+    return await rehostCrestOnCloudinary(url);
+  } catch {
+    return url;
+  }
+}
 
 interface Team {
   id: number;
@@ -30,7 +51,7 @@ export function AddTeam() {
       const crestMap = await buildCrestMap(QUICK_COMPETITIONS);
       const found = crestMap.get(normalizeTeamName(name));
       if (found) {
-        setLogoUrl(found);
+        setLogoUrl(await ensureCloudinaryHosted(found));
         setLogoStatus("Found it!");
       } else {
         setLogoStatus("No crest found — you can paste a URL below instead.");
@@ -51,6 +72,7 @@ export function AddTeam() {
     }
 
     try {
+      const finalLogoUrl = logoUrl.trim() ? await ensureCloudinaryHosted(logoUrl.trim()) : null;
       const res = await fetch("/.netlify/functions/addTeam", {
         method: "POST",
         headers: getAdminHeaders(),
@@ -58,7 +80,7 @@ export function AddTeam() {
           name: name.trim(),
           color: color || "#000000",
           description: description.trim(),
-          logo_url: logoUrl.trim() || null,
+          logo_url: finalLogoUrl,
         }),
       });
 
@@ -149,12 +171,13 @@ export function AddTeam() {
   }
 
   async function saveTeamLogo(teamId: number, url: string) {
+    const finalUrl = url ? await ensureCloudinaryHosted(url) : null;
     await fetch("/.netlify/functions/updateTeamLogo", {
       method: "POST",
       headers: getAdminHeaders(),
-      body: JSON.stringify({ id: teamId, logo_url: url || null }),
+      body: JSON.stringify({ id: teamId, logo_url: finalUrl }),
     });
-    setTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, logo_url: url || null } : t)));
+    setTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, logo_url: finalUrl } : t)));
     setManualUrlDraft((prev) => {
       const next = { ...prev };
       delete next[teamId];
