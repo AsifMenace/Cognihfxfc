@@ -569,7 +569,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   // canvas here strips all of that and guarantees a small, standard-sRGB
   // image that's safe to embed, since these are only ever displayed at
   // ~40px.
-  const recompressImage = async (blob: Blob): Promise<string> => {
+  //
+  // preserveAlpha re-encodes as PNG instead. JPEG has no alpha channel, and
+  // the spec has the browser composite transparency onto solid BLACK when
+  // encoding to it — so a transparent-background club crest came out as a
+  // black box (and a dark crest became invisible against it). Player photos
+  // are opaque rectangles, so they keep the smaller JPEG encoding.
+  const recompressImage = async (blob: Blob, preserveAlpha = false): Promise<string> => {
     const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
     try {
       const maxDim = 200;
@@ -582,7 +588,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas 2D context unavailable');
       ctx.drawImage(bitmap, 0, 0, width, height);
-      return canvas.toDataURL('image/jpeg', 0.85);
+      return preserveAlpha ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85);
     } finally {
       bitmap.close();
     }
@@ -592,13 +598,13 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   // data: URL. Doing this explicitly (rather than letting html-to-image
   // fetch it internally) means we know exactly which photos succeeded/failed
   // instead of guessing why the export silently came out incomplete.
-  const fetchAsDataUrl = async (url: string): Promise<string | null> => {
+  const fetchAsDataUrl = async (url: string, preserveAlpha = false): Promise<string | null> => {
     try {
       const res = await fetch(url, { mode: 'cors', cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       try {
-        return await recompressImage(blob);
+        return await recompressImage(blob, preserveAlpha);
       } catch (recompressErr) {
         console.warn('Recompression failed, using original image data:', url, recompressErr);
         return await new Promise<string>((resolve, reject) => {
@@ -623,22 +629,26 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     const originalSrcs = imgs.map((img) => img.getAttribute('src') || '');
     let failedCount = 0;
     let playerPhotoTotal = 0;
+    const failedLogoTeams: string[] = [];
 
     await Promise.all(
       imgs.map(async (img, i) => {
         const src = originalSrcs[i];
-        // Team logos come from football-data.org's crest CDN, which sends no
-        // CORS headers at all — inlining will always fail for these (unlike
-        // Cloudinary-hosted player photos), so they're excluded from the
-        // "couldn't be loaded" count shown to the user: that failure is
-        // expected here, not a flaky-network problem worth surfacing.
+        // Crests saved straight from football-data.org's CDN send no CORS
+        // headers, so inlining them can never succeed; AddTeam re-hosts new
+        // ones on Cloudinary, which does. Either way they stay out of the
+        // "couldn't be loaded" count below, which is worded for player
+        // photos — a crest that can't be inlined is reported separately.
         const isTeamLogo = img.dataset.teamLogo === 'true';
         if (!isTeamLogo) playerPhotoTotal++;
         if (!src || src.startsWith('data:')) return;
-        const dataUrl = await fetchAsDataUrl(src);
+        const dataUrl = await fetchAsDataUrl(src, isTeamLogo);
         if (dataUrl) {
           img.src = dataUrl;
-        } else if (!isTeamLogo) {
+        } else if (isTeamLogo) {
+          const team = img.getAttribute('alt');
+          if (team && !failedLogoTeams.includes(team)) failedLogoTeams.push(team);
+        } else {
           failedCount++;
         }
       })
@@ -650,7 +660,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       });
     };
 
-    return { restore, failedCount, total: playerPhotoTotal };
+    return { restore, failedCount, total: playerPhotoTotal, failedLogoTeams };
   };
 
   const downloadLineupImage = (dataUrl: string) => {
@@ -667,7 +677,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     setShareError(null);
     let dataUrl: string;
     try {
-      const { restore, failedCount, total } = await inlinePhotosForCapture(el);
+      const { restore, failedCount, total, failedLogoTeams } = await inlinePhotosForCapture(el);
       try {
         dataUrl = await toPng(el, {
           backgroundColor: '#0f172a',
@@ -690,11 +700,24 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       } finally {
         restore();
       }
+      const notes: string[] = [];
       if (failedCount > 0) {
         console.warn(`${failedCount}/${total} player photo(s) failed to load for the shared image`);
-        setShareError(
-          `Heads up: ${failedCount} of ${total} player photo${total === 1 ? '' : 's'} couldn't be loaded and may be missing from the image.`
+        notes.push(
+          `${failedCount} of ${total} player photo${total === 1 ? '' : 's'} couldn't be loaded`
         );
+      }
+      if (failedLogoTeams.length > 0) {
+        // Almost always a crest still served from a host without CORS headers.
+        // Re-saving that team's logo on the Add Team page re-hosts it on
+        // Cloudinary, which can be read back into the exported image.
+        console.warn('Team crest(s) failed to load for the shared image:', failedLogoTeams);
+        notes.push(
+          `the badge for ${failedLogoTeams.join(' and ')} couldn't be loaded (re-save that team's logo on the Add Team page to fix it)`
+        );
+      }
+      if (notes.length > 0) {
+        setShareError(`Heads up: ${notes.join('; ')}. They may be missing from the image.`);
       }
     } catch (err) {
       console.error('Failed to generate lineup image', err);
