@@ -118,6 +118,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<number | ''>('');
+  // Separate from selectedTeamId: the Add Goal form prefills this from the
+  // chosen player, and must not disturb the add-players-to-lineup form.
+  const [selectedGoalTeamId, setSelectedGoalTeamId] = useState<number | ''>('');
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -439,6 +442,11 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }))
     .filter((g) => g.players.length > 0);
 
+  const playerTeamIds = new Map<number, number>();
+  lineupGroups.forEach(({ team, players }) => {
+    players.forEach((p) => playerTeamIds.set(p.id, team.id));
+  });
+
   const groupedPlayerIds = new Set(
     lineupGroups.flatMap((g) => g.players.map((p) => p.id))
   );
@@ -489,7 +497,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
         body: JSON.stringify({
           match_id: match.id,
           player_id: Number(selectedPlayerId),
-          team_id: Number(selectedTeamId),
+          team_id: Number(selectedGoalTeamId),
         }),
       });
       if (!res.ok) {
@@ -503,7 +511,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
       setSuccess('Goal scorer added successfully!');
       await fetchScorers();
       setSelectedPlayerId('');
-      setSelectedTeamId('');
+      setSelectedGoalTeamId('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -1170,7 +1178,14 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <label className="block text-sm font-bold text-gray-300 mb-1">PLAYER</label>
                   <select
                     value={selectedPlayerId}
-                    onChange={(e) => setSelectedPlayerId(e.target.value)}
+                    onChange={(e) => {
+                      const playerId = e.target.value;
+                      setSelectedPlayerId(playerId);
+                      // Prefill the team from the lineup, still editable below.
+                      // Unknown player (not in the lineup) clears it rather than
+                      // leaving a previous pick that would credit the wrong team.
+                      setSelectedGoalTeamId(playerTeamIds.get(Number(playerId)) ?? '');
+                    }}
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
                     required
                   >
@@ -1184,9 +1199,9 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                   <label className="block text-sm font-bold text-gray-300 mb-1">TEAM</label>
                   {/* In Add Goal form */}
                   <select
-                    value={selectedTeamId}
+                    value={selectedGoalTeamId}
                     onChange={(e) =>
-                      setSelectedTeamId(e.target.value === '' ? '' : Number(e.target.value))
+                      setSelectedGoalTeamId(e.target.value === '' ? '' : Number(e.target.value))
                     }
                     className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none"
                     required
