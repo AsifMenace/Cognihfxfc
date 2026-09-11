@@ -107,6 +107,10 @@ export function AddTeam() {
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{ done: number; total: number } | null>(null);
   const [syncSummary, setSyncSummary] = useState<{ updated: number; notFound: string[] } | null>(null);
+  const [rehosting, setRehosting] = useState(false);
+  const [rehostSummary, setRehostSummary] = useState<{ done: number; failed: string[] } | null>(
+    null
+  );
   const [rowFetching, setRowFetching] = useState<number | null>(null);
   const [manualUrlDraft, setManualUrlDraft] = useState<{ [teamId: number]: string }>({});
 
@@ -171,7 +175,7 @@ export function AddTeam() {
   }
 
   async function saveTeamLogo(teamId: number, url: string) {
-    const finalUrl = url ? await ensureCloudinaryHosted(url) : null;
+    const finalUrl: string | null = url ? await ensureCloudinaryHosted(url) : null;
     await fetch("/.netlify/functions/updateTeamLogo", {
       method: "POST",
       headers: getAdminHeaders(),
@@ -183,7 +187,40 @@ export function AddTeam() {
       delete next[teamId];
       return next;
     });
+    return finalUrl;
   }
+
+  // A logo that isn't on Cloudinary is on a host that (almost always) sends
+  // no CORS headers, which is what the shared lineup image export needs.
+  const needsRehost = (t: Team) => !!t.logo_url && !t.logo_url.includes("cloudinary.com");
+
+  // Crests saved before logos were re-hosted on Cloudinary still point at
+  // football-data.org (or another host with no CORS headers). They display
+  // fine as a plain <img>, but the shared lineup image has to read them back
+  // through a canvas, which those hosts forbid — so the badge comes out
+  // blank. Re-saving each one through saveTeamLogo re-hosts it on Cloudinary
+  // and fixes the export, with no change for teams already hosted there.
+  async function handleRehostLogos() {
+    setRehosting(true);
+    setRehostSummary(null);
+    try {
+      const needRehost = teams.filter(needsRehost);
+      let done = 0;
+      const failed: string[] = [];
+      for (const team of needRehost) {
+        // ensureCloudinaryHosted falls back to the original URL when the
+        // re-host fails, so compare rather than assuming it worked.
+        const saved = await saveTeamLogo(team.id, team.logo_url!);
+        if (saved && saved.includes("cloudinary.com")) done++;
+        else failed.push(team.name);
+      }
+      setRehostSummary({ done, failed });
+    } finally {
+      setRehosting(false);
+    }
+  }
+
+  const rehostCount = teams.filter(needsRehost).length;
 
   const inputCls = "w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-yellow-500 focus:outline-none";
   const labelCls = "block mb-1 text-sm font-bold text-gray-300";
@@ -288,6 +325,32 @@ export function AddTeam() {
                 : "🔄 Fetch missing logos"}
             </button>
           </div>
+
+          {rehostCount > 0 && (
+            <div className="mb-4 p-3 bg-slate-700/50 border border-yellow-500/30 rounded-lg">
+              <p className="text-sm text-gray-300 mb-2">
+                {rehostCount} team{rehostCount === 1 ? "'s" : "s'"} logo
+                {rehostCount === 1 ? " is" : "s are"} on a host that blocks the shared lineup
+                image, so {rehostCount === 1 ? "its badge" : "their badges"} come out blank.
+              </p>
+              <button
+                type="button"
+                onClick={handleRehostLogos}
+                disabled={rehosting}
+                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors"
+              >
+                {rehosting ? "Re-hosting..." : "🛠 Fix badges for sharing"}
+              </button>
+            </div>
+          )}
+
+          {rehostSummary && (
+            <p className="text-sm text-gray-300 mb-4">
+              Re-hosted {rehostSummary.done} logo{rehostSummary.done === 1 ? "" : "s"}.
+              {rehostSummary.failed.length > 0 &&
+                ` Could not re-host: ${rehostSummary.failed.join(", ")}.`}
+            </p>
+          )}
 
           {syncSummary && (
             <p className="text-sm text-gray-300 mb-4">
