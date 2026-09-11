@@ -417,6 +417,56 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
     }
   });
 
+  // Admin player pickers: list whoever actually played this match (the
+  // match_players lineup, which carries a per-match team_id) grouped under
+  // their team, then everyone else under "Other Players".
+  const matchTeams = [
+    { id: match?.home_team_id, name: match?.home_team_name },
+    { id: match?.away_team_id, name: match?.away_team_name },
+    { id: match?.cogni_id, name: match?.cogni_name },
+    { id: match?.opponent_id, name: match?.opponent_name },
+  ].filter(
+    (t, i, arr): t is { id: number; name: string } =>
+      typeof t.id === 'number' &&
+      !!t.name &&
+      arr.findIndex((o) => o.id === t.id) === i
+  );
+
+  const lineupGroups = matchTeams
+    .map((team) => ({
+      team,
+      players: lineups.filter((p) => p.team_id === team.id),
+    }))
+    .filter((g) => g.players.length > 0);
+
+  const groupedPlayerIds = new Set(
+    lineupGroups.flatMap((g) => g.players.map((p) => p.id))
+  );
+  const otherPlayers = allPlayers.filter((p) => !groupedPlayerIds.has(p.id));
+
+  const renderPlayerOption = (p: Player) => (
+    <option key={p.id} value={p.id.toString()}>
+      {p.name} ({p.position})
+    </option>
+  );
+
+  // No lineup recorded yet -> nothing to prioritise, so keep a flat list.
+  const renderPlayerOptions = () =>
+    lineupGroups.length === 0 ? (
+      allPlayers.map(renderPlayerOption)
+    ) : (
+      <>
+        {lineupGroups.map(({ team, players }) => (
+          <optgroup key={team.id} label={team.name}>
+            {players.map(renderPlayerOption)}
+          </optgroup>
+        ))}
+        {otherPlayers.length > 0 && (
+          <optgroup label="Other Players">{otherPlayers.map(renderPlayerOption)}</optgroup>
+        )}
+      </>
+    );
+
   const homeScorers = scorers.filter((s) => s.team_name === match?.home_team_name);
   // Single pass so away/opponent goals stay in the order they were added,
   // matching the Games page.
@@ -1127,11 +1177,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     <option value="" disabled>
                       Select player
                     </option>
-                    {allPlayers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.position})
-                      </option>
-                    ))}
+                    {renderPlayerOptions()}
                   </select>
                 </div>
                 <div>
@@ -1211,11 +1257,7 @@ const MatchCentre: React.FC<MatchCentreProps> = ({ isAdmin }) => {
                     <option value="" disabled>
                       Select player
                     </option>
-                    {allPlayers.map((p: Player) => (
-                      <option key={p.id} value={p.id.toString()}>
-                        {p.name} ({p.position})
-                      </option>
-                    ))}
+                    {renderPlayerOptions()}
                   </select>
                 </div>
 
