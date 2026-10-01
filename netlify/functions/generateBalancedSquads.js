@@ -287,10 +287,10 @@ export default async (req, context) => {
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
       }
-      if (totalPlayers < 14 || totalPlayers > 20) {
+      if (totalPlayers < 14 || totalPlayers > 24) {
         return new Response(
           JSON.stringify({
-            error: `Invalid number of players. Support is for 14 to 20 players, you provided ${totalPlayers}.`,
+            error: `Invalid number of players. Support is for 14 to 24 players, you provided ${totalPlayers}.`,
           }),
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         );

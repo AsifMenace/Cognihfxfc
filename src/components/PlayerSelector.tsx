@@ -67,9 +67,9 @@ export function PlayerSelector({
   const selectedCount = selectedPlayerIds.length;
   const is2Squad = squadMode === '2squad';
   const isComplete = is2Squad
-    ? selectedCount >= 14 && selectedCount <= 20 && selectedCount % 2 === 0
+    ? selectedCount >= 14 && selectedCount <= 24 && selectedCount % 2 === 0
     : selectedCount >= 21 && selectedCount <= 24;
-  const maxPlayers = is2Squad ? 20 : 24;
+  const maxPlayers = 24;
 
   const selectedRunnerCount = allPlayers.filter(
     (p) => p.runner && selectedPlayerIds.includes(p.id)
@@ -163,7 +163,7 @@ export function PlayerSelector({
               isComplete ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
             }`}
           >
-            {selectedCount}/{is2Squad ? '14-20' : '21-24'}
+            {selectedCount}/{is2Squad ? '14-24' : '21-24'}
           </div>
         </div>
         <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
@@ -182,7 +182,7 @@ export function PlayerSelector({
                 ? 'Select 1 more player to balance the teams'
                 : isComplete
                   ? `Ready for ${selectedCount / 2}v${selectedCount / 2}!`
-                  : `${selectedCount} selected — max 20`
+                  : `${selectedCount} selected — max 24`
             : selectedCount < 21
               ? `Select ${21 - selectedCount} more (min 21 for 3 squads)`
               : isComplete
