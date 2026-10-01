@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TeamBadge } from "../components/TeamBadge";
-import { Calendar, MapPin, Clock, Home, Plane } from "lucide-react";
+import { Calendar, MapPin, Clock, Home, Plane, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { parseMatchDateTime } from "../components/dateUtils";
 import ThemeProvider from "../components/ThemeProvider";
@@ -52,6 +52,61 @@ interface GoalDetail {
   player_name: string;
   team_name: string;
   team_id: number;
+}
+
+interface PotmDetail {
+  matchId: number;
+  name: string;
+  photoUrl: string;
+  goals: number;
+  assists: number;
+  saves: number;
+  jerseyNumber: number;
+  position?: string;
+}
+
+function PlayerOfTheMatchBadge({ potm }: { potm: PotmDetail }) {
+  const isGoalkeeper = potm.position?.toLowerCase().includes("keeper");
+
+  return (
+    <div className="mt-4 p-4 bg-gradient-to-r from-yellow-600/10 via-yellow-500/10 to-amber-600/10 rounded-xl border border-yellow-500/30 max-w-md mx-auto">
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <Trophy size={14} className="text-yellow-400 flex-shrink-0" />
+        <span className="text-yellow-400 font-bold text-xs uppercase tracking-wide whitespace-nowrap">
+          Player of the Match
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <img
+          src={potm.photoUrl}
+          alt={potm.name}
+          className="w-12 h-12 rounded-full object-cover object-top border-2 border-yellow-400 flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0 text-left">
+          <div className="text-white font-bold text-base truncate">{potm.name}</div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {isGoalkeeper ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-base">🧤</span>
+              <span className="text-white font-semibold text-sm">{potm.saves}</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">⚽</span>
+                <span className="text-white font-semibold text-sm">{potm.goals}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">🅰️</span>
+                <span className="text-white font-semibold text-sm">{potm.assists}</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 interface GoalScorersProps {
@@ -124,6 +179,7 @@ function GoalScorers({ goals, match }: GoalScorersProps) {
 export default function Games() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [goalsMap, setGoalsMap] = useState<Record<number, GoalDetail[]>>({});
+  const [potmMap, setPotmMap] = useState<Record<number, PotmDetail>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -143,10 +199,12 @@ export default function Games() {
     Promise.all([
       fetch(`${API_BASE}/getMatches`).then((r) => r.json()),
       fetch(`${API_BASE}/getAllMatchGoals`).then((r) => r.json()),
+      fetch(`${API_BASE}/getAllPlayerOfTheMatch`).then((r) => r.json()),
     ])
-      .then(([matchesData, goalsData]) => {
+      .then(([matchesData, goalsData, potmData]) => {
         setMatches(matchesData);
         setGoalsMap(goalsData);
+        setPotmMap(potmData);
         setLoading(false);
       })
       .catch((err) => {
@@ -376,6 +434,11 @@ export default function Games() {
                               cogni_id: game.cogni_id,
                             }}
                           />
+
+                          {/* Player of the Match */}
+                          {potmMap[game.id] && (
+                            <PlayerOfTheMatchBadge potm={potmMap[game.id]} />
+                          )}
 
                           {/* Info Row */}
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 text-gray-300 text-sm md:text-base mt-4">
