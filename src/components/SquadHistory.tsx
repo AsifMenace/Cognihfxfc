@@ -1,7 +1,7 @@
 // src/components/squad-creator/SquadHistory.tsx
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaHistory, FaTrash, FaEye, FaChevronDown, FaChevronUp, FaShareAlt } from 'react-icons/fa';
+import { FaHistory, FaTrash, FaEye, FaChevronDown, FaChevronUp, FaShareAlt, FaUserPlus } from 'react-icons/fa';
 import { toPng } from 'html-to-image';
 
 interface Player {
@@ -31,10 +31,11 @@ interface Squad {
 interface SquadHistoryProps {
   isAdmin: boolean;
   onLoadSquad: (squad: Squad) => void;
+  onSelectPlayers: (squad: Squad) => void;
   squadMode: '2squad' | '3squad';
 }
 
-export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryProps) {
+export function SquadHistory({ isAdmin, onLoadSquad, onSelectPlayers, squadMode }: SquadHistoryProps) {
   const [squads, setSquads] = useState<Squad[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,24 +162,27 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
     }
   };
 
-  // Sort players by position order: GK, DEF, MID, FW
-  const sortPlayersByPosition = (players: Player[]) => {
-    const positionOrder: { [key: string]: number } = {
-      goalkeeper: 0,
-      gk: 0,
-      defender: 1,
-      def: 1,
-      midfielder: 2,
-      mid: 2,
-      forward: 3,
-      fw: 3,
-    };
+  // Group players into position sections, in order: GK, DEF, MID, FW
+  const POSITION_GROUPS: { key: string; label: string; matches: string[] }[] = [
+    { key: 'gk', label: 'Goalkeeper', matches: ['goalkeeper', 'gk'] },
+    { key: 'def', label: 'Defenders', matches: ['defender', 'def'] },
+    { key: 'mid', label: 'Midfielders', matches: ['midfielder', 'mid'] },
+    { key: 'fw', label: 'Forwards', matches: ['forward', 'fw'] },
+  ];
 
-    return [...players].sort((a, b) => {
-      const posA = positionOrder[a.position.toLowerCase()] ?? 99;
-      const posB = positionOrder[b.position.toLowerCase()] ?? 99;
-      return posA - posB;
-    });
+  const groupPlayersByPosition = (players: Player[]) => {
+    const groups = POSITION_GROUPS.map((group) => ({
+      ...group,
+      players: players.filter((p) => group.matches.includes(p.position.toLowerCase())),
+    }));
+
+    const known = new Set(POSITION_GROUPS.flatMap((g) => g.matches));
+    const other = players.filter((p) => !known.has(p.position.toLowerCase()));
+    if (other.length > 0) {
+      groups.push({ key: 'other', label: 'Other', matches: [], players: other });
+    }
+
+    return groups.filter((group) => group.players.length > 0);
   };
 
   if (loading) {
@@ -303,6 +307,19 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
                     <FaEye className="text-sm" />
                   </motion.button>
 
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectPlayers(squad);
+                    }}
+                    className="p-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                    title="Reselect these players"
+                  >
+                    <FaUserPlus className="text-sm" />
+                  </motion.button>
+
                   {isAdmin && (
                     <motion.button
                       whileHover={{ scale: 1.05 }}
@@ -362,16 +379,25 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
                           ].map(({ label, players, color }) => (
                             <div key={label}>
                               <h4 className={`font-bold ${color} mb-2 text-sm`}>{label}</h4>
-                              <div className="space-y-1">
-                                {sortPlayersByPosition(players).map((player) => (
-                                  <div
-                                    key={player.id}
-                                    className="flex items-center justify-between p-1.5 bg-slate-800 rounded text-xs"
-                                  >
-                                    <div className="flex items-center gap-1 min-w-0">
-                                      <span>{getPositionEmoji(player.position)}</span>
-                                      <span className="text-gray-300 truncate">{player.name}</span>
-                                      {player.runner && <span className="text-sm flex-shrink-0">🏃</span>}
+                              <div className="space-y-2">
+                                {groupPlayersByPosition(players).map((group) => (
+                                  <div key={group.key}>
+                                    <p className="text-gray-500 text-[10px] font-semibold uppercase tracking-wide mb-1">
+                                      {group.label}
+                                    </p>
+                                    <div className="space-y-1">
+                                      {group.players.map((player) => (
+                                        <div
+                                          key={player.id}
+                                          className="flex items-center justify-between p-1.5 bg-slate-800 rounded text-xs"
+                                        >
+                                          <div className="flex items-center gap-1 min-w-0">
+                                            <span>{getPositionEmoji(player.position)}</span>
+                                            <span className="text-gray-300 truncate">{player.name}</span>
+                                            {player.runner && <span className="text-sm flex-shrink-0">🏃</span>}
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
                                 ))}
@@ -388,16 +414,25 @@ export function SquadHistory({ isAdmin, onLoadSquad, squadMode }: SquadHistoryPr
                           ].map(({ label, players, color }) => (
                             <div key={label}>
                               <h4 className={`font-bold ${color} mb-2 text-sm`}>{label}</h4>
-                              <div className="space-y-1">
-                                {sortPlayersByPosition(players).map((player) => (
-                                  <div
-                                    key={player.id}
-                                    className="flex items-center justify-between p-1.5 bg-slate-800 rounded text-xs"
-                                  >
-                                    <div className="flex items-center gap-1 min-w-0">
-                                      <span>{getPositionEmoji(player.position)}</span>
-                                      <span className="text-gray-300 truncate">{player.name}</span>
-                                      {player.runner && <span className="text-sm flex-shrink-0">🏃</span>}
+                              <div className="space-y-2">
+                                {groupPlayersByPosition(players).map((group) => (
+                                  <div key={group.key}>
+                                    <p className="text-gray-500 text-[10px] font-semibold uppercase tracking-wide mb-1">
+                                      {group.label}
+                                    </p>
+                                    <div className="space-y-1">
+                                      {group.players.map((player) => (
+                                        <div
+                                          key={player.id}
+                                          className="flex items-center justify-between p-1.5 bg-slate-800 rounded text-xs"
+                                        >
+                                          <div className="flex items-center gap-1 min-w-0">
+                                            <span>{getPositionEmoji(player.position)}</span>
+                                            <span className="text-gray-300 truncate">{player.name}</span>
+                                            {player.runner && <span className="text-sm flex-shrink-0">🏃</span>}
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
                                 ))}

@@ -101,7 +101,7 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
 
   // ── Player toggle ──────────────────────────────────────────────────────────
   const handlePlayerToggle = (playerId: number) => {
-    const max = squadMode === '3squad' ? 24 : 20;
+    const max = 24;
     setSelectedPlayerIds((prev) => {
       if (prev.includes(playerId)) return prev.filter((id) => id !== playerId);
       if (prev.length >= max) return prev;
@@ -138,11 +138,11 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
     const count = selectedPlayerIds.length;
 
     if (squadMode === '2squad') {
-      if (count < 14 || count > 20 || count % 2 !== 0) {
+      if (count < 14 || count > 24 || count % 2 !== 0) {
         setError(
           count % 2 !== 0
             ? `Odd number selected (${count}). Select one more or one less.`
-            : 'Select an even number of players between 14 and 20.'
+            : 'Select an even number of players between 14 and 24.'
         );
         return;
       }
@@ -306,6 +306,20 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
     setMatchCreated(null);
   };
 
+  // ── Reselect players from a past squad (stay on selection screen) ──────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSelectSquadPlayers = (squad: any) => {
+    const ids = [
+      ...squad.teamA.map((p: Player) => p.id),
+      ...squad.teamB.map((p: Player) => p.id),
+      ...(squad.teamC ? squad.teamC.map((p: Player) => p.id) : []),
+    ];
+    setSelectedPlayerIds(ids);
+    setSquadMode(squad.teamC ? '3squad' : '2squad');
+    setShowSquadHistory(false);
+    setError(null);
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
     const match = String(dateStr).match(/(\d{4})-(\d{2})-(\d{2})/);
@@ -437,7 +451,12 @@ export function SquadCreator({ isAdmin }: SquadCreatorProps) {
                   exit={{ opacity: 0, height: 0 }}
                   className="mb-4"
                 >
-                  <SquadHistory isAdmin={isAdmin} onLoadSquad={handleLoadSquad} squadMode={squadMode} />
+                  <SquadHistory
+                    isAdmin={isAdmin}
+                    onLoadSquad={handleLoadSquad}
+                    onSelectPlayers={handleSelectSquadPlayers}
+                    squadMode={squadMode}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
